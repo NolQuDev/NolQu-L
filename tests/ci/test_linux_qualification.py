@@ -62,6 +62,17 @@ class LinuxCiTests(unittest.TestCase):
         self.assertIn("assurance", gates)
         self.assertIn("release", gates)
 
+    def test_runner_paths_are_defined_in_step_context(self):
+        workflow = self.workflow()
+        job = next(iter(workflow["jobs"].values()))
+        for environment in (workflow.get("env", {}), job.get("env", {})):
+            self.assertNotRegex(json.dumps(environment), r"\brunner\s*\.",
+                                "runner context is unavailable in workflow/job env")
+        gate_step = next(step for step in job["steps"]
+                         if "linux_qualification.py" in step.get("run", ""))
+        self.assertEqual(gate_step["env"]["NQL_CI_OUTPUT"],
+                         "${{ runner.temp }}/nolqu-l-qualification")
+
     def test_failed_gate_is_retained_and_later_gate_cannot_mask_it(self):
         module = self.module()
         with tempfile.TemporaryDirectory(prefix="linux-ci-control-") as directory:
