@@ -1,0 +1,10 @@
+fn main() {
+    byte_store(0, 255)
+    byte_store(1, 255)
+    byte_store(2, 255)
+    byte_store(3, 255)
+    byte_store(4, 255)
+    input_read(0, 5)
+    byte_parse_u8(0, 8)
+    return byte_load(8)
+}

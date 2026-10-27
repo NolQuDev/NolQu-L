@@ -1,0 +1,6 @@
+# This shape intentionally differs from every legacy B0.4 fixture.
+fn main ( ) {
+    let base = 6 + 4 * 3;
+    let reduced = (base - 2) / 4
+    return reduced == 4;
+}

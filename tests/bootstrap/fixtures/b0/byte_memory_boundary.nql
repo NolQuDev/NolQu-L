@@ -1,0 +1,20 @@
+fn main() {
+    let locala = 1
+    let localb = 2
+    let localc = 3
+    let locald = 4
+    let locale = 5
+    let localf = 6
+    let localg = 7
+    let localh = 8
+    let locali = 9
+    let localj = 10
+    let localk = 11
+    let locall = 12
+    let localm = 13
+    let localn = 14
+    let localo = 15
+    let sentinel = 37
+    byte_store(65535, 200)
+    return byte_load(65535) - 200 + sentinel
+}

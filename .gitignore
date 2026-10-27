@@ -1,0 +1,21 @@
+build/*
+!build/.gitkeep
+
+# Common local noise
+*.swp
+*.swo
+*~
+.DS_Store
+.nolqu-mcp/
+
+# Private host state and generated evidence stay outside source publication.
+.nql/
+.venv*/
+__pycache__/
+*.pyc
+.superpowers/
+.migration-archives/
+.codex/
+.claude/
+.cursor/
+NATIVE_HANDOFF.md

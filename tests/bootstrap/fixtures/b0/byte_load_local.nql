@@ -1,0 +1,4 @@
+fn main() {
+    let byte_load = 37
+    return byte_load
+}

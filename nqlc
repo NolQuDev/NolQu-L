@@ -1,0 +1,765 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+VERSION=""
+TARGET_DEFAULT="x86_64-linux"
+INVOKED_NAME="${0##*/}"
+case "$INVOKED_NAME" in
+    nqlc|nolqulc) DRIVER_NAME="$INVOKED_NAME" ;;
+    *) DRIVER_NAME="nqlc" ;;
+esac
+PRIMARY_EXTENSION=".nql"
+SCRIPT="${BASH_SOURCE[0]}"
+if command -v readlink >/dev/null 2>&1; then
+    SCRIPT="$(readlink -f "$SCRIPT" 2>/dev/null || printf "%s" "$SCRIPT")"
+fi
+TOOL_DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
+TMP_ROOT="${TMPDIR:-/tmp}"
+TMP_DIR=""
+
+quiet=0
+verbose=0
+warn_suppress=0
+werror=0
+wall=0
+check_only=0
+emit_asm=0
+emit_obj=0
+save_temps=0
+dry_run=0
+time_mode=0
+no_std=0
+output=""
+output_seen=0
+color="auto"
+error_format="text"
+max_errors="${NOLQUC_MAX_ERRORS:-20}"
+target="$TARGET_DEFAULT"
+backend="nasm"
+compiler_profile=0
+opt_level=""
+debug_info=0
+emit_ir=0
+dump_ast=0
+dump_ir=0
+run_after=0
+explicit_run=0
+pedantic=0
+gen_deps=0
+emit_ccdb=0
+jobs=1
+inputs=()
+run_args=()
+disabled_warnings=()
+start_ms=0
+stage_start_ms=0
+stage_text=""
+
+usage() {
+    cat <<USAGE
+Usage: $DRIVER_NAME [options] <file$PRIMARY_EXTENSION> [file$PRIMARY_EXTENSION...]
+       $DRIVER_NAME @<flags-file> [file$PRIMARY_EXTENSION...]
+
+Options:
+  -o <file>           Output file name
+  -S                  Emit assembly only
+  -c                  Emit object file only
+  -v                  Verbose pipeline output
+  -q                  Quiet mode (errors only)
+  -w                  Suppress warnings
+  -Werror             Treat warnings as errors
+  -Wno-<name>         Disable specific warning
+  -Wall               Enable all recommended warnings
+  --check             Check without output (canonical includes semantics)
+  --no-std            Explicit no-stdlib mode
+  --color <when>      Color output: auto, always, never
+  --max-errors=N      Stop after N errors (default: 20)
+  --save-temps        Keep all intermediate files
+  -O0, -O1            Optimization level
+  -g                  Include debug information when supported
+  --emit-ir           Emit Nolqu IR to stdout
+  --dump-ast          Dump a textual source-structure tree
+  --dump-ir           Dump Nolqu IR to stdout
+  --run               Compile to a temporary binary and run it
+  --target <target>   Target platform, default x86_64-linux
+  --backend <name>    Compiler backend: nasm (default), canonical
+  --compiler-profile Select the canonical 16 MiB RW/NX runtime profile
+  --dry-run           Print planned pipeline without running it
+  --time              Print elapsed compiler time
+  -j N                Parallel compilation jobs when supported
+  --pedantic          Enable strict checks when supported
+  --error-format=fmt  Error format: text, json
+  -M                  Emit Makefile dependencies to stdout
+  --emit-ccdb         Generate compile_commands.json
+  --version           Show compiler version
+  --help              Show this message
+USAGE
+}
+
+color_enabled() {
+    [[ "$color" == "always" ]] && return 0
+    [[ "$color" == "auto" && -t 2 && -z "${NO_COLOR:-}" ]] && return 0
+    return 1
+}
+
+json_escape() {
+    python3 -c 'import json,sys; print(json.dumps(sys.stdin.read())[1:-1])'
+}
+
+diagnostic() {
+    local level="$1" code="$2" message="$3"
+    if [[ "$error_format" == "json" ]]; then
+        printf '{"file":null,"line":0,"col":0,"level":"%s","code":"%s","message":"%s"}\n' \
+            "$level" "$code" "$(printf "%s" "$message" | json_escape)" >&2
+    elif [[ "$level" == "error" && "$code" != "internal" && color_enabled ]]; then
+        printf '\033[31merror\033[0m: %s\n' "$message" >&2
+    elif [[ "$level" == "error" && "$code" == "internal" && color_enabled ]]; then
+        printf '\033[31minternal error\033[0m: %s\n' "$message" >&2
+    elif [[ "$level" == "error" && "$code" == "internal" ]]; then
+        printf "internal error: %s\n" "$message" >&2
+    else
+        printf "%s: %s\n" "$level" "$message" >&2
+    fi
+}
+
+err() { diagnostic error ECLI "$1"; }
+fatal() { diagnostic fatal FATAL "$1"; }
+internal() { diagnostic error internal "$1"; exit 2; }
+vecho() { if [[ $verbose -eq 1 && $quiet -eq 0 ]]; then printf "%s\n" "$1" >&2; fi; }
+now_ms() { date +%s%3N 2>/dev/null || printf "0"; }
+stage_begin() {
+    stage_text="$1"
+    stage_start_ms="$(now_ms)"
+    if [[ $time_mode -eq 0 ]]; then vecho "$stage_text"; fi
+}
+stage_end() {
+    if [[ $verbose -eq 1 && $quiet -eq 0 && $time_mode -eq 1 ]]; then
+        local end_ms
+        end_ms="$(now_ms)"
+        printf "%-48s %sms\n" "$stage_text" "$((end_ms - stage_start_ms))" >&2
+    fi
+}
+finish_ok() {
+    if [[ $time_mode -eq 1 && $quiet -eq 0 && "$start_ms" -gt 0 ]]; then
+        local end_ms
+        end_ms="$(now_ms)"
+        printf "total: %sms\n" "$((end_ms - start_ms))" >&2
+    fi
+    if [[ $save_temps -eq 1 && $quiet -eq 0 && -n "$TMP_DIR" && -d "$TMP_DIR" ]]; then
+        printf "saved temporary files in %s\n" "$TMP_DIR" >&2
+    fi
+    exit 0
+}
+
+find_version_file() {
+    if [[ -n "${NOLQU_ROOT:-}" && -f "$NOLQU_ROOT/VERSION" ]]; then printf "%s\n" "$NOLQU_ROOT/VERSION"; return 0; fi
+    if [[ -f "$TOOL_DIR/VERSION" ]]; then printf "%s\n" "$TOOL_DIR/VERSION"; return 0; fi
+    if [[ -f "$TOOL_DIR/../lib/nolqu/VERSION" ]]; then printf "%s\n" "$TOOL_DIR/../lib/nolqu/VERSION"; return 0; fi
+    return 1
+}
+
+read_tool_version() {
+    local version_file
+    version_file="$(find_version_file)" || { err "VERSION file not found in project root"; exit 1; }
+    VERSION="$(head -n 1 "$version_file" | tr -d '[:space:]')"
+    [[ "$VERSION" =~ ^[0-9]+[.][0-9]+[.][0-9]+[A-Za-z0-9._-]*$ ]] || { err "VERSION file is invalid"; exit 1; }
+}
+
+find_r0_adapter() {
+    if [[ -n "${NOLQU_ROOT:-}" && -x "$NOLQU_ROOT/tools/nql_r0_adapter.sh" ]]; then printf "%s\n" "$NOLQU_ROOT/tools/nql_r0_adapter.sh"; return 0; fi
+    if [[ -x "$TOOL_DIR/tools/nql_r0_adapter.sh" ]]; then printf "%s\n" "$TOOL_DIR/tools/nql_r0_adapter.sh"; return 0; fi
+    if [[ -x "$TOOL_DIR/../lib/nolqu/tools/nql_r0_adapter.sh" ]]; then printf "%s\n" "$TOOL_DIR/../lib/nolqu/tools/nql_r0_adapter.sh"; return 0; fi
+    return 1
+}
+
+cleanup() {
+    local code=$?
+    if [[ -n "$TMP_DIR" && -d "$TMP_DIR" ]]; then
+        if [[ $code -ne 0 || $save_temps -eq 0 ]]; then rm -rf -- "$TMP_DIR"; fi
+    fi
+    return $code
+}
+on_int() { cleanup; exit 130; }
+on_term() { cleanup; exit 143; }
+on_pipe() { cleanup; exit 141; }
+trap cleanup EXIT
+trap on_int INT
+trap on_term TERM
+trap on_pipe PIPE
+
+run_binary() {
+    local bin="$1"
+    shift
+    if [[ "$(uname -m)" == "x86_64" ]]; then
+        "$bin" "$@"
+    else
+        command -v qemu-x86_64 >/dev/null 2>&1 || { err "qemu-x86_64 not found for running x86_64 binaries"; return 1; }
+        qemu-x86_64 "$bin" "$@"
+    fi
+}
+
+expanded_args=()
+response_literal=0
+response_value_pending=0
+legacy_response=0
+append_expanded_arg() {
+    expanded_args+=("$1")
+    [[ $legacy_response -eq 0 && $response_literal -eq 0 ]] || return 0
+    if [[ $response_value_pending -eq 1 ]]; then
+        response_value_pending=0
+    elif [[ "$1" == -- ]]; then
+        response_literal=1
+    else
+        case "$1" in
+            -o|--color|--max-errors|--error-format|--target|--backend|-j) response_value_pending=1 ;;
+        esac
+    fi
+}
+expand_arg() {
+    local arg="$1"
+    if [[ $response_literal -eq 1 && $legacy_response -eq 0 ]]; then
+        append_expanded_arg "$arg"
+    elif [[ "$arg" == @* && "$arg" != "@" ]]; then
+        local file="${arg#@}"
+        [[ -f "$file" ]] || { err "response file '$file' not found"; exit 1; }
+        [[ -r "$file" ]] || { err "cannot read response file '$file': permission denied"; exit 1; }
+        local line
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            [[ -z "$line" ]] && continue
+            [[ "$line" == \#* ]] && continue
+            append_expanded_arg "$line"
+        done < "$file"
+    else
+        append_expanded_arg "$arg"
+    fi
+}
+raw_driver_args=("$@")
+for arg in "$@"; do expand_arg "$arg"; done
+set -- "${expanded_args[@]}"
+if [[ $# -eq 0 ]]; then err "no input files. Try --help"; exit 1; fi
+
+parse_flags=1
+driver_separator_index=-1
+driver_runtime_separator=0
+while [[ $# -gt 0 ]]; do
+    arg="$1"; shift
+    if [[ $parse_flags -eq 1 && "$arg" == "--" ]]; then
+        driver_separator_index=$((${#expanded_args[@]} - $# - 1))
+        if [[ ${#inputs[@]} -gt 0 ]]; then
+            driver_runtime_separator=1
+            run_args=("$@")
+            break
+        fi
+        parse_flags=0
+        continue
+    fi
+    if [[ $parse_flags -eq 1 && "$arg" == -* && "$arg" != "-" ]]; then
+        case "$arg" in
+            --help|-h) usage; exit 0 ;;
+            --version) read_tool_version; printf "%s %s (%s)\n" "$DRIVER_NAME" "$VERSION" "$TARGET_DEFAULT"; exit 0 ;;
+            -o) [[ $# -gt 0 ]] || { err "flag -o requires an output file name"; exit 1; }; [[ $output_seen -eq 0 ]] || { err "flag -o cannot be used more than once"; exit 1; }; output="$1"; output_seen=1; shift ;;
+            -S) emit_asm=1 ;;
+            -c) emit_obj=1 ;;
+            -v) verbose=1 ;;
+            -q) quiet=1 ;;
+            -w) warn_suppress=1 ;;
+            -Werror) werror=1 ;;
+            -Wall) wall=1 ;;
+            -Wno-*) disabled_warnings+=("${arg#-Wno-}") ;;
+            --check) check_only=1 ;;
+            --no-std) no_std=1 ;;
+            --color) [[ $# -gt 0 ]] || { err "flag --color requires auto, always, or never"; exit 1; }; color="$1"; shift ;;
+            --color=*) color="${arg#--color=}" ;;
+            --max-errors) [[ $# -gt 0 ]] || { err "flag --max-errors requires a number"; exit 1; }; max_errors="$1"; shift ;;
+            --max-errors=*) max_errors="${arg#--max-errors=}" ;;
+            --save-temps) save_temps=1 ;;
+            --error-format) [[ $# -gt 0 ]] || { err "flag --error-format requires text or json"; exit 1; }; error_format="$1"; shift ;;
+            --error-format=*) error_format="${arg#--error-format=}" ;;
+            -O0|-O1) opt_level="$arg" ;;
+            -g) debug_info=1 ;;
+            --emit-ir) emit_ir=1 ;;
+            --dump-ir) dump_ir=1 ;;
+            --run) run_after=1; explicit_run=1 ;;
+            --dump-ast) dump_ast=1 ;;
+            --target) [[ $# -gt 0 ]] || { err "flag --target requires a value"; exit 1; }; target="$1"; shift ;;
+            --target=*) target="${arg#--target=}" ;;
+            --backend) [[ $# -gt 0 ]] || { err "flag --backend requires nasm or canonical"; exit 1; }; backend="$1"; shift ;;
+            --backend=*) backend="${arg#--backend=}" ;;
+            --compiler-profile) compiler_profile=1 ;;
+            --dry-run) dry_run=1 ;;
+            --time) time_mode=1 ;;
+            -j) [[ $# -gt 0 ]] || { err "flag -j requires a value"; exit 1; }; [[ "$1" =~ ^[0-9]+$ && "$1" -gt 0 ]] || { err "flag -j requires a positive number"; exit 1; }; jobs="$1"; shift ;;
+            --pedantic) pedantic=1 ;;
+            -M) gen_deps=1 ;;
+            --emit-ccdb) emit_ccdb=1 ;;
+            *) err "unknown flag '$arg'. Try --help"; exit 1 ;;
+        esac
+    else
+        inputs+=("$arg")
+    fi
+done
+
+# Preserve R0's established response expansion even after its -- separator.
+# Canonical runtime arguments instead retain every byte supplied after --.
+if [[ "$backend" == nasm && $driver_separator_index -ge 0 ]]; then
+    expanded_args=()
+    legacy_response=1
+    for arg in "${raw_driver_args[@]}"; do expand_arg "$arg"; done
+    legacy_tail_start=$((driver_separator_index + 1))
+    if [[ $driver_runtime_separator -eq 1 ]]; then
+        run_args=("${expanded_args[@]:legacy_tail_start}")
+    else
+        inputs=("${expanded_args[@]:legacy_tail_start}")
+    fi
+fi
+
+if [[ "${NOLQUC_COLOR:-}" == "always" ]]; then color="always"; elif [[ -n "${NO_COLOR:-}" ]]; then color="never"; elif [[ -n "${NOLQUC_COLOR:-}" ]]; then color="$NOLQUC_COLOR"; fi
+
+if [[ $run_after -eq 0 && $output_seen -eq 0 && ${#inputs[@]} -eq 1 \
+    && $emit_asm -eq 0 && $emit_obj -eq 0 && $check_only -eq 0 \
+    && $emit_ir -eq 0 && $dump_ir -eq 0 && $dump_ast -eq 0 \
+    && $gen_deps -eq 0 && $emit_ccdb -eq 0 ]]; then
+    run_after=1
+fi
+
+[[ $emit_asm -eq 1 && $emit_obj -eq 1 ]] && { err "flags -S and -c cannot be used together"; exit 1; }
+[[ $warn_suppress -eq 1 && $werror -eq 1 ]] && { err "flags -w and -Werror cannot be used together"; exit 1; }
+[[ $verbose -eq 1 && $quiet -eq 1 ]] && { err "flags -v and -q cannot be used together"; exit 1; }
+[[ $check_only -eq 1 && $output_seen -eq 1 ]] && { err "flag --check does not produce output, so -o does not apply"; exit 1; }
+[[ $gen_deps -eq 1 && $emit_ccdb -eq 1 ]] && { err "flags -M and --emit-ccdb cannot be used together"; exit 1; }
+[[ $run_after -eq 1 && $emit_asm -eq 1 ]] && { err "flags --run and -S cannot be used together"; exit 1; }
+[[ $run_after -eq 1 && $emit_obj -eq 1 ]] && { err "flags --run and -c cannot be used together"; exit 1; }
+[[ $run_after -eq 1 && $check_only -eq 1 ]] && { err "flags --run and --check cannot be used together"; exit 1; }
+[[ $run_after -eq 1 && $emit_ir -eq 1 ]] && { err "flags --run and --emit-ir cannot be used together"; exit 1; }
+[[ $run_after -eq 1 && $dump_ir -eq 1 ]] && { err "flags --run and --dump-ir cannot be used together"; exit 1; }
+[[ $run_after -eq 1 && $dump_ast -eq 1 ]] && { err "flags --run and --dump-ast cannot be used together"; exit 1; }
+[[ $run_after -eq 1 && $gen_deps -eq 1 ]] && { err "flags --run and -M cannot be used together"; exit 1; }
+[[ $run_after -eq 1 && $emit_ccdb -eq 1 ]] && { err "flags --run and --emit-ccdb cannot be used together"; exit 1; }
+[[ "$target" != "x86_64-linux" ]] && { err "target '$target' is not supported yet"; exit 1; }
+case "$color" in auto|always|never) ;; *) err "--color must be auto, always, or never"; exit 1 ;; esac
+case "$error_format" in text|json) ;; *) err "--error-format must be text or json"; exit 1 ;; esac
+[[ "$max_errors" =~ ^[0-9]+$ && "$max_errors" -gt 0 ]] || { err "--max-errors must be a positive number"; exit 1; }
+[[ ${#inputs[@]} -gt 0 ]] || { err "no input files. Try --help"; exit 1; }
+[[ $run_after -eq 1 && ${#inputs[@]} -gt 1 ]] && { err "--run accepts only one input file"; exit 1; }
+[[ ${#inputs[@]} -gt 1 && $output_seen -eq 0 && $check_only -eq 0 && $emit_ir -eq 0 && $dump_ir -eq 0 && $dump_ast -eq 0 && $gen_deps -eq 0 && $emit_ccdb -eq 0 ]] && { err "-o is required when compiling more than one input file"; exit 1; }
+[[ $emit_ir -eq 1 && $output_seen -eq 1 ]] && { err "flag --emit-ir writes to stdout, so -o does not apply"; exit 1; }
+case "$backend" in nasm|canonical) ;; *) err "--backend must be nasm or canonical"; exit 1 ;; esac
+[[ $compiler_profile -eq 0 || "$backend" == canonical ]] || { err "--compiler-profile requires --backend canonical"; exit 1; }
+if [[ "$backend" == canonical ]]; then
+    canonical_public_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)" || exit 1
+    # Hardlink-emulating filesystems can resolve script bytes into a storage
+    # directory. Retain the public entry's layout when that has the assets.
+    if [[ ! -f "$TOOL_DIR/VERSION" && ! -f "$TOOL_DIR/../lib/nolqu/VERSION" ]]; then
+        if [[ -f "$canonical_public_dir/VERSION" || -f "$canonical_public_dir/../lib/nolqu/VERSION" ]]; then
+            TOOL_DIR="$canonical_public_dir"
+        fi
+    fi
+fi
+read_tool_version
+if [[ "$backend" == canonical ]]; then
+    canonical_driver="$TOOL_DIR/tools/nql_c0_driver.sh"
+    if [[ ! -f "$canonical_driver" ]]; then
+        canonical_driver="$TOOL_DIR/../lib/nolqu/tools/nql_c0_driver.sh"
+    fi
+    [[ -r "$canonical_driver" ]] || { printf 'error: canonical backend driver not found\n' >&2; exit 1; }
+    source "$canonical_driver" || exit $?
+    run_canonical_pipeline
+    exit $?
+fi
+R0_ADAPTER="$(find_r0_adapter)" || internal "R0 pipeline adapter not found"
+legacy_flags=()
+[[ "$opt_level" == "-O1" ]] && legacy_flags+=("--release")
+start_ms="$(now_ms)"
+
+warning_pass() {
+    [[ $warn_suppress -eq 1 ]] && return 0
+    [[ $wall -eq 1 || $pedantic -eq 1 ]] || return 0
+    local disabled joined count_file code color_flag
+    joined="$(IFS=,; printf "%s" "${disabled_warnings[*]}")"
+    count_file="$TMP_DIR/warnings.count"
+    if color_enabled; then color_flag=1; else color_flag=0; fi
+    python3 - "$count_file" "$error_format" "$joined" "$wall" "$pedantic" "$werror" "$max_errors" "$color_flag" "${inputs[@]}" <<'PY'
+import json
+import sys
+
+count_path, error_format, disabled_csv, wall, pedantic, werror, max_errors, color_flag, *paths = sys.argv[1:]
+disabled = {item for item in disabled_csv.split(",") if item}
+warnings = []
+limit = int(max_errors)
+hit_limit = False
+
+def enabled(name):
+    return name not in disabled
+
+def emit(path, line_no, col, name, message, line):
+    global hit_limit
+    if not enabled(name):
+        return
+    if werror == "1" and len(warnings) >= limit:
+        hit_limit = True
+        return
+    code = "W" + name.upper().replace("-", "_")
+    level = "error" if werror == "1" else "warning"
+    if error_format == "json":
+        print(json.dumps({
+            "file": path,
+            "line": line_no,
+            "col": col,
+            "level": level,
+            "code": code,
+            "message": message,
+        }, separators=(",", ":")), file=sys.stderr)
+    else:
+        label = level
+        if color_flag == "1":
+            color = "\033[31m" if level == "error" else "\033[33m"
+            label = f"{color}{level}\033[0m"
+        print(f"{path}:{line_no}:{col}: {label}[{code}]: {message}", file=sys.stderr)
+        snippet = line.rstrip("\n")
+        if snippet:
+            print(f"{line_no:5d} | {snippet}", file=sys.stderr)
+            caret = "^"
+            if color_flag == "1":
+                caret = f"\033[1m{caret}\033[0m"
+            print(" " * (8 + max(col - 1, 0)) + caret, file=sys.stderr)
+    warnings.append(name)
+
+for path in paths:
+    with open(path, "r", encoding="utf-8-sig", newline=None) as fh:
+        text = fh.read().replace("\r\n", "\n")
+    lines = text.splitlines(True)
+    for idx, line in enumerate(lines, start=1):
+        body = line[:-1] if line.endswith("\n") else line
+        if body.rstrip(" \t") != body:
+            emit(path, idx, len(body.rstrip(" \t")) + 1, "trailing-whitespace", "trailing whitespace", line)
+        if hit_limit:
+            break
+        if "TODO" in line or "FIXME" in line:
+            emit(path, idx, max(line.find("TODO"), line.find("FIXME")) + 1, "todo", "TODO/FIXME comment left in source", line)
+        if hit_limit:
+            break
+        if pedantic == "1" and len(body) > 100:
+            emit(path, idx, 101, "long-line", "line is longer than 100 characters", line)
+        if hit_limit:
+            break
+        if pedantic == "1" and body.startswith("\t"):
+            emit(path, idx, 1, "tab-indent", "tab indentation is discouraged in pedantic mode", line)
+        if hit_limit:
+            break
+    if text and not text.endswith("\n"):
+        emit(path, len(lines) or 1, len(lines[-1]) if lines else 1, "missing-final-newline", "file does not end with a newline", lines[-1] if lines else "")
+    if hit_limit:
+        break
+
+with open(count_path, "w", encoding="utf-8") as fh:
+    fh.write(f"{len(warnings)} {1 if hit_limit else 0}")
+PY
+    code=$?
+    [[ $code -eq 0 ]] || exit "$code"
+    [[ -f "$count_file" ]] || return 0
+    read -r warnings_count warnings_limited < "$count_file"
+    if [[ "${warnings_limited:-0}" -eq 1 && $werror -eq 1 ]]; then
+        fatal "too many errors ($max_errors), compilation stopped"
+        exit 1
+    fi
+    if [[ "${warnings_count:-0}" -gt 0 && $werror -eq 1 ]]; then
+        err "warnings were treated as errors"
+        exit 1
+    fi
+}
+
+dump_ast_text() {
+    python3 - "${inputs[@]}" <<'PY'
+import os
+import re
+import sys
+
+func_re = re.compile(r'^\s*func\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*\{?\s*$')
+module_re = re.compile(r'^\s*module\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{?\s*$')
+import_re = re.compile(r'^\s*import\s+([A-Za-z_][A-Za-z0-9_]*)\s*$')
+var_re = re.compile(r'^\s*var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=')
+assign_re = re.compile(r'^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=')
+call_re = re.compile(r'^\s*([A-Za-z_][A-Za-z0-9_:.]*)\s*\(')
+
+def kind_for(line):
+    stripped = line.strip()
+    if not stripped:
+        return None
+    if stripped in ("{", "}"):
+        return "BlockEnd" if stripped == "}" else "Block"
+    for name, regex in (("Module", module_re), ("Function", func_re), ("Import", import_re), ("VarDecl", var_re)):
+        m = regex.match(line)
+        if m:
+            if name == "Function":
+                params = ", ".join(p.strip() for p in m.group(2).split(",") if p.strip())
+                return f"Function name={m.group(1)} params=[{params}]"
+            return f"{name} name={m.group(1)}"
+    head = stripped.split(None, 1)[0]
+    if head in {"if", "elif", "else", "while", "for", "try", "catch", "return", "break", "continue"}:
+        return head[:1].upper() + head[1:]
+    if head in {"print", "println"}:
+        return "Print" if head == "print" else "Println"
+    m = assign_re.match(line)
+    if m:
+        return f"Assign name={m.group(1)}"
+    m = call_re.match(line)
+    if m:
+        return f"Call name={m.group(1)}"
+    return "Expr"
+
+for file_index, path in enumerate(sys.argv[1:]):
+    if file_index:
+        print()
+    print(f"File path={path}")
+    depth = 1
+    with open(path, "r", encoding="utf-8-sig", newline=None) as fh:
+        for line_no, line in enumerate(fh, start=1):
+            stripped = line.strip()
+            node = kind_for(line)
+            if node is None:
+                continue
+            if stripped.startswith("}"):
+                depth = max(1, depth - 1)
+            print(f"{'  ' * depth}{node} line={line_no}")
+            opens = stripped.count("{")
+            closes = stripped.count("}")
+            if opens > closes and not stripped.startswith("}"):
+                depth += opens - closes
+            elif closes > opens and not stripped.startswith("}"):
+                depth = max(1, depth - (closes - opens))
+PY
+}
+
+parallel_check_inputs() {
+    [[ ${#inputs[@]} -gt 1 && "$jobs" -gt 1 ]] || return 0
+    local running=0 failed=0 pid
+    pids=()
+    for f in "${inputs[@]}"; do
+        "$R0_ADAPTER" --check "$f" "${legacy_flags[@]}" &
+        pids+=("$!")
+        running=$((running + 1))
+        if [[ $running -ge $jobs ]]; then
+            pid="${pids[0]}"
+            if ! wait "$pid"; then failed=1; fi
+            pids=("${pids[@]:1}")
+            running=$((running - 1))
+        fi
+    done
+    for pid in "${pids[@]}"; do
+        if ! wait "$pid"; then failed=1; fi
+    done
+    [[ $failed -eq 0 ]] || exit 1
+}
+
+validate_text_file() {
+    python3 - "$1" <<PY
+import sys
+path = sys.argv[1]
+data = open(path, "rb").read()
+raw = data[3:] if data.startswith(b"\\xef\\xbb\\xbf") else data
+try:
+    raw.decode("utf-8")
+except UnicodeDecodeError:
+    sys.exit(1)
+if b"\\r" in raw.replace(b"\\r\\n", b"\\n"):
+    sys.exit(2)
+sys.exit(0)
+PY
+}
+
+validate_input() {
+    local f="$1"
+    [[ "$f" != "-" ]] || { err "stdin input is not supported yet"; exit 1; }
+    [[ "$f" == *.nql || "$f" == *.nq ]] || { err "'$f' is not a NolQu-L file (.nql; legacy .nq is also accepted)"; exit 1; }
+    [[ ! -d "$f" ]] || { err "'$f' is a directory, not a file"; exit 1; }
+    [[ -e "$f" ]] || { err "file '$f' not found"; exit 1; }
+    [[ -r "$f" ]] || { err "cannot read '$f': permission denied"; exit 1; }
+    [[ -s "$f" ]] || { err "file '$f' is empty"; exit 1; }
+    validate_text_file "$f"
+    case $? in 0) ;; 1) err "file '$f' is not valid UTF-8"; exit 1 ;; 2) err "CR-only line endings are not supported"; exit 1 ;; *) err "cannot read '$f'"; exit 1 ;; esac
+}
+for f in "${inputs[@]}"; do validate_input "$f"; done
+if [[ -z "$TMP_DIR" ]]; then
+    TMP_DIR="$(mktemp -d "$TMP_ROOT/nqlc.XXXXXX")" || internal "cannot create temporary directory"
+fi
+warning_pass
+if [[ $dump_ast -eq 1 ]]; then
+    if [[ ${#inputs[@]} -gt 1 && "$jobs" -gt 1 ]]; then
+        parallel_check_inputs
+    else
+        for f in "${inputs[@]}"; do "$R0_ADAPTER" --check "$f" "${legacy_flags[@]}" || exit $?; done
+    fi
+    dump_ast_text
+    finish_ok
+fi
+
+default_output() {
+    local f="$1" base
+    base="${f##*/}"
+    base="${base%.nql}"
+    base="${base%.nq}"
+    if [[ $emit_asm -eq 1 ]]; then printf "%s.asm" "$base"; elif [[ $emit_obj -eq 1 ]]; then printf "%s.o" "$base"; else printf "%s" "$base"; fi
+}
+
+if [[ $run_after -eq 1 && $explicit_run -eq 1 && $output_seen -eq 0 ]]; then
+    [[ -n "$TMP_DIR" ]] || TMP_DIR="$(mktemp -d "$TMP_ROOT/nqlc.XXXXXX")" || internal "cannot create temporary directory"
+    output="$TMP_DIR/run"
+elif [[ -z "$output" && $check_only -eq 0 && $emit_ir -eq 0 && $dump_ir -eq 0 && $dump_ast -eq 0 ]]; then
+    output="$(default_output "${inputs[0]}")"
+fi
+if [[ -n "$output" ]]; then
+    out_dir="$(dirname -- "$output")"
+    [[ -d "$out_dir" ]] || { err "directory '$out_dir' not found"; exit 1; }
+    [[ -w "$out_dir" ]] || { err "cannot write to '$output': permission denied"; exit 1; }
+    for f in "${inputs[@]}"; do
+        in_abs="$(readlink -f -- "$f" 2>/dev/null || printf "%s" "$f")"
+        out_abs="$(readlink -m -- "$output" 2>/dev/null || printf "%s" "$output")"
+        [[ "$in_abs" != "$out_abs" ]] || { err "input and output must not be the same file"; exit 1; }
+    done
+fi
+
+if [[ $gen_deps -eq 1 ]]; then
+    for f in "${inputs[@]}"; do
+        if [[ ${#inputs[@]} -eq 1 && -n "$output" ]]; then
+            printf "%s: %s\n" "$output" "$f"
+        else
+            printf "%s: %s\n" "$(default_output "$f")" "$f"
+        fi
+    done
+    finish_ok
+fi
+
+if [[ $emit_ccdb -eq 1 ]]; then
+    ccdb_tmp="compile_commands.json.tmp.$$"
+    python3 - "$PWD" "$target" "$output" "$ccdb_tmp" "$DRIVER_NAME" "${inputs[@]}" <<'PY'
+import json
+import os
+import shlex
+import sys
+
+directory = sys.argv[1]
+target = sys.argv[2]
+output = sys.argv[3]
+ccdb_tmp = sys.argv[4]
+driver_name = sys.argv[5]
+inputs = sys.argv[6:]
+entries = []
+for path in inputs:
+    command = [driver_name, path, "--target", target]
+    if output and len(inputs) == 1:
+        command.extend(["-o", output])
+    entries.append({
+        "directory": directory,
+        "command": " ".join(shlex.quote(part) for part in command),
+        "file": os.path.abspath(path),
+    })
+with open(ccdb_tmp, "w", encoding="utf-8") as fh:
+    json.dump(entries, fh, indent=2)
+    fh.write("\n")
+PY
+    mv -f -- "$ccdb_tmp" compile_commands.json || { rm -f -- "$ccdb_tmp"; err "cannot write to 'compile_commands.json': permission denied"; exit 1; }
+    finish_ok
+fi
+
+combined="${inputs[0]}"
+if [[ ${#inputs[@]} -gt 1 && "$jobs" -gt 1 ]]; then
+    parallel_check_inputs
+fi
+if [[ ${#inputs[@]} -gt 1 ]]; then
+    combined="$TMP_DIR/combined.nql"
+    : > "$combined"
+    for f in "${inputs[@]}"; do cat -- "$f" >> "$combined"; printf "\n" >> "$combined"; done
+fi
+
+if [[ $check_only -eq 1 ]]; then
+    stage_begin "[1/1] checking   $combined"
+    [[ $dry_run -eq 1 ]] && finish_ok
+    if [[ ${#inputs[@]} -gt 1 && "$jobs" -gt 1 ]]; then
+        stage_end
+        finish_ok
+    fi
+    "$R0_ADAPTER" --check "$combined" "${legacy_flags[@]}"; code=$?
+    [[ $code -eq 0 ]] && { stage_end; finish_ok; }
+    exit $code
+fi
+if [[ $dump_ir -eq 1 || $emit_ir -eq 1 ]]; then
+    stage_begin "[1/1] IR         $combined"
+    [[ $dry_run -eq 1 ]] && finish_ok
+    "$R0_ADAPTER" --dump-ir "$combined" "${legacy_flags[@]}"; code=$?
+    [[ $code -eq 0 ]] && { stage_end; finish_ok; }
+    exit $code
+fi
+asm="$TMP_DIR/output.asm"
+obj="$TMP_DIR/output.o"
+out_tmp="$TMP_DIR/final.tmp"
+nasm_flags=(-f elf64)
+if [[ -n "${SOURCE_DATE_EPOCH:-}" ]]; then
+    nasm_flags=(--reproducible "${nasm_flags[@]}")
+fi
+if [[ $debug_info -eq 1 ]]; then
+    nasm_flags+=(-g -F dwarf)
+fi
+stage_begin "[1/4] parsing    $combined"
+stage_end
+stage_begin "[2/4] codegen    $combined -> $asm"
+if [[ $dry_run -eq 1 ]]; then
+    printf "%s\n" "$R0_ADAPTER --emit $asm $combined ${legacy_flags[*]}" >&2
+    if [[ $emit_asm -eq 1 ]]; then
+        printf "%s\n" "mv $asm $output" >&2
+    else
+        printf "nasm" >&2
+        printf " %q" "${nasm_flags[@]}" "$asm" -o "$obj" >&2
+        printf "\n" >&2
+        if [[ $emit_obj -eq 1 ]]; then
+            printf "%s\n" "mv $obj $output" >&2
+        else
+            if command -v x86_64-linux-gnu-ld >/dev/null 2>&1; then linker="x86_64-linux-gnu-ld"; else linker="ld"; fi
+            printf "%s\n" "$linker $obj -o $output" >&2
+            if [[ $run_after -eq 1 ]]; then
+                printf "run %s" "$output" >&2
+                if [[ ${#run_args[@]} -gt 0 ]]; then printf " %q" "${run_args[@]}" >&2; fi
+                printf "\n" >&2
+            fi
+        fi
+    fi
+    finish_ok
+fi
+"$R0_ADAPTER" --emit "$asm" "$combined" "${legacy_flags[@]}" >/dev/null || exit 1
+stage_end
+if [[ $emit_asm -eq 1 ]]; then
+    stage_begin "[3/3] write asm  $asm -> $output"
+    mv -f -- "$asm" "$out_tmp" && mv -f -- "$out_tmp" "$output" || { err "cannot write to '$output': permission denied"; exit 1; }
+    stage_end
+    finish_ok
+fi
+stage_begin "[3/4] assemble   $asm -> $obj"
+command -v nasm >/dev/null 2>&1 || { err "assembler 'nasm' not found"; exit 1; }
+(
+    cd "$TMP_DIR" || exit 1
+    nasm "${nasm_flags[@]}" output.asm -o output.o
+) || exit 1
+stage_end
+if [[ $emit_obj -eq 1 ]]; then
+    stage_begin "[4/4] write obj  $obj -> $output"
+    mv -f -- "$obj" "$out_tmp" && mv -f -- "$out_tmp" "$output" || { err "cannot write to '$output': permission denied"; exit 1; }
+    stage_end
+    finish_ok
+fi
+stage_begin "[4/4] linking    $obj -> $output"
+if command -v x86_64-linux-gnu-ld >/dev/null 2>&1; then linker="x86_64-linux-gnu-ld"; else linker="ld"; fi
+command -v "$linker" >/dev/null 2>&1 || { err "linker 'ld' not found. Make sure binutils is installed"; exit 1; }
+"$linker" "$obj" -o "$out_tmp" || exit 1
+mv -f -- "$out_tmp" "$output" || { err "cannot write to '$output': permission denied"; exit 1; }
+stage_end
+if [[ $run_after -eq 1 ]]; then
+    stage_begin "[5/5] running    $output"
+    run_binary "$output" "${run_args[@]}"
+    code=$?
+    stage_end
+    if [[ $time_mode -eq 1 && $quiet -eq 0 && "$start_ms" -gt 0 ]]; then
+        end_ms="$(now_ms)"
+        printf "total: %sms\n" "$((end_ms - start_ms))" >&2
+    fi
+    exit "$code"
+fi
+finish_ok

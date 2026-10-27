@@ -1,0 +1,5 @@
+fn main() {
+    # The diagnostic must report this source, not a fixed fixture location.
+    missing = 1
+    return 0
+}

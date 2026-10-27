@@ -1,0 +1,6 @@
+fn main() {
+    input_read(32, 96)
+    byte_parse_stmts(32, 0)
+    output_write(0, 5)
+    return 0
+}

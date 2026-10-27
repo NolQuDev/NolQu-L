@@ -1,0 +1,4 @@
+fn main() {
+    let divisor = 3 - 3
+    return 18 / divisor
+}

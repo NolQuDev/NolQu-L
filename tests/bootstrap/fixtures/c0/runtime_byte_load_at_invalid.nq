@@ -1,0 +1,4 @@
+fn main() {
+    byte_load_at(0, 256)
+    return 0
+}

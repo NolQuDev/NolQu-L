@@ -1,0 +1,4 @@
+fn main() {
+    byte_store(65536)
+    return 0
+}

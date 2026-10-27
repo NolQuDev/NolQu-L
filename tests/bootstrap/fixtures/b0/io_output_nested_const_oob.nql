@@ -1,0 +1,4 @@
+fn main() {
+    output_write(65536, input_read(0, 0))
+    return 0
+}

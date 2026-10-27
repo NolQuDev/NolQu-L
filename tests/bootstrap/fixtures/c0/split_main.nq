@@ -1,0 +1,3 @@
+fn m ain() {
+    return 7
+}

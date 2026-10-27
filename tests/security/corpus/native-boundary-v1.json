@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "native-boundary-v1",
+  "seeds": [
+    {"id": "scalar", "source": "fn main(){return 42}", "accept": true},
+    {"id": "argv", "source": "fn main(){return arg_count()}", "accept": true},
+    {"id": "raw-owned", "source": "fn main(){unsafe {# safety: this test only compiles; frame belongs to the program\nsyscall6(39,0)}return 0}", "accept": true},
+    {"id": "comment-braces", "source": "fn main(){unsafe {// safety: braces } { in comments do not delimit code\nbyte_address(0,0)}return 0}", "accept": true},
+    {"id": "outside", "source": "fn main(){return syscall6(39,0)}", "accept": false, "code": "C0S-001"},
+    {"id": "after-close", "source": "fn main(){unsafe {# safety: owns this scope only\n}return byte_address(0,1)}", "accept": false, "code": "C0S-001"},
+    {"id": "empty-invariant", "source": "fn main(){unsafe {# safety:\nsyscall6(39,0)}return 0}", "accept": false, "code": "C0P-014"},
+    {"id": "missing-close", "source": "fn main(){unsafe {# safety: owns the frame\nsyscall6(39,0)", "accept": false},
+    {"id": "empty", "source": "", "accept": false},
+    {"id": "non-ascii", "source": "fn main(){return \u00ff}", "accept": false},
+    {"id": "nul-in-source", "source": "fn main(){return 0}\u0000fn other(){return 1}", "accept": false},
+    {"id": "unfinished-call", "source": "fn main(){return arg_copy(0,0,}", "accept": false}
+  ]
+}

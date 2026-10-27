@@ -1,0 +1,10 @@
+fn main() {
+    let index = 0
+    let sum = 0
+    while index < 4 {
+        byte_store(index, index + 266)
+        sum = sum + byte_load(index)
+        index = index + 1
+    }
+    return sum
+}

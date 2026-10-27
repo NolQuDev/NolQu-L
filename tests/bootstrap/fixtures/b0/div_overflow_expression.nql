@@ -1,0 +1,5 @@
+fn main() {
+    let minimum = 0 - 9223372036854775807 - 1
+    let negative_one = 0 - 1
+    return minimum / negative_one
+}

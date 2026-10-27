@@ -1,0 +1,4 @@
+fn main ( ) {
+    mystery ( );
+    return 0
+}

@@ -1,0 +1,60 @@
+name: NolQu-L Linux qualification
+
+'on':
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, 'ci/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nolqu-l-linux-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      NQL_CI_OUTPUT: ${{ runner.temp }}/nolqu-l-qualification
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, verified 2026-10-27
+        with:
+          persist-credentials: false
+
+      - name: Install host inspection and test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends nasm binutils qemu-user clang llvm python3-venv
+          python3 -m venv "$RUNNER_TEMP/nolqu-l-venv"
+          "$RUNNER_TEMP/nolqu-l-venv/bin/python" -m pip install 'mcp==1.29.0' 'PyYAML==6.0.3'
+          echo "$RUNNER_TEMP/nolqu-l-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Record actual host dependencies
+        run: |
+          mkdir "$RUNNER_TEMP/nolqu-l-host"
+          python3 --version > "$RUNNER_TEMP/nolqu-l-host/python.txt"
+          python3 -m pip freeze > "$RUNNER_TEMP/nolqu-l-host/python-dependencies.txt"
+          dpkg-query -W nasm binutils qemu-user clang llvm > "$RUNNER_TEMP/nolqu-l-host/system-dependencies.txt"
+          uname -a > "$RUNNER_TEMP/nolqu-l-host/kernel.txt"
+          df -h > "$RUNNER_TEMP/nolqu-l-host/filesystems.txt"
+
+      - name: Run sequential required Linux gates
+        run: python3 -B .github/scripts/linux_qualification.py --output "$NQL_CI_OUTPUT"
+
+      - name: Retain results even when qualification fails
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6, verified 2026-10-27
+        with:
+          name: nolqu-l-linux-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/nolqu-l-qualification
+            ${{ runner.temp }}/nolqu-l-host
