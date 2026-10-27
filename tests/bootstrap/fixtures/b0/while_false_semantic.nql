@@ -1,7 +1,0 @@
-fn main() {
-    let value = 9
-    while value < 3 {
-        value = value + 1
-    }
-    return value
-}

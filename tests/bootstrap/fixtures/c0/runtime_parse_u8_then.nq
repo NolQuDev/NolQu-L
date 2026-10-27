@@ -1,8 +1,0 @@
-fn main() {
-    byte_store(3, 255)
-    byte_store(4, 255)
-    byte_store(5, 255)
-    input_read(0, 7)
-    byte_parse_u8_then(0, 8, 125)
-    return byte_load(8)
-}

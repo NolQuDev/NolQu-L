@@ -1,4 +1,0 @@
-fn main() {
-    nope()
-    return 0
-}

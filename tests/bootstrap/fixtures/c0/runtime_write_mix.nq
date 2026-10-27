@@ -1,5 +1,0 @@
-fn main() {
-    write("")
-    input_read(0, 1)
-    return 0
-}

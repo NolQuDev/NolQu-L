@@ -1,5 +1,0 @@
-fn main() {
-    input_read(0, 96)
-    byte_parse_stmts(0, 200)
-    return byte_load(200)
-}

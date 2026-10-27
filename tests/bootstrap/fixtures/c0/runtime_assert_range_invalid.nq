@@ -1,4 +1,0 @@
-fn main() {
-    byte_assert_range(0, 57, 48)
-    return 0
-}

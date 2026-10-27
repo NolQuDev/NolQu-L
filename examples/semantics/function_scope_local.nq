@@ -1,8 +1,0 @@
-func scope_demo() {
-if 1 == 1 {
-var y = 7
-}
-return y
-}
-
-print scope_demo()

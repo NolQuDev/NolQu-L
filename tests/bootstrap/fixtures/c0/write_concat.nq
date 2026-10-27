@@ -1,5 +1,0 @@
-fn main() {
-    write("AB");
-    write("\x43")
-    return 3
-}

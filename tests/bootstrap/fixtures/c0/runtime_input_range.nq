@@ -1,4 +1,0 @@
-fn main() {
-    input_read(255, 2)
-    return 0
-}

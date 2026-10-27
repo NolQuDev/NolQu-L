@@ -1,4 +1,0 @@
-fn main() {
-    write("NolQu-L\n")
-    return 9
-}

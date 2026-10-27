@@ -1,4 +1,0 @@
-fn main() {
-    byte_parse_stmts(0, 250)
-    return 0
-}

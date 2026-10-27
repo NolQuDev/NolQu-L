@@ -1,9 +1,0 @@
-# The condition and both return values are source-derived.
-fn main() {
-    let left = 5 * 2
-    if left != 9 {
-        return left + 3
-    } else {
-        return 2
-    }
-}

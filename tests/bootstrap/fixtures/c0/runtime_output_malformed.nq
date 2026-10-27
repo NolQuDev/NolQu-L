@@ -1,4 +1,0 @@
-fn main() {
-    output_write(0)
-    return byte_load(0)
-}

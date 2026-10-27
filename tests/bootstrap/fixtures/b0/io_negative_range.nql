@@ -1,6 +1,0 @@
-fn main() {
-    let offset = 0
-    offset = offset - 1
-    output_write(offset, 0)
-    return 0
-}

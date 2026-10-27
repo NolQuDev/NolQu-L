@@ -1,4 +1,0 @@
-fn main() {
-    byte_classify_ascii(0, 256)
-    return 0
-}

@@ -1,7 +1,0 @@
-fn main() {
-    write("pre:")
-    input_read(0, 1)
-    output_write(0, 1)
-    write(":post")
-    return byte_load(0)
-}

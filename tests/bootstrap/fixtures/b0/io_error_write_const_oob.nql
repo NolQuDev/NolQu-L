@@ -1,4 +1,0 @@
-fn main() {
-    error_write(65536, 0)
-    return 0
-}

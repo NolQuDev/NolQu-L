@@ -1,3 +1,0 @@
-fn main() {
-    return byte_load(65536)
-}

@@ -1,7 +1,0 @@
-fn main() {
-    let offset = 65534
-    let count = 2
-    offset = offset + 1
-    output_write(offset, count)
-    return 0
-}
