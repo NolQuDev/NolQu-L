@@ -86,8 +86,8 @@ def branch_policy(branch, version):
     release = r"[0-9]+\.[0-9]+\.[0-9]+(?:-rc\.[0-9]+)?"
     if branch == "Dev" and re.fullmatch(alpha, version) is None:
         raise ValueError("Dev accepts Alpha versions only")
-    if branch == "Rel" and re.fullmatch(release, version) is None:
-        raise ValueError("Rel accepts Release Candidate or final versions only")
+    if branch == "Stable" and re.fullmatch(release, version) is None:
+        raise ValueError("Stable accepts Release Candidate or final versions only")
     return {"branch": branch, "version": version}
 
 

@@ -52,6 +52,29 @@ finished. A real orphan-while-target-live reproducer failed before its wait-loop
 repair, then all 12 runner controls passed. Full main still requires a new run
 with that repair; neither failed run is reclassified.
 
+Run [40502246740](https://github.com/NolQuDev/NolQu-L/actions/runs/40502246740)
+subsequently qualified the Alpha source on `Dev` at
+`13450398d8edb6fef081dad56d78eeb725d0f856`: all ten command gates exited zero.
+The full main suite printed 1,083 PASS markers; complete MCP discovery ran
+127 methods successfully. CI controls (11), publication controls (4), real
+hard-link methods (5), runner controls (12), Android host controls on Linux (12),
+finite assurance and nine release checks passed. Counts overlap and are not
+a sum of unique tests. Canonical input identities were unchanged throughout.
+The retained ZIP SHA-256 is
+`ea207f3c6ffc0571fe0a9bb9e764a0eb3de73ec75fd9933cc65a29df1c2be009`.
+
+This closes the current Linux host/CLI qualification failures for that source
+tree. It does not qualify every Android filesystem capability, attribute the
+historical SIGKILL, or promote Full Compiler/self-hosting/security maturity.
+
+The same source tree was integrated into `Main` at
+`f2562b6bd6ec4b29687bb5572e24fd59ecf9ab05`. Run
+[40502990465](https://github.com/NolQuDev/NolQu-L/actions/runs/40502990465)
+also passed all ten gates, with 1,083 main PASS markers and all 127 MCP methods.
+Its canonical inputs were unchanged; retained streams match their recorded
+lengths and SHA-256 identities. The ZIP SHA-256 is
+`28dcf8e8769234ea9ef0e2ec38b7b69e129612c85a86baa72b2880834d47c88c`.
+
 ## Native Termux scope
 
 Development uses Termux private storage. Actual hard-link creation is denied

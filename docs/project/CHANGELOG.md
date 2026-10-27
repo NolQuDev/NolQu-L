@@ -7,7 +7,7 @@ Development continues on the `dev` channel.
 ### Changed
 
 - Use `Main` for integration, `Dev` for Alpha development, and reserve an empty
-  `Rel` for future RC/final work. CI checks the populated branch's version role;
+  `Stable` for future RC/final work. CI checks the populated branch's version role;
   creating the branches does not promote the current Alpha or publish a release.
 - Keep internal master prompts, concept attachments, agent plans and session
   reports outside public source snapshots. Public summaries use this changelog,
@@ -22,6 +22,10 @@ Development continues on the `dev` channel.
 
 ### CI
 
+- Linux qualification at `13450398` passes all ten gates: 1,083 main PASS
+  markers, 127 MCP methods, real hard-link protection, finite assurance,
+  publication controls and nine release checks. Results and scope are recorded
+  in [VALIDATION.md](VALIDATION.md); no stable/security/self-host promotion.
 - Add experimental sequential Linux qualification for real hard-link protection,
   compiler regressions, MCP, finite assurance and retained failure evidence.
   Native Android coverage stays separate. Workflow availability is not a passing

@@ -11,15 +11,15 @@ remain failed/unqualified on that host; they are not removed, replaced by mocks,
 or counted as passed. A Linux result is separate evidence for its recorded host.
 
 `.github/workflows/linux-qualification.yml` uses one Ubuntu24.04 x86_64 job.
-It runs on pull requests, pushes to Main/Dev/Rel (also lowercase main and ci/**),
+It runs on pull requests, pushes to Main/Dev/Stable (also lowercase main and ci/**),
 and manual dispatch. Checkout
 and artifact upload are pinned to full verified commit SHAs. Contents access is
 read-only, checkout does not persist credentials, and no publication/deployment
 credential is supplied to tests.
 
 Populated branches follow [BRANCHES.md](../project/BRANCHES.md): Dev is Alpha,
-Rel accepts RC/final versions, and pull requests use the destination branch's
-rule. Rel remains an empty branch until a release candidate exists.
+Stable accepts RC/final versions, and pull requests use the destination branch's
+rule. Stable remains an empty branch until a release candidate exists.
 
 The runner first verifies the actual Linux architecture, required executables,
 and a real shared inode with mutation through its second name. Failure produces
