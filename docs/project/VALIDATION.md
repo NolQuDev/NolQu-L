@@ -42,6 +42,16 @@ document; the file gate also expected that removed document. Follow-up fixes
 require their own exact-commit run. Passing targeted checks does not turn this
 failed run into PASS.
 
+Run [40499493109](https://github.com/NolQuDev/NolQu-L/actions/runs/40499493109)
+tested the cleaned 397-file snapshot at
+`f0c680251b2a25623444a43b371bfdaecdbff247`. Nine of ten command gates passed,
+including publication controls/path checks, real hardlinks, all 127 MCP methods
+and the nine release checks. Main still failed on three signal-cleanup subcases:
+the outer host supervisor retained adopted zombies until the entire suite
+finished. A real orphan-while-target-live reproducer failed before its wait-loop
+repair, then all 12 runner controls passed. Full main still requires a new run
+with that repair; neither failed run is reclassified.
+
 ## Native Termux scope
 
 Development uses Termux private storage. Actual hard-link creation is denied

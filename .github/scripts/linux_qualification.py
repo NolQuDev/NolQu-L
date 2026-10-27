@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import sys
 import tempfile
@@ -80,6 +81,16 @@ def identities():
     return {str(path.relative_to(ROOT)): BoundedRunner.identity(path) for path in files}
 
 
+def branch_policy(branch, version):
+    alpha = r"[0-9]+\.[0-9]+\.[0-9]+-alpha\.[0-9]+"
+    release = r"[0-9]+\.[0-9]+\.[0-9]+(?:-rc\.[0-9]+)?"
+    if branch == "Dev" and re.fullmatch(alpha, version) is None:
+        raise ValueError("Dev accepts Alpha versions only")
+    if branch == "Rel" and re.fullmatch(release, version) is None:
+        raise ValueError("Rel accepts Release Candidate or final versions only")
+    return {"branch": branch, "version": version}
+
+
 def run_gates(output, gates, *, context=None, final_check=None):
     output = Path(output)
     output.mkdir(mode=0o700)
@@ -138,6 +149,8 @@ def main():
         parser.error("output must be a new evidence directory")
     try:
         context = require_linux_host(output.parent)
+        branch = os.environ.get("GITHUB_BASE_REF") or os.environ.get("GITHUB_REF_NAME", "local")
+        context["branch_policy"] = branch_policy(branch, (ROOT / "VERSION").read_text().strip())
         context.update(python=sys.version, revision=os.environ.get("GITHUB_SHA"),
                        run_id=os.environ.get("GITHUB_RUN_ID"),
                        run_attempt=os.environ.get("GITHUB_RUN_ATTEMPT"),

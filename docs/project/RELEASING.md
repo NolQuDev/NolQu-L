@@ -2,6 +2,8 @@
 
 ## Tracks
 
+- Branch roles: [BRANCHES.md](BRANCHES.md). `Rel` stays empty until a qualified
+  RC is ready; `Dev` remains Alpha and `Main` is the integration branch.
 - `dev`: active work, including `a`, `b`, and `rc` versions
 - `stable`: public release line
 

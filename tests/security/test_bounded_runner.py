@@ -107,6 +107,36 @@ class BoundedRunnerTests(unittest.TestCase):
                 except ProcessLookupError:
                     pass
 
+    def test_exited_orphan_is_reaped_while_target_is_still_running(self):
+        runner = self.runner(timeout=5)
+        target = r'''
+import os,pathlib,sys,time
+read_end,write_end=os.pipe()
+parent=os.fork()
+if parent == 0:
+    os.close(read_end)
+    orphan=os.fork()
+    if orphan == 0:
+        os.write(write_end,str(os.getpid()).encode())
+    os._exit(0)
+os.close(write_end)
+orphan=int(os.read(read_end,64))
+os.close(read_end)
+os.waitpid(parent,0)
+path=pathlib.Path('/proc')/str(orphan)
+deadline=time.monotonic()+1
+while path.exists() and time.monotonic()<deadline:
+    time.sleep(.01)
+if path.exists():
+    print(path.joinpath('stat').read_text())
+    sys.exit(17)
+print('orphan reaped before target exit')
+'''
+        result = runner.run("live-reaping", [sys.executable, "-c", target], b"")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, b"orphan reaped before target exit\n")
+        self.assertGreaterEqual(runner.records[0]["control"]["reaped_descendants"], 1)
+
     def test_cancellation_cleans_child_and_preserves_failure_record(self):
         runner = self.runner(timeout=5)
         children = []
