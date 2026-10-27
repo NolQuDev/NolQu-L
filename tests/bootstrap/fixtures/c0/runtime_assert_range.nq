@@ -1,5 +1,0 @@
-fn main() {
-    input_read(0, 1)
-    byte_assert_range(0, 48, 57)
-    return byte_load(0)
-}

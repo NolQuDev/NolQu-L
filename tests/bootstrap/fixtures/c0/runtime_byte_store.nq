@@ -1,4 +1,0 @@
-fn main() {
-    byte_store(255, 77)
-    return byte_load(255)
-}

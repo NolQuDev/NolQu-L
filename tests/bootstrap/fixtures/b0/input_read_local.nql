@@ -1,4 +1,0 @@
-fn main() {
-    let input_read = 23
-    return input_read
-}

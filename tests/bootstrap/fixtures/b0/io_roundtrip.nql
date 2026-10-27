@@ -1,5 +1,0 @@
-fn main() {
-    let count = input_read(1024, 6)
-    output_write(1024, count)
-    return count
-}

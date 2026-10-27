@@ -1,4 +1,0 @@
-fn main() {
-    write("B0\n")
-    return 0
-}

@@ -1,4 +1,0 @@
-fn main() {
-    byte_parse_u8(252, 0)
-    return 0
-}

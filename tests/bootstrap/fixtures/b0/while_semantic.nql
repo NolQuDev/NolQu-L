@@ -1,7 +1,0 @@
-fn main() {
-    let counter = 0
-    while counter < 6 {
-        counter = counter + 2
-    }
-    return counter
-}

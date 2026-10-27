@@ -1,6 +1,0 @@
-fn main() {
-    while byte_load(0) {
-        let x = 7
-    }
-    return x
-}

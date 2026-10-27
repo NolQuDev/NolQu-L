@@ -1,6 +1,0 @@
-module m {
-func f(a) {
-return a
-}
-}
-print m.f(1

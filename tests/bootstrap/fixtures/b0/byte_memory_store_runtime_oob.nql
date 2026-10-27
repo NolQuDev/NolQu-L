@@ -1,6 +1,0 @@
-fn main() {
-    let index = 65535
-    index = index + 1
-    byte_store(index, 1)
-    return 0
-}
