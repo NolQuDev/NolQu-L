@@ -1,123 +1,314 @@
 # Nine Pillars of NolQu-L
 
-NolQu-L aims to be an Assembly-Level Systems Programming Language: simple and
-readable at the surface, transparent toward the machine, with explicit safety
-boundaries and predictable costs. These nine pillars guide language design,
-compiler development, tooling and compatibility decisions.
+## Pillar 1 — Kesederhanaan
 
-They are normative design principles, not a claim that every target capability
-or Safety analysis is implemented. Check [feature status](FEATURE_STATUS.md),
-the [canonical toolchain](../compiler/CANONICAL_TOOLCHAIN.md) and
-[validation status](../project/VALIDATION.md) for the current implementation.
+NolQu-L harus memungkinkan programmer mengekspresikan program dengan cara yang sesederhana mungkin tanpa mengorbankan fungsi, kontrol, performa, maupun kejelasan. Bahasa tidak boleh memaksa programmer menulis sintaks, boilerplate, pola, atau aturan tambahan yang tidak memberikan manfaat nyata. Masalah yang sederhana harus dapat ditulis secara sederhana. Masalah yang memang kompleks boleh membutuhkan kode yang kompleks, tetapi NolQu-L tidak boleh menambahkan kompleksitas yang sebenarnya tidak diperlukan. Kesederhanaan bukan berarti kode harus menjadi sependek mungkin; tujuannya adalah menghilangkan kompleksitas yang tidak perlu sambil mempertahankan kompleksitas yang memang berasal dari masalah yang sedang diselesaikan.
 
-## Pillar 1 — Simplicity
+## Pillar 2 — Keterbacaan
 
-Simple programs should have simple source. Avoid boilerplate, syntax and rules
-that add work without adding useful control or clarity. Real problem complexity
-may remain explicit; accidental complexity should be reduced.
+Kode NolQu-L harus mudah dibaca dan dipahami oleh manusia. Maksud, struktur, dan alur program harus sebisa mungkin terlihat jelas dari kode yang ditulis, sehingga pembaca tidak perlu menebak perilaku tersembunyi atau memahami aturan yang tidak intuitif hanya untuk mengetahui apa yang dilakukan program. NolQu-L tidak mengutamakan kode yang paling pendek apabila pemendekan tersebut membuat kode lebih sulit dipahami. Sintaks dan fitur bahasa harus mendorong kode yang jelas, konsisten, dan mudah diikuti, baik oleh penulisnya sendiri maupun oleh programmer lain pada masa mendatang.
 
-Simplicity must preserve capability and visible machine costs. Inside the
-compiler, prefer the simplest implementation that satisfies its actual contracts
-and can be tested and audited.
+## Pillar 3 — Dekat dengan Mesin
 
-## Pillar 2 — Readability
+NolQu-L menargetkan kontrol setingkat assembly pada ISA yang didukung dan harus tetap transparan terhadap perilaku mesin di bawahnya. Hindari abstraksi yang menyembunyikan biaya sebenarnya — seperti alokasi memori, syscall, akses memori, dan operasi tingkat rendah lainnya.
 
-User-written NolQu-L code should make intent, structure and control flow easy to
-follow. Names and constructs should explain their purpose; concise spelling
-should not make common operations harder to understand.
+Pengguna harus dapat memahami dan memperkirakan apa yang terjadi pada level mesin dari kode yang mereka tulis.
 
-Compiler internals also need readable engineering, while the language remains
-designed first for the people writing programs in it.
+## Pillar 4 — Kompleks di Dalam, Mudah di Luar
 
-## Pillar 3 — Close to the Machine
+Implementasi internal boleh rumit apabila memang diperlukan, tetapi antarmuka yang dilihat pengguna harus tetap sederhana, konsisten, dan intuitif.
 
-Allocations, release, copies, syscalls, calls, alignment, synchronization, ABI
-conversions and runtime checks must have identifiable costs. Programmers should
-be able to reason about where memory lives, when resources end and which
-operations may be expensive.
-
-On supported targets, explicit instruction, layout, memory and ABI control
-should be auditable. This does not promise one source operation per instruction,
-universal zero overhead or identical behavior across different ISAs. Capabilities
-must be documented and verified for the target that implements them.
-
-## Pillar 4 — Complex Inside, Simple Outside
-
-The compiler may perform sophisticated analysis so users can write clear source
-without carrying unnecessary implementation complexity. Internal difficulty
-should not become extra syntax or an awkward public interface.
-
-Analysis and abstractions must still expose the machine costs relevant to the
-programmer's decisions.
+Beban kompleksitas sebisa mungkin ditanggung oleh compiler dan runtime, bukan oleh pengguna.
 
 ## Pillar 5 — NolQu-L Safety
 
-Memory and resource safety belong to the language design. They must connect to
-types, semantics, ownership, moves, borrowing, lifetimes, checks, FFI, ABI,
-concurrency and diagnostics as those facilities are implemented.
+NolQu-L mengutamakan keamanan memori (memory safety) sebagai bagian dari desain bahasa melalui NolQu-L Safety — model keamanan yang dirancang untuk memberikan keamanan memori dan resource tanpa mengorbankan kesederhanaan, keterbacaan, performa, maupun kedekatan dengan mesin.
 
-Balanced is the default and primary safety identity. Safe maximizes available
-verification. Unsafe makes responsibility explicit where the compiler cannot
-prove the required conditions; syntax, structural, type and other applicable
-checks still remain. A safety comment states an invariant; it does not prove it.
-These design modes must not be confused with the subset of checks available in
-the current compiler.
+Seluruh desain NolQu-L Safety harus tetap mengikuti Nine Pillars of NolQu-L, terutama Pillar 1, Pillar 3, dan Pillar 4. NolQu-L Safety adalah identitas keamanan NolQu-L sendiri — terinspirasi oleh berbagai teknik yang telah terbukti di industri, tetapi diimplementasikan sesuai filosofi dan kebutuhan NolQu-L.
 
-## Pillar 6 — Clear Error Handling
+### Safe by Default
 
-Errors should identify a diagnostic code, location, cause and explanation, with
-a concrete suggestion where possible. Ordinary malformed source should produce
-a controlled diagnostic rather than an internal crash or an endless error loop.
+NolQu-L Safety dirancang dengan filosofi Safe by Default, di mana keamanan menjadi perilaku bawaan bahasa. Secara default NolQu-L menggunakan mode Balanced, yang mempertahankan jaminan keamanan inti sambil memberikan keseimbangan antara keamanan, fleksibilitas, dan performa.
 
-Failures must propagate honestly through compiler stages and tooling. A failed
-operation or partial artifact must never be reported as success.
+Compiler melakukan sebanyak mungkin analisis saat kompilasi untuk mencegah berbagai kesalahan umum tanpa membebani programmer.
 
-## Pillar 7 — Test Before Merge
+Analisis yang dilakukan compiler mencakup:
 
-Every change needs validation appropriate to its impact: valid behavior,
-rejection of invalid input and checks for unintended regressions. Tests,
-examples and documentation should agree on the contract being verified.
+- Akses memori di luar batas (out-of-bounds).
 
-An intentional breaking change accepted under Pillar 8 needs evidence for its
-new behavior and migration path, as well as checks for collateral breakage.
-Unintended regressions stop expansion of the affected work until resolved.
+- Penggunaan nilai yang belum diinisialisasi.
 
-## Pillar 8 — Stability Without Blocking Evolution
+- Use-after-free dan double-free.
 
-Preserve working programs where practical, but backward compatibility is not
-absolute. NolQu-L may replace a poor or limiting design when the improvement to
-safety, simplicity, readability, performance, analysis or architecture justifies
-the cost.
+- Dangling pointer.
 
-Before accepting a break, record the actual problem, evidence, alternatives,
-expected benefit and verification method. Assess source, behavior, ABI/FFI,
-tooling, libraries and bootstrap impact; define migration, tests, rollout and
-rollback. Use deprecation where safe and reasonable. Explain exceptions needed
-for security, ambiguity or disproportionate complexity.
+- Pemeriksaan nilai yang mungkin tidak ada secara eksplisit — nilai semacam ini harus direpresentasikan sebagai tipe dan tidak bisa diabaikan tanpa penanganan yang disengaja.
 
-Temporary compatibility paths need a purpose and an evaluation or removal
-condition. Group changes at clear version or milestone boundaries and never
-silently change the meaning of existing code. Historical notes that demand
-absolute compatibility do not override this pillar.
+- Deteksi memory leak apabila memungkinkan.
 
-## Pillar 9 — Optimize for Impact
+- Pelepasan resource seperti memori, file, handle, dan resource lainnya secara otomatis ketika memungkinkan — deterministik, bukan bergantung pada garbage collector.
 
-Prioritize changes with meaningful effects on compilation, execution, memory,
-binary size, generated code or architecture. Support performance claims with
-relevant measurements; label unmeasured ideas as hypotheses.
+Resource dilepas di semua jalur, termasuk jalur error — tidak hanya di jalur sukses. Urutan pelepasan resource adalah kebalikan dari urutan alokasi — bisa diprediksi dan konsisten.
 
-Consider complexity, maintainability, portability and effects on other metrics.
-Micro-optimization is optional when its benefit is unproven. An optimization
-that breaks a contract must also satisfy Pillar 8.
+### Tiga Mode Keamanan
 
-## Applying the Pillars
+NolQu-L Safety menyediakan tiga mode keamanan yang bisa dipilih sesuai kebutuhan. Ketiga mode menggunakan fondasi NolQu-L Safety yang sama — perbedaannya terletak pada tingkat pemeriksaan, fleksibilitas, dan kontrol yang diberikan kepada programmer.
 
-Ask whether a change is simpler, readable, predictable at the machine level,
-clear about safety and errors, testable, compatible where practical, and useful
-for a traceable bootstrap. Preserve good decisions, repair weak ones and replace
-those that obstruct the language's future with evidence and a migration plan.
+#### BALANCED (mode bawaan)
 
-- [Core language and implementation scope](CORE_LANGUAGE.md)
-- [Recorded design decisions](DECISIONS.md)
-- [Architecture](../compiler/ARCHITECTURE.md)
-- [Current development status](../project/STATE_OF_PROJECT.md)
+Mode default NolQu-L. Memberikan keseimbangan antara keamanan, fleksibilitas, dan performa, dengan tetap mempertahankan jaminan keamanan inti. Cocok untuk pengembangan aplikasi umum.
+
+#### SAFE
+
+Mengaktifkan analisis keamanan secara maksimal sesuai kemampuan compiler. Digunakan untuk kebutuhan yang mengutamakan keandalan dan keamanan di atas fleksibilitas.
+
+#### UNSAFE
+
+Memberikan kontrol tingkat rendah yang lebih besar dengan mengurangi jaminan keamanan. Cocok untuk pengembangan kernel, driver, interoperabilitas dengan bahasa lain, maupun optimasi khusus yang tidak bisa dicapai di mode lain. Mendekati kontrol C/C++, tetapi tetap eksplisit dan berada di bawah sistem NolQu-L Safety.
+
+Penggunaan mode ini ditulis secara eksplisit di level file, modul, atau blok — bukan tersembunyi di konfigurasi build.
+
+### Blok Unsafe
+
+Untuk kebutuhan pemrograman tingkat rendah maupun optimasi tertentu, NolQu-L menyediakan blok unsafe yang memberikan kontrol lebih besar kepada programmer.
+
+Aturan blok unsafe:
+
+- Penggunaan blok unsafe secara eksplisit menandakan bahwa tanggung jawab terhadap keamanan berada pada programmer, bukan compiler.
+
+- Compiler tetap melakukan analisis dan memberikan peringatan apabila memungkinkan, bahkan di dalam blok unsafe.
+
+- Blok unsafe harus sekecil mungkin dan terisolasi — bukan jalan pintas untuk menghindari pemeriksaan keamanan.
+
+- Setiap blok unsafe wajib disertai komentar yang menjelaskan mengapa kode tersebut tetap aman meski tidak bisa diverifikasi sepenuhnya oleh compiler (safety invariant):
+
+```text
+unsafe {
+    -- safety: pointer valid karena dijamin oleh ...
+    *ptr = 42
+}
+```
+
+### Error yang Jelas
+
+Setiap pelanggaran NolQu-L Safety harus menghasilkan pesan error yang menyebutkan:
+
+- Kode error NolQu-L Safety (NS-xxx) untuk referensi dokumentasi.
+
+- Lokasi kejadian (file, baris, kolom).
+
+- Apa yang dilanggar dan mengapa itu masalah.
+
+- Apa yang bisa dilakukan untuk memperbaikinya.
+
+Pelanggaran NolQu-L Safety yang dapat dibuktikan tidak boleh lolos tanpa diagnostic yang sesuai. Perilaku yang berada di luar safety guarantees harus dinyatakan secara eksplisit dan tetap dapat dilacak.
+
+### Keamanan dan Performa Bukan Pertentangan
+
+Pemeriksaan NolQu-L Safety dilakukan sedini mungkin, terutama saat kompilasi. Pemeriksaan runtime digunakan hanya ketika properti tersebut tidak dapat dibuktikan secara statis dan pemeriksaan runtime memang diperlukan. Biaya performa keamanan di NolQu-L harus terukur, transparan, dan dapat diprediksi — sesuai Pillar 3.
+
+### Urutan Implementasi di Compiler
+
+NolQu-L Safety diimplementasikan bertahap, dimulai dari yang paling fundamental:
+
+1. Pelepasan resource otomatis dan deteksi use-after-free.
+
+2. Pemeriksaan nilai tidak terinisialisasi dan out-of-bounds.
+
+3. Model kepemilikan (ownership) dan move semantics.
+
+4. Pemeriksaan peminjaman (borrow checking).
+
+5. Verifikasi lifetime dan dangling pointer.
+
+6. Tiga mode keamanan (Balanced, Safe, Unsafe).
+
+Setiap tahap harus stabil sebelum tahap berikutnya dimulai.
+
+## Pillar 6 — Penanganan Error yang Jelas
+
+Setiap error harus memberikan:
+
+- Lokasi terjadinya error (file, baris, kolom).
+
+- Penyebab error.
+
+- Dan jika memungkinkan, saran konkret untuk memperbaikinya.
+
+Tidak boleh ada kegagalan diam-diam maupun crash tanpa konteks yang jelas. Error merupakan bagian dari antarmuka bahasa, bukan sekadar fitur tambahan.
+
+Ini berlaku untuk semua lapisan: lexer, parser, NolQu-L Safety, linker, dan runtime. Tidak ada lapisan yang boleh menghasilkan pesan yang tidak bisa dipahami pengguna.
+
+## Pillar 7 — Test Sebelum Merge
+
+Tidak ada perubahan yang boleh masuk tanpa test yang membuktikan bahwa perubahan tersebut bekerja dengan benar dan tidak menyebabkan regresi yang tidak disengaja pada bagian lain.
+
+Setiap perubahan harus memiliki pengujian yang sesuai dengan dampaknya, termasuk apabila perubahan tersebut secara sengaja mengubah perilaku lama.
+
+Jika regresi yang tidak disengaja ditemukan saat implementasi, hentikan — perbaiki regresi tersebut sebelum melanjutkan.
+
+Breaking change yang telah direncanakan dan disetujui berdasarkan Pillar 8 tidak dianggap sebagai regresi, tetapi tetap wajib memiliki test yang membuktikan bahwa:
+
+- Perilaku baru bekerja sesuai desain.
+
+- Bagian lain tidak rusak secara tidak disengaja.
+
+- Perubahan memberikan manfaat yang menjadi alasan breaking change.
+
+- Jalur migrasi bekerja apabila jalur tersebut disediakan.
+
+Test bukan hanya alat untuk mempertahankan perilaku lama. Test juga menjadi bukti bahwa evolusi bahasa dilakukan secara terkendali.
+
+## Pillar 8 — Stabilitas Tanpa Menghambat Evolusi
+
+Perubahan harus sebisa mungkin menjaga kompatibilitas dan tidak merusak kode yang sudah bekerja. Namun, backward compatibility bukan tujuan absolut.
+
+Stabilitas adalah default — bukan batas yang mencegah bahasa berkembang.
+
+Perubahan yang mematahkan kompatibilitas diperbolehkan apabila memberikan peningkatan yang berarti terhadap:
+
+- Keamanan.
+
+- Kesederhanaan.
+
+- Keterbacaan.
+
+- Performa.
+
+- Konsistensi bahasa.
+
+- Kemampuan compiler melakukan analisis.
+
+- Maintainability.
+
+- Kualitas arsitektur jangka panjang.
+
+NolQu-L tidak boleh mempertahankan keputusan desain yang buruk hanya demi kompatibilitas.
+
+### Breaking Change Harus Memiliki Alasan
+
+Breaking change tidak boleh dilakukan hanya karena desain baru terlihat lebih menarik atau lebih modern.
+
+Setiap breaking change harus memiliki alasan teknis yang jelas dan manfaat yang cukup besar untuk membenarkan biaya migrasinya.
+
+Sebelum breaking change diterima, setidaknya harus diketahui:
+
+- Masalah pada desain atau perilaku lama.
+
+- Alasan mengapa masalah tersebut perlu diperbaiki.
+
+- Manfaat dari desain baru.
+
+- Bagian bahasa atau ekosistem yang terdampak.
+
+- Risiko yang ditimbulkan.
+
+- Alternatif yang telah dipertimbangkan.
+
+Semakin luas dampak perubahan, semakin kuat alasan yang diperlukan.
+
+### Kompatibilitas Memiliki Beberapa Bentuk
+
+Kompatibilitas bukan hanya tentang apakah source code lama masih dapat dikompilasi. Perubahan dapat memengaruhi:
+
+- Source compatibility.
+
+- Behavior compatibility.
+
+- Binary atau ABI compatibility.
+
+- Library compatibility.
+
+- Tooling compatibility.
+
+- Interoperability dengan sistem lain.
+
+Dampak terhadap masing-masing bagian harus dipertimbangkan sesuai konteks perubahan. NolQu-L tidak menjanjikan bahwa seluruh bentuk kompatibilitas harus selalu dipertahankan, tetapi compiler dan ekosistem tidak boleh mematahkannya tanpa alasan yang diketahui.
+
+### Migration Path
+
+Jika memungkinkan, breaking change harus menyediakan jalur migrasi yang masuk akal.
+
+Jalur migrasi dapat berupa:
+
+- Diagnostic compiler yang menjelaskan perubahan.
+
+- Saran pengganti untuk sintaks atau API lama.
+
+- Automatic fix atau migration tooling.
+
+- Compatibility layer sementara.
+
+- Dokumentasi migrasi.
+
+- Periode deprecation sebelum fitur dihapus.
+
+Namun, migration path bukan kewajiban absolut apabila mempertahankan mekanisme lama justru:
+
+- Menciptakan risiko keamanan.
+
+- Membuat implementasi jauh lebih kompleks.
+
+- Menyebabkan perilaku ambigu.
+
+- Menghambat arsitektur baru.
+
+- Bertentangan dengan Nine Pillars of NolQu-L.
+
+Dalam kondisi tersebut, perubahan langsung tetap diperbolehkan selama alasannya terdokumentasi dengan jelas.
+
+### Deprecation Sebelum Removal
+
+Fitur yang masih aman dan masih dapat dipertahankan dengan biaya yang wajar sebaiknya melalui proses deprecation sebelum dihapus.
+
+Compiler dapat memberikan warning yang menjelaskan:
+
+- Bahwa fitur tersebut deprecated.
+
+- Alasan deprecation.
+
+- Alternatif yang direkomendasikan.
+
+- Versi ketika fitur tersebut direncanakan untuk dihapus, apabila sudah diketahui.
+
+Deprecation tidak boleh menjadi tempat permanen bagi desain lama. Jika suatu fitur telah memiliki pengganti yang lebih baik dan alasan keberadaannya tidak lagi cukup kuat, fitur tersebut pada akhirnya dapat dihapus.
+
+### Hindari Compatibility Debt
+
+Kompatibilitas memiliki biaya. Compatibility shim, legacy behavior, parser khusus untuk sintaks lama, maupun jalur compiler tambahan dapat meningkatkan kompleksitas implementasi dan maintenance.
+
+NolQu-L tidak boleh terus menambahkan lapisan kompatibilitas sampai compiler menjadi lebih sulit dipahami, diuji, dioptimalkan, atau dikembangkan.
+
+Jika biaya mempertahankan kompatibilitas mulai lebih besar daripada manfaatnya, desain tersebut harus dievaluasi kembali. Menghapus compatibility debt diperbolehkan apabila memberikan perbaikan arsitektur yang nyata dan mengikuti aturan breaking change pada pillar ini.
+
+### Breaking Change Harus Terkendali
+
+Breaking change harus dilakukan secara eksplisit dan terencana. Perubahan besar sebisa mungkin dikumpulkan pada batas versi yang jelas daripada muncul secara acak di banyak update kecil.
+
+Pengguna harus dapat mengetahui bahwa suatu versi membawa perubahan yang membutuhkan migrasi.
+
+Compiler tidak boleh diam-diam mengubah arti kode lama apabila perubahan tersebut dapat menghasilkan perilaku yang berbeda tanpa diagnostic yang memadai.
+
+### Evolusi Tanpa Rewrite Tanpa Alasan
+
+Kebebasan melakukan breaking change bukan izin untuk terus mendesain ulang bahasa. Bagian yang sudah bekerja dengan baik tidak perlu diubah hanya demi konsistensi kosmetik, preferensi pribadi, atau tren bahasa pemrograman lain.
+
+Perubahan harus menyelesaikan masalah nyata atau memberikan peningkatan yang cukup berarti.
+
+> Pertahankan yang baik.\
+> Perbaiki yang buruk.\
+> Ganti yang menghambat masa depan.
+
+Stabilitas harus melindungi pengguna dari perubahan yang tidak perlu. Evolusi harus melindungi bahasa dari keputusan lama yang tidak lagi layak dipertahankan.
+
+## Pillar 9 — Optimasi Berdasarkan Dampak
+
+Optimasi struktural dianjurkan apabila terdapat peluang nyata untuk memberikan dampak yang signifikan terhadap performa, penggunaan memori, ukuran binary, waktu kompilasi, atau kualitas arsitektur.
+
+Optimasi mikro yang dampaknya belum diukur atau tidak terbukti tidak perlu dipaksakan.
+
+Optimasi yang meningkatkan kompleksitas implementasi harus memiliki manfaat yang sebanding dengan biaya maintenance yang ditimbulkannya.
+
+Jika sebuah optimasi membutuhkan breaking change, perubahan tersebut juga harus memenuhi Pillar 8. Dengan demikian, "lebih cepat" saja tidak otomatis menjadi alasan untuk mematahkan kompatibilitas.
+
+Semakin besar biaya perubahan bagi pengguna, semakin besar pula peningkatan yang harus dapat dibuktikan. Optimasi harus berdasarkan dampak nyata — bukan sekadar kemungkinan teoritis.
