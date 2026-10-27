@@ -6,10 +6,10 @@ Development continues on the `dev` channel.
 
 ### Fixed
 
-- Restore the complete original Nine Pillars wording from Concept v10
-  Assembly-Level, replacing the English paraphrase. Only document formatting
-  is adapted to Markdown. README, documentation and contributor navigation
-  expose the same principles page; implementation maturity is unchanged.
+- Publish a complete English translation of the Nine Pillars from Concept v10
+  Assembly-Level, preserving all original sections, requirements, exceptions
+  and examples. README, documentation and contributor navigation expose the
+  same principles page; implementation maturity is unchanged.
 - Repair documentation links that contained local `/root/Nolqu` paths so they
   open the matching files or directories on GitHub. Historical removed command
   names remain text rather than links to nonexistent files.
