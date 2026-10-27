@@ -43,6 +43,6 @@ Bad:
 
 ## Related Docs
 
-- [GOVERNANCE.md](/root/Nolqu/docs/community/GOVERNANCE.md)
-- [CONTRIBUTING.md](/root/Nolqu/docs/community/CONTRIBUTING.md)
-- [MAINTAINER_CHECKLIST.md](/root/Nolqu/docs/project/MAINTAINER_CHECKLIST.md)
+- [GOVERNANCE.md](../community/GOVERNANCE.md)
+- [CONTRIBUTING.md](../community/CONTRIBUTING.md)
+- [MAINTAINER_CHECKLIST.md](MAINTAINER_CHECKLIST.md)

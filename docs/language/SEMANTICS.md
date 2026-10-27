@@ -2,7 +2,7 @@
 
 This document summarizes the current semantic rules that matter most when writing real NolQu-L programs.
 
-It is intentionally shorter than the full language reference in [LANGUAGE.md](/root/Nolqu/docs/language/LANGUAGE.md).
+It is intentionally shorter than the full language reference in [LANGUAGE.md](LANGUAGE.md).
 
 ## Current Model
 

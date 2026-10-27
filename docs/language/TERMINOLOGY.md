@@ -90,7 +90,7 @@ semantic feature.
 
 ## Related Docs
 
-- [CORE_LANGUAGE.md](/root/Nolqu/docs/language/CORE_LANGUAGE.md)
-- [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md)
-- [BACKENDS.md](/root/Nolqu/docs/compiler/BACKENDS.md)
-- [IR.md](/root/Nolqu/docs/compiler/IR.md)
+- [CORE_LANGUAGE.md](CORE_LANGUAGE.md)
+- [FEATURE_STATUS.md](FEATURE_STATUS.md)
+- [BACKENDS.md](../compiler/BACKENDS.md)
+- [IR.md](../compiler/IR.md)

@@ -4,6 +4,15 @@
 
 Development continues on the `dev` channel.
 
+### Fixed
+
+- Publish the established Nine Pillars of NolQu-L in the principles page and
+  expose them from README, documentation and contributor navigation. The older
+  eight-item summary is superseded; implementation maturity is unchanged.
+- Repair documentation links that contained local `/root/Nolqu` paths so they
+  open the matching files or directories on GitHub. Historical removed command
+  names remain text rather than links to nonexistent files.
+
 ### Changed
 
 - Use `Main` for integration, `Dev` for Alpha development, and reserve an empty
@@ -59,22 +68,22 @@ Development continues on the `dev` channel.
   claiming unimplemented bootstrap generations
 - root `VERSION` file as release metadata
 - root `CHANNEL` file for `stable` vs `dev`
-- [ROADMAP.md](/root/Nolqu/docs/project/ROADMAP.md) for release planning
-- [ARCHITECTURE.md](/root/Nolqu/docs/compiler/ARCHITECTURE.md) for codebase structure
-- [LICENSE](/root/Nolqu/LICENSE), [TRADEMARK.md](/root/Nolqu/docs/community/TRADEMARK.md), [CONTACT.md](/root/Nolqu/docs/community/CONTACT.md), [CONTRIBUTING.md](/root/Nolqu/docs/community/CONTRIBUTING.md), and [SECURITY.md](/root/Nolqu/docs/community/SECURITY.md) for project legal/contact/governance metadata
-- [CODE_OF_CONDUCT.md](/root/Nolqu/docs/community/CODE_OF_CONDUCT.md) and [AUTHORS.md](/root/Nolqu/docs/community/AUTHORS.md) for collaboration policy and authorship metadata
-- [SUPPORT.md](/root/Nolqu/docs/community/SUPPORT.md) and [GOVERNANCE.md](/root/Nolqu/docs/community/GOVERNANCE.md) for support flow and project-authority metadata
-- [FAQ.md](/root/Nolqu/docs/community/FAQ.md) and [STYLE_GUIDE.md](/root/Nolqu/docs/community/STYLE_GUIDE.md) for common project answers and contribution/documentation style guidance
-- [COMPATIBILITY.md](/root/Nolqu/docs/project/COMPATIBILITY.md) and [PACKAGING.md](/root/Nolqu/docs/project/PACKAGING.md) for backend/platform expectations and distribution layout notes
-- [INSTALL.md](/root/Nolqu/docs/project/INSTALL.md) and [BACKENDS.md](/root/Nolqu/docs/compiler/BACKENDS.md) for setup workflow and focused backend-role documentation
-- [PROJECT_STRUCTURE.md](/root/Nolqu/docs/project/PROJECT_STRUCTURE.md) and [TESTING.md](/root/Nolqu/docs/compiler/TESTING.md) for repo-layout and test-model documentation
-- [COMMANDS.md](/root/Nolqu/docs/project/COMMANDS.md) and [IR.md](/root/Nolqu/docs/compiler/IR.md) for workflow reference and exported-IR documentation
-- [TERMINOLOGY.md](/root/Nolqu/docs/language/TERMINOLOGY.md) and [DECISIONS.md](/root/Nolqu/docs/language/DECISIONS.md) for shared project vocabulary and explicit design-decision tracking
-- [KNOWN_LIMITATIONS.md](/root/Nolqu/docs/language/KNOWN_LIMITATIONS.md) and [ERRORS.md](/root/Nolqu/docs/language/ERRORS.md) for explicit limitation tracking and error-model documentation
-- [ROADMAP_SHORT.md](/root/Nolqu/docs/project/ROADMAP_SHORT.md) and [STATE_OF_PROJECT.md](/root/Nolqu/docs/project/STATE_OF_PROJECT.md) for compact direction and project-status summaries
-- [REPO_INDEX.md](/root/Nolqu/docs/project/REPO_INDEX.md) and [MAINTAINER_CHECKLIST.md](/root/Nolqu/docs/project/MAINTAINER_CHECKLIST.md) for doc navigation and maintainer workflow
-- [RELEASE_NOTES_TEMPLATE.md](/root/Nolqu/docs/project/RELEASE_NOTES_TEMPLATE.md) and [DESIGN_PRINCIPLES.md](/root/Nolqu/docs/language/DESIGN_PRINCIPLES.md) for release drafting and concise philosophy reference
-- [LABELS.md](/root/Nolqu/docs/project/LABELS.md) and [.github/CODEOWNERS](/root/Nolqu/.github/CODEOWNERS) for lightweight GitHub triage and ownership metadata
+- [ROADMAP.md](ROADMAP.md) for release planning
+- [ARCHITECTURE.md](../compiler/ARCHITECTURE.md) for codebase structure
+- [LICENSE](../../LICENSE), [TRADEMARK.md](../community/TRADEMARK.md), [CONTACT.md](../community/CONTACT.md), [CONTRIBUTING.md](../community/CONTRIBUTING.md), and [SECURITY.md](../community/SECURITY.md) for project legal/contact/governance metadata
+- [CODE_OF_CONDUCT.md](../community/CODE_OF_CONDUCT.md) and [AUTHORS.md](../community/AUTHORS.md) for collaboration policy and authorship metadata
+- [SUPPORT.md](../community/SUPPORT.md) and [GOVERNANCE.md](../community/GOVERNANCE.md) for support flow and project-authority metadata
+- [FAQ.md](../community/FAQ.md) and [STYLE_GUIDE.md](../community/STYLE_GUIDE.md) for common project answers and contribution/documentation style guidance
+- [COMPATIBILITY.md](COMPATIBILITY.md) and [PACKAGING.md](PACKAGING.md) for backend/platform expectations and distribution layout notes
+- [INSTALL.md](INSTALL.md) and [BACKENDS.md](../compiler/BACKENDS.md) for setup workflow and focused backend-role documentation
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) and [TESTING.md](../compiler/TESTING.md) for repo-layout and test-model documentation
+- [COMMANDS.md](COMMANDS.md) and [IR.md](../compiler/IR.md) for workflow reference and exported-IR documentation
+- [TERMINOLOGY.md](../language/TERMINOLOGY.md) and [DECISIONS.md](../language/DECISIONS.md) for shared project vocabulary and explicit design-decision tracking
+- [KNOWN_LIMITATIONS.md](../language/KNOWN_LIMITATIONS.md) and [ERRORS.md](../language/ERRORS.md) for explicit limitation tracking and error-model documentation
+- [ROADMAP_SHORT.md](ROADMAP_SHORT.md) and [STATE_OF_PROJECT.md](STATE_OF_PROJECT.md) for compact direction and project-status summaries
+- [REPO_INDEX.md](REPO_INDEX.md) and [MAINTAINER_CHECKLIST.md](MAINTAINER_CHECKLIST.md) for doc navigation and maintainer workflow
+- [RELEASE_NOTES_TEMPLATE.md](RELEASE_NOTES_TEMPLATE.md) and [DESIGN_PRINCIPLES.md](../language/DESIGN_PRINCIPLES.md) for release drafting and concise philosophy reference
+- [LABELS.md](LABELS.md) and [.github/CODEOWNERS](../../.github/CODEOWNERS) for lightweight GitHub triage and ownership metadata
 
 ### Bootstrap
 
@@ -155,13 +164,13 @@ Second major update cycle begins with LLVM backend bootstrap work.
 - `tests/llvm/smoke.sh` and `make llvm-smoke` for LLVM backend coverage
 - `tools/nq_ir_dump_parser.py`, `make ir-json`, and `tests/ir/bridge.sh` for the next bridge step from exported IR dump to structured JSON
 - `tools/nq_ir_json_to_llvm.py` and `make ir-llvm` for the first structured IR-to-LLVM lowering pass on a narrow subset, now extended to local/global slots, basic string print, basic array literal/indexing/update, basic `for` loops, plus the basic control flow used by `if`, `while`, and simple recursion
-- [CORE_LANGUAGE.md](/root/Nolqu/docs/language/CORE_LANGUAGE.md) and [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md) to separate stable language surface from experiments and syntax-only features
-- [LANGUAGE.md](/root/Nolqu/docs/language/LANGUAGE.md) now reflects the same `core`, `experimental`, and `syntax-only` split instead of presenting all parser features as equally stable
+- [CORE_LANGUAGE.md](../language/CORE_LANGUAGE.md) and [FEATURE_STATUS.md](../language/FEATURE_STATUS.md) to separate stable language surface from experiments and syntax-only features
+- [LANGUAGE.md](../language/LANGUAGE.md) now reflects the same `core`, `experimental`, and `syntax-only` split instead of presenting all parser features as equally stable
 - README, architecture, roadmap, and LLVM bridge docs documented the
   then-current transition away from duplicate source parsing; this direction
   is now superseded by the canonical machine bootstrap recorded above
-- [LLVM_BOOTSTRAP_POLICY.md](/root/Nolqu/docs/compiler/LLVM_BOOTSTRAP_POLICY.md) now defines what changes are acceptable in the bootstrap LLVM parser and what work should move to the IR bridge instead
-- [LLVM_BOOTSTRAP_STATUS.md](/root/Nolqu/docs/compiler/LLVM_BOOTSTRAP_STATUS.md) now freezes the currently maintained bootstrap subset so it cannot quietly grow into a second language surface
+- [LLVM_BOOTSTRAP_POLICY.md](../compiler/LLVM_BOOTSTRAP_POLICY.md) now defines what changes are acceptable in the bootstrap LLVM parser and what work should move to the IR bridge instead
+- [LLVM_BOOTSTRAP_STATUS.md](../compiler/LLVM_BOOTSTRAP_STATUS.md) now freezes the currently maintained bootstrap subset so it cannot quietly grow into a second language surface
 - `tests/llvm/smoke.sh` is now explicitly marked as a maintenance suite for the frozen bootstrap subset rather than the main feature-growth path
 - `tests/ir/parity.sh` now compares representative program output between the stable NASM backend and the IR-to-LLVM bridge, including globals + recursion, local-array function cases, branch/array combinations, mixed global-array call flows, loop-driven stateful helper calls, nested helper-chain stack flows, recursion that mutates global array state, deeper `else if` chains with side effects, `else if` control flow combined with recursion, `for` loops that call helpers, branch, recurse, and mutate global state, plus single-loop and nested-loop `break`/`continue` flow across both `while` and `for`
 - `parse_for`/`parse_continue` and the IR-to-LLVM bridge now agree on `continue` semantics for `for` loops via a dedicated continue label, which fixes hangs in nested `for` + `continue` cases and keeps parity green on nested `for` loop control flow
@@ -169,7 +178,7 @@ Second major update cycle begins with LLVM backend bootstrap work.
 - roadmap and feature-status docs now explicitly defer block-scoped locals until Nolqu is ready for a larger semantic-model change
 - examples now include loop-control with helper/global-state flow and recursive array/loop flow so the active supported surface is easier to see from user-facing programs
 - the language reference now includes a compact "Current Semantic Rules" section so active rules like function-scoped locals and loop-control behavior are explicit in one place
-- [SEMANTICS.md](/root/Nolqu/docs/language/SEMANTICS.md) now gives a short semantic summary separate from the full syntax reference
+- [SEMANTICS.md](../language/SEMANTICS.md) now gives a short semantic summary separate from the full syntax reference
 - examples and tests now cover stronger argument patterns, including the current 8-parameter limit and passing arrays through ordinary function calls
 - examples and tests now also cover nested function calls inside argument lists so argument evaluation patterns are no longer represented only by flat calls
 - examples and tests now also lock down left-to-right argument evaluation order instead of leaving it implicit
@@ -186,7 +195,7 @@ Second major update cycle begins with LLVM backend bootstrap work.
 - architecture and roadmap docs now describe the backend split between stable NASM and experimental LLVM
 - the LLVM bootstrap subset now includes assignment, basic `if/else`, `while`, simple integer functions with locals, nested calls, `return`, basic recursion, and basic function-call validation
 - roadmap and README now state the longer-term goal of growing Nolqu toward a more serious native-language toolchain
-- added [LLVM_BRIDGE.md](/root/Nolqu/docs/compiler/LLVM_BRIDGE.md) for the
+- added [LLVM_BRIDGE.md](../compiler/LLVM_BRIDGE.md) for the
   historical Python-to-IR LLVM migration, now frozen as legacy compatibility
 - the wrapper and Makefile exposed IR export for the historical LLVM bridge;
   the dump includes readable symbol names for named IR ops
@@ -253,7 +262,7 @@ Release-discipline and test-organization hardening release.
 ### Added
 
 - modular test layout with `tests/compiler/smoke.sh`, `tests/compiler/regression.sh`, and `tests/compiler/diagnostics.sh`
-- [RELEASING.md](/root/Nolqu/docs/project/RELEASING.md) for release workflow guidance
+- [RELEASING.md](RELEASING.md) for release workflow guidance
 - `Makefile` targets for `smoke`, `examples`, `set-dev`, and `set-stable`
 
 ### Improved
@@ -369,9 +378,9 @@ First stable baseline for Nolqu.
 
 ### Added
 
-- Core language baseline documentation in [LANGUAGE.md](/root/Nolqu/docs/language/LANGUAGE.md)
-- Project overview and usage docs in [README.md](/root/Nolqu/README.md)
-- CLI wrapper [nq](/root/Nolqu/nq) with:
+- Core language baseline documentation in [LANGUAGE.md](../language/LANGUAGE.md)
+- Project overview and usage docs in [README.md](../../README.md)
+- CLI wrapper `nq` with:
   - `--help`
   - `--version`
   - `--build-compiler`

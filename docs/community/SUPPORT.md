@@ -2,10 +2,10 @@
 
 ## What To Use For Help
 
-- use the examples in [README.md](/root/Nolqu/README.md) first
-- use [LANGUAGE.md](/root/Nolqu/docs/language/LANGUAGE.md) for syntax reference
-- use [SEMANTICS.md](/root/Nolqu/docs/language/SEMANTICS.md) for current behavior rules
-- use [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md) to check whether a
+- use the examples in [README.md](../../README.md) first
+- use [LANGUAGE.md](../language/LANGUAGE.md) for syntax reference
+- use [SEMANTICS.md](../language/SEMANTICS.md) for current behavior rules
+- use [FEATURE_STATUS.md](../language/FEATURE_STATUS.md) to check whether a
   feature is `core`, `experimental`, or `syntax-only`
 
 ## Good Support Requests
@@ -30,5 +30,5 @@ For support or project questions:
 ## Notes
 
 - support answers are easier when the report is small and reproducible
-- for security-sensitive issues, use [SECURITY.md](/root/Nolqu/docs/community/SECURITY.md)
+- for security-sensitive issues, use [SECURITY.md](SECURITY.md)
   instead of public support discussion

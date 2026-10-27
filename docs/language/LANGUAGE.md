@@ -2,7 +2,7 @@
 
 This document describes the user-facing NolQu-L language surface as of `1.0.2a1`.
 
-It does not treat every parser feature as equally stable. For the official status split, see [CORE_LANGUAGE.md](/root/Nolqu/docs/language/CORE_LANGUAGE.md) and [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md).
+It does not treat every parser feature as equally stable. For the official status split, see [CORE_LANGUAGE.md](CORE_LANGUAGE.md) and [FEATURE_STATUS.md](FEATURE_STATUS.md).
 
 ## Status Guide
 

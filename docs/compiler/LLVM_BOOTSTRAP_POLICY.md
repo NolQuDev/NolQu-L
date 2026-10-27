@@ -8,7 +8,7 @@ The parser still exists for compatibility and regression continuity. It is
 outside the canonical NolQu-L bootstrap chain and must not be treated as Stage
 0, a self-hosting step, or a future semantic center.
 
-For the currently frozen supported subset, see [LLVM_BOOTSTRAP_STATUS.md](/root/Nolqu/docs/compiler/LLVM_BOOTSTRAP_STATUS.md).
+For the currently frozen supported subset, see [LLVM_BOOTSTRAP_STATUS.md](LLVM_BOOTSTRAP_STATUS.md).
 
 ## Policy
 

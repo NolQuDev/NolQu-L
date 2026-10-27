@@ -22,16 +22,16 @@ from `1.0.2a1`. Source/ABI contracts and canonical seed bytes are unaffected.
 
 ## Typical Flow
 
-1. Update [VERSION](/root/Nolqu/VERSION).
-2. Set the correct release track in [CHANNEL](/root/Nolqu/CHANNEL).
-3. Update [README.md](/root/Nolqu/README.md) if user-facing behavior changed.
-4. Add release notes to [docs/project/CHANGELOG.md](/root/Nolqu/docs/project/CHANGELOG.md).
-5. Check whether any feature moved between `core`, `experimental`, or `syntax-only` status in [CORE_LANGUAGE.md](/root/Nolqu/docs/language/CORE_LANGUAGE.md) and [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md).
+1. Update [VERSION](../../VERSION).
+2. Set the correct release track in [CHANNEL](../../CHANNEL).
+3. Update [README.md](../../README.md) if user-facing behavior changed.
+4. Add release notes to [docs/project/CHANGELOG.md](CHANGELOG.md).
+5. Check whether any feature moved between `core`, `experimental`, or `syntax-only` status in [CORE_LANGUAGE.md](../language/CORE_LANGUAGE.md) and [FEATURE_STATUS.md](../language/FEATURE_STATUS.md).
 6. Run `make bootstrap-test` and confirm `bootstrap/manifest.tsv` matches the
    artifacts actually proven by tests.
 7. If legacy LLVM behavior changed, verify it remained compatibility-only and
    update its frozen status documentation when necessary.
-8. Keep legal and project-policy docs aligned: [LICENSE](/root/Nolqu/LICENSE), [TRADEMARK.md](/root/Nolqu/docs/community/TRADEMARK.md), [CONTACT.md](/root/Nolqu/docs/community/CONTACT.md), [CONTRIBUTING.md](/root/Nolqu/docs/community/CONTRIBUTING.md), [SECURITY.md](/root/Nolqu/docs/community/SECURITY.md), [CODE_OF_CONDUCT.md](/root/Nolqu/docs/community/CODE_OF_CONDUCT.md), [AUTHORS.md](/root/Nolqu/docs/community/AUTHORS.md), [SUPPORT.md](/root/Nolqu/docs/community/SUPPORT.md), [GOVERNANCE.md](/root/Nolqu/docs/community/GOVERNANCE.md), [FAQ.md](/root/Nolqu/docs/community/FAQ.md), [STYLE_GUIDE.md](/root/Nolqu/docs/community/STYLE_GUIDE.md), [COMPATIBILITY.md](/root/Nolqu/docs/project/COMPATIBILITY.md), [PACKAGING.md](/root/Nolqu/docs/project/PACKAGING.md), [INSTALL.md](/root/Nolqu/docs/project/INSTALL.md), [BACKENDS.md](/root/Nolqu/docs/compiler/BACKENDS.md), [PROJECT_STRUCTURE.md](/root/Nolqu/docs/project/PROJECT_STRUCTURE.md), [TESTING.md](/root/Nolqu/docs/compiler/TESTING.md), [COMMANDS.md](/root/Nolqu/docs/project/COMMANDS.md), [IR.md](/root/Nolqu/docs/compiler/IR.md), [TERMINOLOGY.md](/root/Nolqu/docs/language/TERMINOLOGY.md), [DECISIONS.md](/root/Nolqu/docs/language/DECISIONS.md), [KNOWN_LIMITATIONS.md](/root/Nolqu/docs/language/KNOWN_LIMITATIONS.md), [ERRORS.md](/root/Nolqu/docs/language/ERRORS.md), [ROADMAP_SHORT.md](/root/Nolqu/docs/project/ROADMAP_SHORT.md), [STATE_OF_PROJECT.md](/root/Nolqu/docs/project/STATE_OF_PROJECT.md), [REPO_INDEX.md](/root/Nolqu/docs/project/REPO_INDEX.md), [MAINTAINER_CHECKLIST.md](/root/Nolqu/docs/project/MAINTAINER_CHECKLIST.md), [RELEASE_NOTES_TEMPLATE.md](/root/Nolqu/docs/project/RELEASE_NOTES_TEMPLATE.md), [LABELS.md](/root/Nolqu/docs/project/LABELS.md), [.github/CODEOWNERS](/root/Nolqu/.github/CODEOWNERS), and [DESIGN_PRINCIPLES.md](/root/Nolqu/docs/language/DESIGN_PRINCIPLES.md).
+8. Keep legal and project-policy docs aligned: [LICENSE](../../LICENSE), [TRADEMARK.md](../community/TRADEMARK.md), [CONTACT.md](../community/CONTACT.md), [CONTRIBUTING.md](../community/CONTRIBUTING.md), [SECURITY.md](../community/SECURITY.md), [CODE_OF_CONDUCT.md](../community/CODE_OF_CONDUCT.md), [AUTHORS.md](../community/AUTHORS.md), [SUPPORT.md](../community/SUPPORT.md), [GOVERNANCE.md](../community/GOVERNANCE.md), [FAQ.md](../community/FAQ.md), [STYLE_GUIDE.md](../community/STYLE_GUIDE.md), [COMPATIBILITY.md](COMPATIBILITY.md), [PACKAGING.md](PACKAGING.md), [INSTALL.md](INSTALL.md), [BACKENDS.md](../compiler/BACKENDS.md), [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md), [TESTING.md](../compiler/TESTING.md), [COMMANDS.md](COMMANDS.md), [IR.md](../compiler/IR.md), [TERMINOLOGY.md](../language/TERMINOLOGY.md), [DECISIONS.md](../language/DECISIONS.md), [KNOWN_LIMITATIONS.md](../language/KNOWN_LIMITATIONS.md), [ERRORS.md](../language/ERRORS.md), [ROADMAP_SHORT.md](ROADMAP_SHORT.md), [STATE_OF_PROJECT.md](STATE_OF_PROJECT.md), [REPO_INDEX.md](REPO_INDEX.md), [MAINTAINER_CHECKLIST.md](MAINTAINER_CHECKLIST.md), [RELEASE_NOTES_TEMPLATE.md](RELEASE_NOTES_TEMPLATE.md), [LABELS.md](LABELS.md), [.github/CODEOWNERS](../../.github/CODEOWNERS), and [DESIGN_PRINCIPLES.md](../language/DESIGN_PRINCIPLES.md).
 5. Run:
    `make dev`
    `make release-check`

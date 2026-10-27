@@ -7,6 +7,6 @@ Use this folder if you want the shortest path from "what is NolQu-L?" to
 
 ## Start Here
 
-- [hello.nq](/root/Nolqu/examples/core/hello.nq)
-- [arrays.nq](/root/Nolqu/examples/core/arrays.nq)
-- [test.nq](/root/Nolqu/examples/core/test.nq)
+- [hello.nq](hello.nq)
+- [arrays.nq](arrays.nq)
+- [test.nq](test.nq)

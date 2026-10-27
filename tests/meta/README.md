@@ -9,4 +9,4 @@ Their absence does not establish that design-only capabilities are implemented.
 
 ## Contents
 
-- [release_check.sh](/root/Nolqu/tests/meta/release_check.sh): verifies version, channel, docs, and required project files
+- [release_check.sh](release_check.sh): verifies version, channel, docs, and required project files

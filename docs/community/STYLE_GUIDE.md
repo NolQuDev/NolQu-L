@@ -12,7 +12,7 @@
 
 - prefer examples that are minimal but real
 - avoid showing experimental features as if they were core language features
-- keep examples aligned with [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md)
+- keep examples aligned with [FEATURE_STATUS.md](../language/FEATURE_STATUS.md)
 - when behavior depends on semantics, prefer examples that make that behavior
   explicit
 

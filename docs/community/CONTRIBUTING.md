@@ -5,12 +5,13 @@ design constraints.
 
 ## Before Contributing
 
-- read [CORE_LANGUAGE.md](/root/Nolqu/docs/language/CORE_LANGUAGE.md)
-- read [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md)
-- read [SEMANTICS.md](/root/Nolqu/docs/language/SEMANTICS.md)
+- read the [Nine Pillars of NolQu-L](../language/DESIGN_PRINCIPLES.md)
+- read [CORE_LANGUAGE.md](../language/CORE_LANGUAGE.md)
+- read [FEATURE_STATUS.md](../language/FEATURE_STATUS.md)
+- read [SEMANTICS.md](../language/SEMANTICS.md)
 - read [ARCHITECTURE.md](../compiler/ARCHITECTURE.md) and the relevant `bootstrap/` contract
 - follow [PUBLICATION.md](../project/PUBLICATION.md) when selecting files for GitHub
-- read [bootstrap/README.md](/root/Nolqu/bootstrap/README.md)
+- read [bootstrap/README.md](../../bootstrap/README.md)
 
 ## Contribution Priorities
 

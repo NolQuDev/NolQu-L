@@ -12,8 +12,8 @@ These programs exist to show how NolQu-L behaves today, not just how it looks.
 
 ## Start Here
 
-- [functions.nq](/root/Nolqu/examples/semantics/functions.nq)
-- [branching.nq](/root/Nolqu/examples/semantics/branching.nq)
-- [function_scope_local.nq](/root/Nolqu/examples/semantics/function_scope_local.nq)
-- [argument_order.nq](/root/Nolqu/examples/semantics/argument_order.nq)
-- [recursive_array_flow.nq](/root/Nolqu/examples/semantics/recursive_array_flow.nq)
+- [functions.nq](functions.nq)
+- [branching.nq](branching.nq)
+- [function_scope_local.nq](function_scope_local.nq)
+- [argument_order.nq](argument_order.nq)
+- [recursive_array_flow.nq](recursive_array_flow.nq)

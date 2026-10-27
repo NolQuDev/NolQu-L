@@ -6,6 +6,10 @@ implemented in `src/*.asm` is Reference Compiler R0: it remains the tested
 compatibility compiler, but it is not Stage 0 and is not evidence of
 self-hosting.
 
+The [Nine Pillars of NolQu-L](docs/language/DESIGN_PRINCIPLES.md) define the
+language's principles: simplicity, readability, visible machine costs,
+explicit safety and tested evolution.
+
 The canonical direction is independent of LLVM, Python, and host-language
 compilers:
 
@@ -378,7 +382,7 @@ make test
 - Current limitations are summarized in [KNOWN_LIMITATIONS.md](docs/language/KNOWN_LIMITATIONS.md), and error behavior is summarized in [ERRORS.md](docs/language/ERRORS.md).
 - A short project direction summary lives in [ROADMAP_SHORT.md](docs/project/ROADMAP_SHORT.md), and a current snapshot lives in [STATE_OF_PROJECT.md](docs/project/STATE_OF_PROJECT.md).
 - A one-page docs map lives in [REPO_INDEX.md](docs/project/REPO_INDEX.md), and maintainer operations are summarized in [MAINTAINER_CHECKLIST.md](docs/project/MAINTAINER_CHECKLIST.md).
-- Release-note drafting lives in [RELEASE_NOTES_TEMPLATE.md](docs/project/RELEASE_NOTES_TEMPLATE.md), and the short-form philosophy lives in [DESIGN_PRINCIPLES.md](docs/language/DESIGN_PRINCIPLES.md).
+- Release-note drafting lives in [RELEASE_NOTES_TEMPLATE.md](docs/project/RELEASE_NOTES_TEMPLATE.md); the normative language principles are the [Nine Pillars of NolQu-L](docs/language/DESIGN_PRINCIPLES.md).
 - Function calls use a simple stack-based calling convention.
 - Function arguments are currently positional-only; there are no default, named, or variadic arguments yet.
 - Return values are passed in `rax`.

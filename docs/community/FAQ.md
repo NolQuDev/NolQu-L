@@ -18,7 +18,7 @@ track and includes active LLVM-related backend work.
 ## Is NolQu-L Open Source?
 
 Yes. The project is currently released under the MIT license. See
-[LICENSE](/root/Nolqu/LICENSE).
+[LICENSE](../../LICENSE).
 
 ## Are Locals Block-Scoped?
 
@@ -41,11 +41,11 @@ ordinary function calls.
 
 ## Where Should I Start?
 
-- [README.md](/root/Nolqu/README.md)
-- [LANGUAGE.md](/root/Nolqu/docs/language/LANGUAGE.md)
-- [SEMANTICS.md](/root/Nolqu/docs/language/SEMANTICS.md)
-- [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md)
+- [README.md](../../README.md)
+- [LANGUAGE.md](../language/LANGUAGE.md)
+- [SEMANTICS.md](../language/SEMANTICS.md)
+- [FEATURE_STATUS.md](../language/FEATURE_STATUS.md)
 
 ## Where Do I Ask Questions?
 
-See [SUPPORT.md](/root/Nolqu/docs/community/SUPPORT.md) and [CONTACT.md](/root/Nolqu/docs/community/CONTACT.md).
+See [SUPPORT.md](SUPPORT.md) and [CONTACT.md](CONTACT.md).

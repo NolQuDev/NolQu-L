@@ -5,22 +5,22 @@ one flat level.
 
 ## Sections
 
-- [language](/root/Nolqu/docs/language): language surface, semantics, design rules
-- [compiler](/root/Nolqu/docs/compiler): architecture, backends, IR, testing
-- [project](/root/Nolqu/docs/project): roadmap, release workflow, repo structure
-- [community](/root/Nolqu/docs/community): contact, governance, contribution, policy
+- [language](language): language surface, semantics, design rules
+- [compiler](compiler): architecture, backends, IR, testing
+- [project](project): roadmap, release workflow, repo structure
+- [community](community): contact, governance, contribution, policy
 
 ## Start Here
 
+- [Nine Pillars of NolQu-L](language/DESIGN_PRINCIPLES.md)
 - [Architecture](compiler/ARCHITECTURE.md)
 - [Changelog](project/CHANGELOG.md)
 - [Validation Status](project/VALIDATION.md)
-- [Canonical Bootstrap](/root/Nolqu/bootstrap/README.md)
-- [Repo Index](/root/Nolqu/docs/project/REPO_INDEX.md)
-- [Language Reference](/root/Nolqu/docs/language/LANGUAGE.md)
-- [Semantics](/root/Nolqu/docs/language/SEMANTICS.md)
-- [Architecture](/root/Nolqu/docs/compiler/ARCHITECTURE.md)
-- [Backends](/root/Nolqu/docs/compiler/BACKENDS.md)
-- [State Of Project](/root/Nolqu/docs/project/STATE_OF_PROJECT.md)
+- [Canonical Bootstrap](../bootstrap/README.md)
+- [Repo Index](project/REPO_INDEX.md)
+- [Language Reference](language/LANGUAGE.md)
+- [Semantics](language/SEMANTICS.md)
+- [Backends](compiler/BACKENDS.md)
+- [State Of Project](project/STATE_OF_PROJECT.md)
 
-If you are not sure where to start, use [REPO_INDEX.md](/root/Nolqu/docs/project/REPO_INDEX.md).
+If you are not sure where to start, use [REPO_INDEX.md](project/REPO_INDEX.md).

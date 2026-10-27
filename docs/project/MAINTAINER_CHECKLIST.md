@@ -19,10 +19,10 @@
 
 ## Before A Pre-Release Move
 
-- update [README.md](/root/Nolqu/README.md) if user-visible behavior changed
-- update [CHANGELOG.md](/root/Nolqu/docs/project/CHANGELOG.md)
-- review [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md)
-- review [DECISIONS.md](/root/Nolqu/docs/language/DECISIONS.md) if semantics changed
+- update [README.md](../../README.md) if user-visible behavior changed
+- update [CHANGELOG.md](CHANGELOG.md)
+- review [FEATURE_STATUS.md](../language/FEATURE_STATUS.md)
+- review [DECISIONS.md](../language/DECISIONS.md) if semantics changed
 - run:
   - `make bootstrap-test`
   - `make release-check`
@@ -34,7 +34,7 @@
 - confirm that pre-release-only language or backend assumptions are not being
   presented as stable defaults
 - re-check public-facing docs and examples
-- run the normal stable release flow in [RELEASING.md](/root/Nolqu/docs/project/RELEASING.md)
+- run the normal stable release flow in [RELEASING.md](RELEASING.md)
 
 ## Practical Rule
 

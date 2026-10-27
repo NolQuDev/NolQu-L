@@ -3,6 +3,9 @@
 This document records important current design decisions so they do not remain
 implicit or drift across docs, tests, and implementations.
 
+The normative language philosophy is the [Nine Pillars of NolQu-L](DESIGN_PRINCIPLES.md).
+Implementation decisions and historical notes below do not override those pillars.
+
 ## Current Decisions
 
 ### Formal Name Is NolQu-L
@@ -93,7 +96,7 @@ A meaningful user-visible semantic change should normally update:
 
 ## Related Docs
 
-- [SEMANTICS.md](/root/Nolqu/docs/language/SEMANTICS.md)
-- [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md)
-- [LLVM_BOOTSTRAP_POLICY.md](/root/Nolqu/docs/compiler/LLVM_BOOTSTRAP_POLICY.md)
-- [LLVM_BRIDGE.md](/root/Nolqu/docs/compiler/LLVM_BRIDGE.md)
+- [SEMANTICS.md](SEMANTICS.md)
+- [FEATURE_STATUS.md](FEATURE_STATUS.md)
+- [LLVM_BOOTSTRAP_POLICY.md](../compiler/LLVM_BOOTSTRAP_POLICY.md)
+- [LLVM_BRIDGE.md](../compiler/LLVM_BRIDGE.md)

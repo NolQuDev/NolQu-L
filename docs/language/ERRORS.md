@@ -56,7 +56,7 @@ considered part of the feature, not an afterthought.
 
 ## Related Docs
 
-- [SEMANTICS.md](/root/Nolqu/docs/language/SEMANTICS.md)
-- [TESTING.md](/root/Nolqu/docs/compiler/TESTING.md)
-- [IR.md](/root/Nolqu/docs/compiler/IR.md)
-- [LLVM_BRIDGE.md](/root/Nolqu/docs/compiler/LLVM_BRIDGE.md)
+- [SEMANTICS.md](SEMANTICS.md)
+- [TESTING.md](../compiler/TESTING.md)
+- [IR.md](../compiler/IR.md)
+- [LLVM_BRIDGE.md](../compiler/LLVM_BRIDGE.md)

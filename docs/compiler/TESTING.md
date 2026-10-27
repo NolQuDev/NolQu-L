@@ -66,6 +66,6 @@ If a user-visible semantic change lands, it should normally update:
 
 ## Related Docs
 
-- [SEMANTICS.md](/root/Nolqu/docs/language/SEMANTICS.md)
-- [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md)
-- [RELEASING.md](/root/Nolqu/docs/project/RELEASING.md)
+- [SEMANTICS.md](../language/SEMANTICS.md)
+- [FEATURE_STATUS.md](../language/FEATURE_STATUS.md)
+- [RELEASING.md](../project/RELEASING.md)
