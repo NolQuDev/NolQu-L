@@ -1,0 +1,5 @@
+fn main() {
+    byte_store(7, 77)
+    byte_store(8, byte_load(7))
+    return byte_load(8)
+}

@@ -1,0 +1,8 @@
+func set_mid(a, v) {
+a[1] = v
+return a[1]
+}
+
+var g = [1,2,3]
+print set_mid(g, 9)
+print g[1]

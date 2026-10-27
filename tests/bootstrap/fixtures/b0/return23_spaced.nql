@@ -1,0 +1,5 @@
+# This spacing and value intentionally differ from the original B0 fixture.
+fn   main ( ) {
+    // Semantic codegen must read this literal instead of matching whole bytes.
+    return 23;
+}

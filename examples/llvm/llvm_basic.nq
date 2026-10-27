@@ -1,0 +1,2 @@
+var x = 40
+print x + 2

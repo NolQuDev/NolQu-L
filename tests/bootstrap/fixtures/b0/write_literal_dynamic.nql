@@ -1,0 +1,5 @@
+# Semantic write lowering must preserve decoded string bytes and return value.
+fn main() {
+    write("Core-0 dynamic\n");
+    return 5;
+}

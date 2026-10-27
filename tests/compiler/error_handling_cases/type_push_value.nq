@@ -1,0 +1,2 @@
+var a = int[]
+push(a, "x")

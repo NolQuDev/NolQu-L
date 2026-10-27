@@ -1,0 +1,14 @@
+{
+  "sources": {
+    "frontend.nql": "f5ede77065a06498df9dfb6add43cf016d3eb38e8081dd44fa8a37d904fb6725",
+    "backend.nql": "1f90c6fcd92c076caf4897151e9c62551e9d77f5fd75d225ac033bb9df47d6ca"
+  },
+  "artifacts": {
+    "c0-frontend.seed": "46aaa86e226c54d1b9429c25696699bc2d4747d84b12f79ac6b0c21971cbfa7c",
+    "c0-backend.seed": "af8820eaff28b467dd148b2a48d966b775c4f170bb19fe223bc8a77c7b3559f9"
+  },
+  "b0": {
+    "source_sha256": "0a901a7d3686d63845514e4fc54cfaa2591a4377b9b574b22d8e3360a5b4d53d",
+    "artifact_sha256": "bebc7b23c8395ee312580b067644c3eb7556494db024dfd592404165a5336768"
+  }
+}

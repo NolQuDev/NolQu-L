@@ -1,0 +1,5 @@
+fn main() {
+    byte_store(255, 7)
+    output_write(255, 0)
+    return byte_load(255)
+}

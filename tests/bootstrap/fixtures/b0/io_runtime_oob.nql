@@ -1,0 +1,8 @@
+fn main() {
+    let offset = 65534
+    let count = 2
+    let got = 0
+    offset = offset + 1
+    got = input_read(offset, count)
+    return got
+}

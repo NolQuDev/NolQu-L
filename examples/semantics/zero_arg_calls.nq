@@ -1,0 +1,10 @@
+func one() {
+return 1
+}
+
+func add(a, b) {
+return a + b
+}
+
+print one()
+print add(one(), 4)
