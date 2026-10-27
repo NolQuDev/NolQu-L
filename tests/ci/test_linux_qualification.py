@@ -74,6 +74,41 @@ class LinuxCiTests(unittest.TestCase):
         self.assertEqual(gate_step["env"]["NQL_CI_OUTPUT"],
                          "${{ runner.temp }}/nolqu-l-qualification")
 
+    def test_current_repository_branches_trigger_qualification(self):
+        branches = self.workflow()["on"]["push"]["branches"]
+        self.assertTrue({"Main", "Dev", "Rel"}.issubset(branches))
+
+    def test_branch_maturity_matches_alpha_and_release_roles(self):
+        module = self.module()
+        for branch, version in (("Dev", "1.0.0-alpha.1"), ("Dev", "1.1.0-alpha.17"),
+                                ("Main", "1.0.0-beta.1"), ("Rel", "1.0.0-rc.1"),
+                                ("Rel", "1.0.0")):
+            with self.subTest(branch=branch, version=version):
+                self.assertEqual(module.branch_policy(branch, version)["version"], version)
+        for branch, version in (("Dev", "1.0.0-beta.1"), ("Dev", "1.0.0-rc.1"),
+                                ("Dev", "1.0.0"), ("Rel", "1.0.0-alpha.1"),
+                                ("Rel", "1.0.0-beta.1")):
+            with self.subTest(branch=branch, version=version), self.assertRaises(ValueError):
+                module.branch_policy(branch, version)
+
+    def test_non_alpha_dev_metadata_stops_before_gate_execution(self):
+        module = self.module()
+        with tempfile.TemporaryDirectory(prefix="branch-role-control-") as directory:
+            root = Path(directory)
+            (root / "VERSION").write_text("1.0.0-rc.1\n")
+            output = root / "evidence"
+            with mock.patch.object(module, "ROOT", root), \
+                    mock.patch.object(module, "require_linux_host", return_value={}), \
+                    mock.patch.object(module, "run_gates") as gates, \
+                    mock.patch.dict("os.environ", {"GITHUB_BASE_REF": "Dev", "GITHUB_REF_NAME": "1/merge"}), \
+                    mock.patch.object(sys, "argv", [str(SCRIPT), "--output", str(output)]):
+                self.assertEqual(module.main(), 2)
+                gates.assert_not_called()
+            report = json.loads((output / "result.json").read_text())
+            self.assertEqual(report["status"], "BLOCKED")
+            self.assertFalse(report["passed"])
+            self.assertIn("Alpha", report["error"]["message"])
+
     def test_failed_gate_is_retained_and_later_gate_cannot_mask_it(self):
         module = self.module()
         with tempfile.TemporaryDirectory(prefix="linux-ci-control-") as directory:

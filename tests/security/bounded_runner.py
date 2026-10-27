@@ -41,7 +41,15 @@ try:
     target=subprocess.Popen(sys.argv[2:])
     record['target_pid']=target.pid
     save()
-    record['target_exit_code']=target.wait()
+    # Reap adopted exited children while the target is alive too. Blocking
+    # only on target.wait() retains their zombies for the target's lifetime.
+    while True:
+        pid,status=os.waitpid(-1,0)
+        if pid == target.pid:
+            target.returncode=os.waitstatus_to_exitcode(status)
+            record['target_exit_code']=target.returncode
+            break
+        record['reaped_descendants']+=1
 except BaseException as exc:
     record['interrupted']=type(exc).__name__
 finally:

@@ -6,6 +6,9 @@ Development continues on the `dev` channel.
 
 ### Changed
 
+- Use `Main` for integration, `Dev` for Alpha development, and reserve an empty
+  `Rel` for future RC/final work. CI checks the populated branch's version role;
+  creating the branches does not promote the current Alpha or publish a release.
 - Keep internal master prompts, concept attachments, agent plans and session
   reports outside public source snapshots. Public summaries use this changelog,
   implementation contracts and `VALIDATION.md`; a required publication path
@@ -84,6 +87,9 @@ Development continues on the `dev` channel.
 
 ### Fixed
 
+- The host-test supervisor reaps adopted exited children while its command is
+  still running, preserving cleanup checks for nested compiler tests and exact
+  target exit/signal reporting.
 - GitHub qualification defines runner paths in step scope, where the runner
   context is available; local controls cover the validation failure.
 - Reference Compiler R0 states its existing absolute-addressing default

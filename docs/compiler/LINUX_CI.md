@@ -11,10 +11,15 @@ remain failed/unqualified on that host; they are not removed, replaced by mocks,
 or counted as passed. A Linux result is separate evidence for its recorded host.
 
 `.github/workflows/linux-qualification.yml` uses one Ubuntu24.04 x86_64 job.
-It runs on pull requests, pushes to main or ci/**, and manual dispatch. Checkout
+It runs on pull requests, pushes to Main/Dev/Rel (also lowercase main and ci/**),
+and manual dispatch. Checkout
 and artifact upload are pinned to full verified commit SHAs. Contents access is
 read-only, checkout does not persist credentials, and no publication/deployment
 credential is supplied to tests.
+
+Populated branches follow [BRANCHES.md](../project/BRANCHES.md): Dev is Alpha,
+Rel accepts RC/final versions, and pull requests use the destination branch's
+rule. Rel remains an empty branch until a release candidate exists.
 
 The runner first verifies the actual Linux architecture, required executables,
 and a real shared inode with mutation through its second name. Failure produces
@@ -26,7 +31,9 @@ and release metadata checks. Each command runs once. A later successful command
 cannot mask an earlier failure. Missing tools and unsupported checks are not PASS.
 
 The existing bounded runner owns child cleanup and retains exact streams,
-commands, identities, status and supervisor records. Limits selected for this
+commands, identities, status and supervisor records. It reaps adopted exited
+children while a test command is still alive; it cannot reap the caller's
+unrelated processes. Limits selected for this
 workflow are45 minutes per command,50 minutes aggregate and32MiB per captured
 stream, within a60-minute job. These are execution budgets, not measured compiler
 performance thresholds. RSS is not capped. Job termination or service/storage

@@ -294,6 +294,7 @@ Expected output after compiling and running generated `output`:
 ## Project Files
 
 - [Architecture](docs/compiler/ARCHITECTURE.md): implemented stages, boundaries and current limitations
+- [Branch roles](docs/project/BRANCHES.md): Main integration, Dev Alpha, and empty Rel reserved for RC/final
 - `bootstrap/`: canonical machine foundation and future compiler stages
 - `src/`: Reference Compiler R0 sources
 - `nql`: canonical project manager and run executable (`nolqul -> nql`)
