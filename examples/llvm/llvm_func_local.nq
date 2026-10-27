@@ -1,0 +1,6 @@
+func add_twice(a, b) {
+var sum = a + b
+return sum + sum
+}
+
+print add_twice(10, 11)

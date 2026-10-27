@@ -1,0 +1,4 @@
+fn main() {
+    byte_parse_u8_then(251, 0, 125)
+    return 0
+}

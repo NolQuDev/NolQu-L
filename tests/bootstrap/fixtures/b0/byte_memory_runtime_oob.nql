@@ -1,0 +1,6 @@
+fn main() {
+    let index = 0
+    byte_store(index, 1)
+    index = index + 65536
+    return byte_load(index)
+}

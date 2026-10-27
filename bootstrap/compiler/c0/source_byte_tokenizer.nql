@@ -1,0 +1,18 @@
+fn main() {
+    input_read(64, 17)
+    byte_assert_range(80, 0, 0)
+    byte_store(0, 64)
+    byte_store(1, 0)
+    byte_store(3, 0)
+    byte_store(6, 0)
+    byte_load_at(0, 1)
+    while byte_load(1) {
+        byte_classify_ascii(1, 6)
+        byte_token_push(6, 3, 127)
+        byte_store(0, byte_load(0) - 255)
+        byte_store(3, byte_load(3) - 255)
+        byte_load_at(0, 1)
+    }
+    output_write(127, 49)
+    return 0
+}

@@ -1,0 +1,24 @@
+# Default ownership
+* @NolQuDev
+
+# Core compiler and wrapper
+/bootstrap/ @NolQuDev
+/src/ @NolQuDev
+/nql @NolQuDev
+/nqlc @NolQuDev
+/Makefile @NolQuDev
+
+# Docs, examples, tests, and tooling
+/docs/ @NolQuDev
+/examples/ @NolQuDev
+/tests/ @NolQuDev
+/tools/ @NolQuDev
+
+# Root project metadata
+/README.md @NolQuDev
+/LICENSE @NolQuDev
+/VERSION @NolQuDev
+/CHANNEL @NolQuDev
+
+# GitHub metadata
+/.github/ @NolQuDev

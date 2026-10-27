@@ -1,0 +1,5 @@
+fn main(){
+while byte_load(1) {
+byte_store(1,0)
+}
+return 7}

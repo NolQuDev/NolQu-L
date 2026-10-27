@@ -1,0 +1,5 @@
+fn main() {
+    input_read(7, 4)
+    output_write(7, 4)
+    return byte_load(7)
+}

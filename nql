@@ -1,0 +1,667 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+VERSION=""
+INVOKED_NAME="${0##*/}"
+case "$INVOKED_NAME" in
+    nql) CLI_NAME="nql"; COMPILER_NAME="nqlc" ;;
+    nolqul) CLI_NAME="nolqul"; COMPILER_NAME="nolqulc" ;;
+    *) CLI_NAME="nql"; COMPILER_NAME="nqlc" ;;
+esac
+SOURCE_EXTENSION=".nql"
+MANIFEST_NAME="nql.toml"
+STATE_DIR_NAME=".nql"
+SCRIPT="${BASH_SOURCE[0]}"
+if command -v readlink >/dev/null 2>&1; then
+    SCRIPT="$(readlink -f "$SCRIPT" 2>/dev/null || printf "%s" "$SCRIPT")"
+fi
+TOOL_DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
+PUBLIC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ ! -f "$TOOL_DIR/VERSION" && ! -f "$TOOL_DIR/../lib/nolqu/VERSION" &&
+      ( -f "$PUBLIC_DIR/VERSION" || -f "$PUBLIC_DIR/../lib/nolqu/VERSION" ) ]]; then
+    TOOL_DIR="$PUBLIC_DIR"
+fi
+quiet=0
+verbose=0
+release=0
+target="x86_64-linux"
+color="auto"
+backend_override=""
+compiler_profile=0
+
+select_backend() {
+    [[ -z "$backend_override" ]] || { err "duplicate --backend selection"; exit 1; }
+    case "$1" in nasm|canonical) backend_override="$1" ;; *) err "--backend must be nasm or canonical"; exit 1 ;; esac
+}
+
+color_enabled() {
+    [[ "$color" == "always" ]] && return 0
+    [[ "$color" == "auto" && -t 2 && -z "${NO_COLOR:-}" ]] && return 0
+    return 1
+}
+
+err() {
+    if color_enabled; then
+        printf '\033[31merror\033[0m: %s\n' "$1" >&2
+    else
+        printf "error: %s\n" "$1" >&2
+    fi
+}
+msg() { if [[ $quiet -eq 0 ]]; then printf "%s\n" "$1" >&2; fi; }
+
+find_version_file() {
+    if [[ -n "${NOLQU_ROOT:-}" && -f "$NOLQU_ROOT/VERSION" ]]; then printf "%s\n" "$NOLQU_ROOT/VERSION"; return 0; fi
+    if [[ -f "$TOOL_DIR/VERSION" ]]; then printf "%s\n" "$TOOL_DIR/VERSION"; return 0; fi
+    if [[ -f "$TOOL_DIR/../lib/nolqu/VERSION" ]]; then printf "%s\n" "$TOOL_DIR/../lib/nolqu/VERSION"; return 0; fi
+    return 1
+}
+
+read_tool_version() {
+    local version_file
+    version_file="$(find_version_file)" || { err "VERSION file not found in project root"; exit 1; }
+    VERSION="$(head -n 1 "$version_file" | tr -d '[:space:]')"
+    [[ "$VERSION" =~ ^[0-9]+[.][0-9]+[.][0-9]+[A-Za-z0-9._-]*$ ]] || { err "VERSION file is invalid"; exit 1; }
+}
+
+find_r0_adapter() {
+    if [[ -n "${NOLQU_ROOT:-}" && -x "$NOLQU_ROOT/tools/nql_r0_adapter.sh" ]]; then printf "%s\n" "$NOLQU_ROOT/tools/nql_r0_adapter.sh"; return 0; fi
+    if [[ -x "$TOOL_DIR/tools/nql_r0_adapter.sh" ]]; then printf "%s\n" "$TOOL_DIR/tools/nql_r0_adapter.sh"; return 0; fi
+    if [[ -x "$TOOL_DIR/../lib/nolqu/tools/nql_r0_adapter.sh" ]]; then printf "%s\n" "$TOOL_DIR/../lib/nolqu/tools/nql_r0_adapter.sh"; return 0; fi
+    return 1
+}
+
+find_nqlc() {
+    if [[ -x "$TOOL_DIR/$COMPILER_NAME" ]]; then printf "%s\n" "$TOOL_DIR/$COMPILER_NAME"; return 0; fi
+    command -v "$COMPILER_NAME" 2>/dev/null && return 0
+    if [[ -x "$TOOL_DIR/nqlc" ]]; then printf "%s\n" "$TOOL_DIR/nqlc"; return 0; fi
+    command -v nqlc 2>/dev/null && return 0
+    return 1
+}
+
+help_text() {
+    cat <<USAGE
+Usage: $CLI_NAME <command> [options]
+
+Commands:
+  init [name]      Create a NolQu-L project
+  build            Compile project into $STATE_DIR_NAME/build/<name>
+  run [-- args]    Build and run project binary
+  test             Build and run tests/*$SOURCE_EXTENSION
+  check            Check project sources without output
+  clean            Remove $STATE_DIR_NAME build directory
+  version          Show $CLI_NAME and compiler version
+
+Global options:
+  --release          Build with -O1
+  --backend <name>   Project backend: nasm (default) or canonical
+  --compiler-profile  Explicit canonical 16 MiB compiler profile
+  --target <target>  Target platform, default x86_64-linux
+  -v, --verbose      Verbose compiler pipeline
+  -q, --quiet        Suppress progress except errors
+  --color <when>     Color output: auto, always, never
+  --help             Show this help
+  --version          Show version
+
+Canonical source execution uses nqlc --backend canonical --run.
+Terminal stdin execution requires Linux setsid (util-linux).
+USAGE
+}
+
+legacy_subcommand() {
+    case "$1" in
+        emit|release|tokens|ir|export-ir|bench) return 0 ;;
+        run|check) [[ $# -ge 2 && ( "$2" == *.nql || "$2" == *.nq ) ]] && return 0; return 1 ;;
+        *) return 1 ;;
+    esac
+}
+
+if [[ $# -eq 0 ]]; then help_text >&2; exit 1; fi
+first="$1"
+# Inspect only compiler arguments, never the program's tail after --. Skip
+# option values as well, so an output named --backend is still just a path.
+raw_backend=""
+raw_profile=0
+raw_source=0
+raw_project=0
+raw_command=""
+raw_command_index=-1
+raw_operand_seen=0
+raw_args=("$@")
+for ((i=0; i<${#raw_args[@]}; i++)); do
+    case "${raw_args[i]}" in
+        --) break ;;
+        --backend) i=$((i + 1)); raw_backend="${raw_args[i]:-}" ;;
+        --backend=*) raw_backend="${raw_args[i]#--backend=}" ;;
+        --compiler-profile) raw_profile=1 ;;
+        -o|--emit|--export-ir|--target|--color|--max-errors|--error-format|-j) i=$((i + 1)) ;;
+        -*) ;;
+        *)
+            if [[ $raw_operand_seen -eq 0 ]]; then
+                raw_operand_seen=1
+                case "${raw_args[i]}" in
+                    init|build|run|test|check|clean|version|add|remove|publish|doc|fmt|lint)
+                        raw_command="${raw_args[i]}"
+                        raw_command_index=$i
+                        ;;
+                esac
+            fi
+            case "${raw_args[i]}" in *.nql|*.nq) raw_source=1 ;; esac
+            ;;
+    esac
+done
+case "$raw_command" in
+    run|check) if [[ $raw_source -eq 0 ]]; then raw_project=1; fi ;;
+    "") ;;
+    *) raw_project=1 ;;
+esac
+if [[ $raw_project -eq 0 && ( "$raw_backend" == canonical || $raw_profile -eq 1 ) &&
+      ( $raw_source -eq 1 || "$first" == --* ) ]]; then
+    NOLQUC="$(find_nqlc)" || { err "compiler '$COMPILER_NAME' not found"; exit 2; }
+    # Replace the command itself, wherever leading options put it. Values
+    # named run/check and everything after -- remain in their original slots.
+    case "$raw_command" in run|check) raw_args[raw_command_index]="--$raw_command" ;; esac
+    exec "$NOLQUC" "${raw_args[@]}"
+fi
+case "$first" in
+    --build-compiler|--emit|--check|--dump-tokens|--dump-ir|--export-ir|--backend|--release|--bench|--run)
+        if [[ $raw_project -eq 0 || ( "$raw_backend" != canonical && "$first" != --backend ) ]]; then
+            R0_ADAPTER="$(find_r0_adapter)" || { err "R0 pipeline adapter not found"; exit 2; }
+            exec "$R0_ADAPTER" "$@"
+        fi ;;
+    *.nql|*.nq)
+        R0_ADAPTER="$(find_r0_adapter)" || { err "R0 pipeline adapter not found"; exit 2; }
+        exec "$R0_ADAPTER" "$@" ;;
+esac
+if legacy_subcommand "$@"; then R0_ADAPTER="$(find_r0_adapter)" || { err "R0 pipeline adapter not found"; exit 2; }; exec "$R0_ADAPTER" "$@"; fi
+
+cmd=""
+cmd_args=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help|-h) help_text; exit 0 ;;
+        --version) cmd="version"; shift; break ;;
+        --release) release=1; shift ;;
+        --backend) [[ $# -ge 2 ]] || { err "--backend requires a value"; exit 1; }; select_backend "$2"; shift 2 ;;
+        --backend=*) select_backend "${1#--backend=}"; shift ;;
+        --compiler-profile) compiler_profile=1; shift ;;
+        --target) [[ $# -ge 2 ]] || { err "--target requires a value"; exit 1; }; target="$2"; shift 2 ;;
+        --target=*) target="${1#--target=}"; shift ;;
+        -v|--verbose) verbose=1; shift ;;
+        -q|--quiet) quiet=1; shift ;;
+        --color) [[ $# -ge 2 ]] || { err "--color requires a value"; exit 1; }; color="$2"; shift 2 ;;
+        --color=*) color="${1#--color=}"; shift ;;
+        init|build|run|test|check|clean|version|add|remove|publish|doc|fmt|lint) cmd="$1"; shift; cmd_args=("$@"); break ;;
+        --*) err "unknown option: $1. Try --help"; exit 1 ;;
+        *) err "unknown subcommand '$1'. Try --help"; exit 1 ;;
+    esac
+done
+[[ -n "$cmd" ]] || { err "no subcommand provided. Try --help"; exit 1; }
+
+validate_globals() {
+    [[ "$target" == "x86_64-linux" ]] || { err "target '$target' is not supported yet"; exit 1; }
+    case "$color" in auto|always|never) ;; *) err "--color must be auto, always, or never"; exit 1 ;; esac
+    [[ $verbose -eq 1 && $quiet -eq 1 ]] && { err "-v and -q cannot be used together"; exit 1; }
+}
+
+apply_color_env() {
+    if [[ "${NOLQUC_COLOR:-}" == "always" ]]; then
+        color="always"
+    elif [[ -n "${NO_COLOR:-}" ]]; then
+        color="never"
+    elif [[ -n "${NOLQUC_COLOR:-}" ]]; then
+        color="$NOLQUC_COLOR"
+    fi
+}
+
+consume_command_globals() {
+    local stop_at_dashdash=0
+    [[ "$cmd" == "run" || "$cmd" == "check" ]] && stop_at_dashdash=1
+    local parsed=()
+    while [[ ${#cmd_args[@]} -gt 0 ]]; do
+        case "${cmd_args[0]}" in
+            --)
+                if [[ $stop_at_dashdash -eq 1 ]]; then
+                    parsed+=("${cmd_args[@]}")
+                    cmd_args=("${parsed[@]}")
+                    return
+                fi
+                parsed+=("${cmd_args[0]}")
+                cmd_args=("${cmd_args[@]:1}")
+                ;;
+            --help|-h)
+                help_text
+                exit 0
+                ;;
+            --version)
+                cmd="version"
+                cmd_args=()
+                return
+                ;;
+            --release)
+                release=1
+                cmd_args=("${cmd_args[@]:1}")
+                ;;
+            --backend)
+                [[ ${#cmd_args[@]} -ge 2 ]] || { err "--backend requires a value"; exit 1; }
+                select_backend "${cmd_args[1]}"
+                cmd_args=("${cmd_args[@]:2}")
+                ;;
+            --backend=*)
+                select_backend "${cmd_args[0]#--backend=}"
+                cmd_args=("${cmd_args[@]:1}")
+                ;;
+            --compiler-profile)
+                compiler_profile=1
+                cmd_args=("${cmd_args[@]:1}")
+                ;;
+            --dump-ir)
+                if [[ "$cmd" == "run" ]]; then
+                    err "run cannot be used with --dump-ir"
+                    exit 1
+                fi
+                err "unknown option: ${cmd_args[0]}. Try --help"
+                exit 1
+                ;;
+            --target)
+                [[ ${#cmd_args[@]} -ge 2 ]] || { err "--target requires a value"; exit 1; }
+                target="${cmd_args[1]}"
+                cmd_args=("${cmd_args[@]:2}")
+                ;;
+            --target=*)
+                target="${cmd_args[0]#--target=}"
+                cmd_args=("${cmd_args[@]:1}")
+                ;;
+            -v|--verbose)
+                verbose=1
+                cmd_args=("${cmd_args[@]:1}")
+                ;;
+            -q|--quiet)
+                quiet=1
+                cmd_args=("${cmd_args[@]:1}")
+                ;;
+            --color)
+                [[ ${#cmd_args[@]} -ge 2 ]] || { err "--color requires a value"; exit 1; }
+                color="${cmd_args[1]}"
+                cmd_args=("${cmd_args[@]:2}")
+                ;;
+            --color=*)
+                color="${cmd_args[0]#--color=}"
+                cmd_args=("${cmd_args[@]:1}")
+                ;;
+            --*)
+                err "unknown option: ${cmd_args[0]}. Try --help"
+                exit 1
+                ;;
+            *)
+                parsed+=("${cmd_args[0]}")
+                cmd_args=("${cmd_args[@]:1}")
+                ;;
+        esac
+    done
+    cmd_args=("${parsed[@]}")
+}
+
+consume_command_globals
+apply_color_env
+validate_globals
+read_tool_version
+
+run_binary() {
+    local bin="$1"; shift
+    if [[ "$(uname -m)" == "x86_64" ]]; then "$bin" "$@"; else command -v qemu-x86_64 >/dev/null 2>&1 || { err "qemu-x86_64 not found for running x86_64 binaries"; return 1; }; qemu-x86_64 "$bin" "$@"; fi
+}
+
+project_root() {
+    local dir="$PWD"
+    while [[ "$dir" != "/" ]]; do
+        if [[ -f "$dir/$MANIFEST_NAME" ]]; then printf "%s\n" "$dir"; return 0; fi
+        dir="$(dirname "$dir")"
+    done
+    return 1
+}
+
+read_manifest() {
+    manifest="$1/$MANIFEST_NAME"
+    package_name="$(grep -E "^[[:space:]]*name[[:space:]]*=" "$manifest" | head -n 1 | cut -d= -f2- | tr -d " \"\r")"
+    package_version="$(grep -E "^[[:space:]]*version[[:space:]]*=" "$manifest" | head -n 1 | cut -d= -f2- | tr -d " \"\r")"
+    [[ -n "$package_name" ]] || package_name="$(basename "$1")"
+    package_version="$VERSION"
+    local line section="" manifest_backend="" value
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%$'\r'}"
+        if [[ "$line" =~ ^[[:space:]]*\[([^][]+)\][[:space:]]*(#.*)?$ ]]; then
+            section="${BASH_REMATCH[1]}"
+        elif [[ "$section" == build && "$line" =~ ^[[:space:]]*backend[[:space:]]*= ]]; then
+            [[ -z "$manifest_backend" ]] || { err "duplicate [build] backend selection"; return 1; }
+            value="${line#*=}"
+            value="${value%%#*}"
+            value="${value#"${value%%[![:space:]]*}"}"
+            value="${value%"${value##*[![:space:]]}"}"
+            case "$value" in
+                '"nasm"'|"'nasm'") manifest_backend=nasm ;;
+                '"canonical"'|"'canonical'") manifest_backend=canonical ;;
+                *) err "[build] backend must be nasm or canonical"; return 1 ;;
+            esac
+        fi
+    done < "$manifest"
+    backend="${backend_override:-${manifest_backend:-nasm}}"
+    [[ $compiler_profile -eq 0 || "$backend" == canonical ]] || { err "--compiler-profile requires --backend canonical"; return 1; }
+}
+
+project_sources() {
+    find "$1/src" -type f -name "*.nql" | sort
+}
+
+project_tests() {
+    find "$1/tests" -type f -name "*.nql" | sort
+}
+
+hash_sources() {
+    local root="$1" driver_dir helper assets adapter component
+    {
+        printf "tool-version=%s\n" "$VERSION"
+        printf "target=%s\n" "$target"
+        printf "release=%s\n" "$release"
+        printf "backend=%s\nprofile=%s\n" "$backend" "$compiler_profile"
+        for component in "$SCRIPT" "$NOLQUC" "$root/$MANIFEST_NAME"; do
+            component_identity "$component" || return 1
+        done
+        project_sources "$root" | while IFS= read -r f; do component_identity "$f" || exit 1; done || return 1
+        driver_dir="$(dirname "$(readlink -f -- "$NOLQUC")")" || return 1
+        if [[ ! -f "$driver_dir/VERSION" && ! -f "$driver_dir/../lib/nolqu/VERSION" ]]; then
+            driver_dir="$(dirname "$NOLQUC")"
+        fi
+        if [[ "$backend" == canonical ]]; then
+            helper="$driver_dir/tools/nql_c0_driver.sh"
+            [[ -f "$helper" ]] || helper="$driver_dir/../lib/nolqu/tools/nql_c0_driver.sh"
+            assets="$(cd "$(dirname "$helper")/.." && pwd)" || return 1
+            for component in "$helper" "$assets/VERSION" "$assets/bootstrap/manifest.tsv" \
+                "$assets/bootstrap/compiler/c0/"{frontend,backend}.nql \
+                "$assets/bootstrap/compiler/c0/x86_64-linux/compile-source.sh" \
+                "$assets/bootstrap/compiler/c0/x86_64-linux/"c0-{frontend,backend}.{seed,sha256}; do
+                component_identity "$component" || return 1
+            done
+        else
+            adapter="$(find_r0_adapter)" || return 1
+            assets="$(cd "$(dirname "$adapter")/.." && pwd)" || return 1
+            for component in "$adapter" "$assets/build/nqlc-r0" "$assets/src/nqlc.asm"; do
+                component_identity "$component" || return 1
+            done
+        fi
+    } | sha256sum | awk "{print \$1}"
+}
+
+component_identity() {
+    [[ -f "$1" && -r "$1" ]] || return 1
+    sha256sum -- "$1" && stat -c '%a' -- "$1"
+}
+
+load_project_sources() {
+    [[ -d "$root/src" ]] || { err "src/ directory not found"; return 1; }
+    mapfile -t sources < <(project_sources "$root")
+    [[ ${#sources[@]} -gt 0 ]] || { err "no .nql files found in src/"; return 1; }
+    [[ "$backend" != canonical || ${#sources[@]} -eq 1 ]] || { err "canonical backend supports only one compilation unit"; return 1; }
+}
+
+compiler_options() {
+    args+=(--target "$target" --color "$color")
+    [[ "$backend" != canonical ]] || args+=(--backend canonical)
+    [[ $compiler_profile -eq 0 ]] || args+=(--compiler-profile)
+    [[ $release -eq 0 ]] || args+=(-O1)
+    [[ $verbose -eq 0 ]] || args+=(-v)
+    [[ $quiet -eq 0 ]] || args+=(-q)
+}
+
+# Commands that need to return to the project loop own only their direct
+# compiler child. Forward signals to nqlc so its existing traps can reap its
+# own groups and remove candidates; never kill the caller's process group.
+project_active=""
+project_registering=0
+project_signal_status=0
+project_signal() {
+    [[ $project_signal_status -ne 0 ]] || project_signal_status="$1"
+    [[ $project_registering -eq 1 ]] || exit "$project_signal_status"
+}
+project_cleanup() {
+    local status=$?
+    trap - EXIT
+    trap '' HUP INT TERM PIPE
+    if [[ -n "$project_active" ]]; then
+        kill -TERM "$project_active" 2>/dev/null || :
+        wait "$project_active" 2>/dev/null || :
+    fi
+    exit "$status"
+}
+project_compile_owned() {
+    local status=0 monitor=off
+    if [[ "$backend" != canonical ]]; then "$@"; return $?; fi
+    [[ $- != *m* ]] || monitor=on
+    trap project_cleanup EXIT
+    trap 'project_signal 129' HUP
+    trap 'project_signal 130' INT
+    trap 'project_signal 143' TERM
+    trap 'project_signal 141' PIPE
+    set -m
+    project_registering=1
+    "$@" <&0 &
+    project_active=$!
+    project_registering=0
+    [[ $project_signal_status -eq 0 ]] || exit "$project_signal_status"
+    wait "$project_active" || status=$?
+    project_registering=1
+    project_active=""
+    project_registering=0
+    [[ $project_signal_status -eq 0 ]] || exit "$project_signal_status"
+    [[ "$monitor" == on ]] || set +m
+    return "$status"
+}
+
+write_build_cache() {
+    local cache_file="$1" key="$2" binary="$3" temporary digest mode
+    digest="$(sha256sum -- "$binary")" || return 1
+    mode="$(stat -c '%a' -- "$binary")" || return 1
+    mkdir -p -- "$(dirname "$cache_file")" || return 1
+    temporary="$(mktemp -- "${cache_file}.XXXXXX")" || return 1
+    if printf '%s %s %s\n' "$key" "${digest%% *}" "$mode" > "$temporary" &&
+       mv -fT -- "$temporary" "$cache_file"; then
+        return 0
+    fi
+    rm -f -- "$temporary"
+    return 1
+}
+
+require_project() {
+    root="$(project_root)" || { err "not a NolQu-L project. Run '$CLI_NAME init' first"; exit 1; }
+}
+
+require_no_args() {
+    local command_name="$1"
+    shift
+    [[ $# -eq 0 ]] || { err "$CLI_NAME $command_name does not accept positional arguments"; exit 1; }
+}
+
+build_project() {
+    local root="$1" want_quiet="$2"
+    local stored_hash="" stored_digest="" stored_mode="" extra="" digest mode
+    read_manifest "$root" || return $?
+    load_project_sources || return $?
+    mkdir -p "$root/$STATE_DIR_NAME/build" || return $?
+    out="$root/$STATE_DIR_NAME/build/$package_name"
+    NOLQUC="$(find_nqlc)" || { err "compiler '$COMPILER_NAME' not found"; return 2; }
+    hash="$(hash_sources "$root" 2>/dev/null)" || hash=""
+    cache_file="$root/$STATE_DIR_NAME/cache/build.sha"
+    if [[ -n "$hash" && -f "$out" && -x "$out" && -f "$cache_file" ]]; then
+        read -r stored_hash stored_digest stored_mode extra < "$cache_file" || :
+        digest="$(sha256sum -- "$out")" || digest=""
+        mode="$(stat -c '%a' -- "$out")" || mode=""
+        if [[ "$stored_hash" == "$hash" && -n "$digest" && "$stored_digest" == "${digest%% *}" &&
+              "$stored_mode" == "$mode" && -z "$extra" ]]; then
+            [[ "$want_quiet" -eq 1 ]] || msg "Finished (cached) -> $STATE_DIR_NAME/build/$package_name"
+            printf "%s\n" "$out"
+            return 0
+        fi
+    fi
+    [[ "$want_quiet" -eq 1 ]] || msg "Compiling $package_name v$package_version"
+    args=("${sources[@]}" -o "$out")
+    compiler_options
+    project_compile_owned "$NOLQUC" "${args[@]}" || return $?
+    if [[ -n "$hash" && "$(hash_sources "$root")" == "$hash" ]]; then
+        write_build_cache "$cache_file" "$hash" "$out" 2>/dev/null || msg "warning: build cache could not be written"
+    fi
+    [[ "$want_quiet" -eq 1 ]] || msg "Finished -> $STATE_DIR_NAME/build/$package_name"
+    printf "%s\n" "$out"
+}
+
+case "$cmd" in
+    init)
+        backend="${backend_override:-nasm}"
+        [[ $compiler_profile -eq 0 || "$backend" == canonical ]] || { err "--compiler-profile requires --backend canonical"; exit 1; }
+        name=""
+        if [[ ${#cmd_args[@]} -gt 1 ]]; then err "$CLI_NAME init accepts only one project name"; exit 1; fi
+        [[ ${#cmd_args[@]} -eq 1 ]] && name="${cmd_args[0]}"
+        if [[ -n "$name" ]]; then
+            root="$PWD/$name"
+            if [[ -e "$root" && -n "$(find "$root" -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)" ]]; then err "directory '$name' already exists and is not empty"; exit 1; fi
+            mkdir -p "$root"
+            package_name="$name"
+        else
+            root="$PWD"
+            if [[ -n "$(find "$root" -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)" ]]; then
+                err "directory '$root' already exists and is not empty"
+                exit 1
+            fi
+            package_name="$(basename "$PWD")"
+        fi
+        mkdir -p "$root/src" "$root/tests" "$root/$STATE_DIR_NAME"
+        if [[ ! -f "$root/$MANIFEST_NAME" ]]; then
+            backend_line=""
+            [[ -z "$backend_override" ]] || backend_line="backend = \"$backend_override\""
+            cat > "$root/$MANIFEST_NAME" <<TOML
+[package]
+name = "$package_name"
+version = "$VERSION"
+author = ""
+
+[build]
+target = "x86_64-linux"
+$backend_line
+
+[dependencies]
+TOML
+        fi
+        if [[ ! -f "$root/.gitignore" ]]; then printf "%s\n" "$STATE_DIR_NAME/" > "$root/.gitignore"; fi
+        main_source="$root/src/main$SOURCE_EXTENSION"
+        if [[ ! -f "$main_source" ]]; then
+            if [[ "$backend" == canonical ]]; then
+                cat > "$main_source" <<'NOLQU'
+fn main() {
+    byte_store(0,72) byte_store(1,101) byte_store(2,108)
+    byte_store(3,108) byte_store(4,111) byte_store(5,44)
+    byte_store(6,32) byte_store(7,87) byte_store(8,111)
+    byte_store(9,114) byte_store(10,108) byte_store(11,100)
+    byte_store(12,33) byte_store(13,10)
+    output_write(0,14)
+    return 0
+}
+NOLQU
+                printf 'fn main(){return 0}\n' > "$root/tests/smoke.nql"
+            else
+            cat > "$main_source" <<'NOLQU'
+func main() {
+    print "Hello, World!"
+}
+
+main()
+NOLQU
+            fi
+        fi
+        msg "Created NolQu-L project $package_name"
+        ;;
+    build)
+        require_no_args "$cmd" "${cmd_args[@]}"
+        require_project
+        build_project "$root" "$quiet" >/dev/null
+        ;;
+    run)
+        require_project
+        read_manifest "$root" || exit $?
+        run_args=()
+        if [[ ${#cmd_args[@]} -gt 0 ]]; then if [[ "${cmd_args[0]}" == "--" ]]; then run_args=("${cmd_args[@]:1}"); else run_args=("${cmd_args[@]}"); fi; fi
+        if [[ "$backend" == canonical ]]; then
+            load_project_sources || exit $?
+            mkdir -p "$root/$STATE_DIR_NAME/build" || exit $?
+            out="$root/$STATE_DIR_NAME/build/$package_name"
+            NOLQUC="$(find_nqlc)" || { err "compiler not found"; exit 2; }
+            args=(--run "${sources[0]}" -o "$out")
+            compiler_options
+            msg "Running $STATE_DIR_NAME/build/$package_name"
+            exec "$NOLQUC" "${args[@]}" -- "${run_args[@]}"
+        fi
+        bin="$(build_project "$root" "$quiet")" || exit $?
+        msg "Running ${bin#$root/}"
+        run_binary "$bin" "${run_args[@]}"
+        ;;
+    check)
+        require_no_args "$cmd" "${cmd_args[@]}"
+        require_project
+        read_manifest "$root" || exit $?
+        load_project_sources || exit $?
+        msg "Checking $package_name v$package_version"
+        NOLQUC="$(find_nqlc)" || { err "compiler not found"; exit 2; }
+        args=(--check)
+        compiler_options
+        args+=("${sources[@]}")
+        project_compile_owned "$NOLQUC" "${args[@]}" || exit $?
+        msg "Check passed (0 errors, 0 warnings)"
+        ;;
+    clean)
+        require_no_args "$cmd" "${cmd_args[@]}"
+        require_project
+        read_manifest "$root" || exit $?
+        rm -rf "$root/$STATE_DIR_NAME"
+        msg "Cleaned $package_name"
+        ;;
+    test)
+        require_no_args "$cmd" "${cmd_args[@]}"
+        require_project
+        read_manifest "$root" || exit $?
+        msg "Testing $package_name v$package_version"
+        mkdir -p "$root/$STATE_DIR_NAME/tests"
+        mapfile -t tests < <(project_tests "$root")
+        if [[ ${#tests[@]} -eq 0 ]]; then
+            msg "No tests found"
+            exit 0
+        fi
+        failed=0
+        NOLQUC="$(find_nqlc)" || { err "compiler not found"; exit 2; }
+        for t in "${tests[@]}"; do
+            rel="${t#$root/}"
+            rel_no_ext="${rel%.nql}"
+            out="$root/$STATE_DIR_NAME/tests/$rel_no_ext"
+            mkdir -p "$(dirname "$out")"
+            args=("$t" -o "$out")
+            compiler_options
+            [[ "$backend" != canonical ]] || args+=(--run)
+            if project_compile_owned "$NOLQUC" "${args[@]}" >/dev/null &&
+               { [[ "$backend" == canonical ]] || run_binary "$out" >/dev/null; }; then
+                [[ $quiet -eq 1 ]] || printf "test %s ... ok\n" "$rel" >&2
+            else
+                [[ $quiet -eq 1 ]] || printf "test %s ... FAILED\n" "$rel" >&2
+                failed=$((failed + 1))
+            fi
+        done
+        if [[ $failed -gt 0 ]]; then err "$failed test(s) failed"; exit 1; fi
+        ;;
+    version)
+        require_no_args "$cmd" "${cmd_args[@]}"
+        printf "%-8s%s\n" "$CLI_NAME" "$VERSION"
+        if NOLQUC="$(find_nqlc)"; then
+            nqlc_version="$("$NOLQUC" --version)"
+            printf "%-8s%s\n" "$COMPILER_NAME" "${nqlc_version#* }"
+        fi
+        ;;
+    add|remove|publish|doc|fmt|lint)
+        err "$CLI_NAME $cmd is not supported yet"
+        exit 1
+        ;;
+esac

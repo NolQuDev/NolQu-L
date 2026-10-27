@@ -1,0 +1,3 @@
+fnmain() {
+    return 7
+}

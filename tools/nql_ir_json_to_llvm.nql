@@ -1,0 +1,1795 @@
+var output_path = ""
+var output_to_file = 0
+var current_kind = 0
+var current_const = 0
+var current_temp = 0
+var current_name = ""
+var rbx_kind = 0
+var rbx_const = 0
+var rbx_temp = 0
+var rbx_name = ""
+var rcx_kind = 0
+var rcx_const = 0
+var rcx_temp = 0
+var rcx_name = ""
+var temp_id = 0
+var block_terminated = 0
+var stack_kinds = int[]
+var stack_consts = int[]
+var stack_temps = int[]
+var pending_call_name = ""
+var pending_for_cmp_temp = 0
+var pending_for_cmp_active = 0
+var current_param_count = 0
+var current_function_start_pos = 0
+var current_json_text = ""
+var current_item_start_pos = 0
+var skip_lower_items = 0
+var fallthrough_is_label = 0
+
+func emit_line(line str) {
+    if output_to_file == 1 {
+        var n = append_file(output_path, line + "\n")
+        return n
+    } else {
+        print line
+    }
+    return 0
+}
+
+func json_int(line str) {
+    var colon = find(line, ": ")
+    if colon < 0 {
+        print "nq_ir_json_to_llvm: malformed integer field"
+        exit(1)
+    }
+    var end = len(line)
+    var comma = find(line, ",")
+    if comma >= 0 {
+        end = comma
+    }
+    return int(slice(line, colon + 2, end))
+}
+
+func json_str(line str) {
+    var colon = find(line, ": \"")
+    if colon < 0 {
+        print "nq_ir_json_to_llvm: malformed string field"
+        exit(1)
+    }
+    var start = colon + 3
+    var rest = slice(line, start, len(line))
+    var end = find(rest, "\"")
+    if end < 0 {
+        print "nq_ir_json_to_llvm: malformed string field"
+        exit(1)
+    }
+    return slice(rest, 0, end)
+}
+
+func next_line_end(text str, pos, total) {
+    var cursor = pos + 0
+    while cursor < total {
+        if slice(text, cursor, cursor + 1) == "\n" {
+            return cursor
+        }
+        cursor = cursor + 1
+    }
+    return total
+}
+
+func value_text(kind, const_value, temp_value, name_value str) {
+    if kind == 0 {
+        return str(const_value)
+    }
+    if kind == 2 {
+        return "%arg" + str(temp_value)
+    }
+    return "%t" + str(temp_value)
+}
+
+func current_text() {
+    return value_text(current_kind, current_const, current_temp, current_name)
+}
+
+func rbx_text() {
+    return value_text(rbx_kind, rbx_const, rbx_temp, rbx_name)
+}
+
+func rcx_text() {
+    return value_text(rcx_kind, rcx_const, rcx_temp, rcx_name)
+}
+
+func reset_value_stack() {
+    while len(stack_kinds) > 0 {
+        rbx_const = pop(stack_temps)
+        rbx_const = pop(stack_consts)
+        rbx_const = pop(stack_kinds)
+    }
+    return 0
+}
+
+func reset_lower_state() {
+    reset_value_stack()
+    current_kind = 0
+    current_const = 0
+    current_temp = 0
+    current_name = ""
+    rbx_kind = 0
+    rbx_const = 0
+    rbx_temp = 0
+    rbx_name = ""
+    rcx_kind = 0
+    rcx_const = 0
+    rcx_temp = 0
+    rcx_name = ""
+    block_terminated = 0
+    pending_call_name = ""
+    pending_for_cmp_temp = 0
+    pending_for_cmp_active = 0
+    skip_lower_items = 0
+    return 0
+}
+
+func push_current() {
+    push(stack_kinds, current_kind)
+    push(stack_consts, current_const)
+    push(stack_temps, current_temp)
+    return 0
+}
+
+func pop_stack_to_rbx() {
+    if len(stack_kinds) <= 0 {
+        print "nq_ir_json_to_llvm: POP_RBX on empty stack"
+        exit(1)
+    }
+    rbx_temp = pop(stack_temps)
+    rbx_const = pop(stack_consts)
+    rbx_kind = pop(stack_kinds)
+    return 0
+}
+
+func pop_stack_to_current() {
+    if len(stack_kinds) <= 0 {
+        print "nq_ir_json_to_llvm: POP_RAX on empty stack"
+        exit(1)
+    }
+    current_temp = pop(stack_temps)
+    current_const = pop(stack_consts)
+    current_kind = pop(stack_kinds)
+    return 0
+}
+
+func stack_value_text(index) {
+    if stack_kinds[index] == 0 {
+        return str(stack_consts[index])
+    }
+    if stack_kinds[index] == 2 {
+        return "%arg" + str(stack_temps[index])
+    }
+    return "%t" + str(stack_temps[index])
+}
+
+func drop_stack_count(count) {
+    var i = 0
+    while i < count {
+        rbx_const = pop(stack_temps)
+        rbx_const = pop(stack_consts)
+        rbx_const = pop(stack_kinds)
+        i = i + 1
+    }
+    return 0
+}
+
+func emit_pending_call(arg_count) {
+    if len(pending_call_name) <= 0 {
+        return 0
+    }
+    if arg_count > len(stack_kinds) {
+        print "nq_ir_json_to_llvm: CALL needs more args than stack contains"
+        exit(1)
+    }
+    if arg_count > 4 {
+        print "nq_ir_json_to_llvm: CALL currently supports up to 4 args"
+        exit(1)
+    }
+    temp_id = temp_id + 1
+    current_kind = 1
+    current_temp = temp_id
+    var result_temp_name = "%t" + str(current_temp) + ""
+    var start = len(stack_kinds) - arg_count
+    var idx0 = start
+    var idx1 = start + 1
+    var idx2 = start + 2
+    var idx3 = start + 3
+    var idx4 = start + 4
+    var idx5 = start + 5
+    var idx6 = start + 6
+    var idx7 = start + 7
+    var call_arg0 = ""
+    var call_arg1 = ""
+    var call_arg2 = ""
+    var call_arg3 = ""
+    var call_arg4 = ""
+    var call_arg5 = ""
+    var call_arg6 = ""
+    var call_arg7 = ""
+    if arg_count > 0 {
+        call_arg0 = stack_value_text(idx0) + ""
+    }
+    if arg_count > 1 {
+        call_arg1 = stack_value_text(idx1) + ""
+    }
+    if arg_count > 2 {
+        call_arg2 = stack_value_text(idx2) + ""
+    }
+    if arg_count > 3 {
+        call_arg3 = stack_value_text(idx3) + ""
+    }
+    if arg_count > 4 {
+        call_arg4 = stack_value_text(idx4) + ""
+    }
+    if arg_count > 5 {
+        call_arg5 = stack_value_text(idx5) + ""
+    }
+    if arg_count > 6 {
+        call_arg6 = stack_value_text(idx6) + ""
+    }
+    if arg_count > 7 {
+        call_arg7 = stack_value_text(idx7) + ""
+    }
+    if arg_count == 0 {
+        emit_line("  " + result_temp_name + " = call i64 @" + pending_call_name + "()")
+    }
+    if arg_count == 1 {
+        emit_line("  " + result_temp_name + " = call i64 @" + pending_call_name + "(i64 " + call_arg0 + ")")
+    }
+    if arg_count == 2 {
+        var call_line2 = "  " + result_temp_name
+        call_line2 = call_line2 + " = call i64 @"
+        call_line2 = call_line2 + pending_call_name
+        call_line2 = call_line2 + "(i64 "
+        call_line2 = call_line2 + call_arg0
+        call_line2 = call_line2 + ", i64 "
+        if stack_kinds[idx1] == 0 {
+            call_line2 = call_line2 + str(stack_consts[idx1])
+        } else {
+            if stack_kinds[idx1] == 2 {
+                call_line2 = call_line2 + "%arg" + str(stack_temps[idx1])
+            } else {
+                call_line2 = call_line2 + "%t" + str(stack_temps[idx1])
+            }
+        }
+        call_line2 = call_line2 + ")"
+        emit_line(call_line2)
+    }
+    if arg_count == 3 {
+        emit_line("  " + result_temp_name + " = call i64 @" + pending_call_name + "(i64 " + call_arg0 + ", i64 " + call_arg1 + ", i64 " + call_arg2 + ")")
+    }
+    if arg_count == 4 {
+        emit_line("  " + result_temp_name + " = call i64 @" + pending_call_name + "(i64 " + call_arg0 + ", i64 " + call_arg1 + ", i64 " + call_arg2 + ", i64 " + call_arg3 + ")")
+    }
+    if arg_count == 5 {
+        emit_line("  " + result_temp_name + " = call i64 @" + pending_call_name + "(i64 " + call_arg0 + ", i64 " + call_arg1 + ", i64 " + call_arg2 + ", i64 " + call_arg3 + ", i64 " + call_arg4 + ")")
+    }
+    if arg_count == 6 {
+        emit_line("  " + result_temp_name + " = call i64 @" + pending_call_name + "(i64 " + call_arg0 + ", i64 " + call_arg1 + ", i64 " + call_arg2 + ", i64 " + call_arg3 + ", i64 " + call_arg4 + ", i64 " + call_arg5 + ")")
+    }
+    if arg_count == 7 {
+        emit_line("  " + result_temp_name + " = call i64 @" + pending_call_name + "(i64 " + call_arg0 + ", i64 " + call_arg1 + ", i64 " + call_arg2 + ", i64 " + call_arg3 + ", i64 " + call_arg4 + ", i64 " + call_arg5 + ", i64 " + call_arg6 + ")")
+    }
+    if arg_count == 8 {
+        emit_line("  " + result_temp_name + " = call i64 @" + pending_call_name + "(i64 " + call_arg0 + ", i64 " + call_arg1 + ", i64 " + call_arg2 + ", i64 " + call_arg3 + ", i64 " + call_arg4 + ", i64 " + call_arg5 + ", i64 " + call_arg6 + ", i64 " + call_arg7 + ")")
+    }
+    drop_stack_count(arg_count)
+    pending_call_name = ""
+    return 0
+}
+
+func param_index(offset) {
+    if offset < 16 {
+        print "nq_ir_json_to_llvm: unsupported parameter offset " + str(offset)
+        exit(1)
+    }
+    var stack_slot = (offset - 16) / 8
+    var arg_index = current_param_count - 1 - stack_slot
+    if arg_index < 0 {
+        print "nq_ir_json_to_llvm: parameter offset outside function parameter count"
+        exit(1)
+    }
+    return arg_index
+}
+
+func param_name(offset) {
+    return "%arg" + str(param_index(offset))
+}
+
+func param_slot_name(offset) {
+    if offset < 16 {
+        print "nq_ir_json_to_llvm: unsupported parameter offset " + str(offset)
+        exit(1)
+    }
+    return "%param_" + str(offset)
+}
+
+func emit_function_header(name str, param_count) {
+    if param_count == 0 {
+        emit_line("define i64 @" + name + "() {")
+    }
+    if param_count == 1 {
+        emit_line("define i64 @" + name + "(i64 %arg0) {")
+    }
+    if param_count == 2 {
+        emit_line("define i64 @" + name + "(i64 %arg0, i64 %arg1) {")
+    }
+    if param_count == 3 {
+        emit_line("define i64 @" + name + "(i64 %arg0, i64 %arg1, i64 %arg2) {")
+    }
+    if param_count == 4 {
+        emit_line("define i64 @" + name + "(i64 %arg0, i64 %arg1, i64 %arg2, i64 %arg3) {")
+    }
+    if param_count == 5 {
+        emit_line("define i64 @" + name + "(i64 %arg0, i64 %arg1, i64 %arg2, i64 %arg3, i64 %arg4) {")
+    }
+    if param_count == 6 {
+        emit_line("define i64 @" + name + "(i64 %arg0, i64 %arg1, i64 %arg2, i64 %arg3, i64 %arg4, i64 %arg5) {")
+    }
+    if param_count == 7 {
+        emit_line("define i64 @" + name + "(i64 %arg0, i64 %arg1, i64 %arg2, i64 %arg3, i64 %arg4, i64 %arg5, i64 %arg6) {")
+    }
+    if param_count == 8 {
+        emit_line("define i64 @" + name + "(i64 %arg0, i64 %arg1, i64 %arg2, i64 %arg3, i64 %arg4, i64 %arg5, i64 %arg6, i64 %arg7) {")
+    }
+    if param_count > 4 {
+        print "nq_ir_json_to_llvm: functions currently support up to 4 params"
+        exit(1)
+    }
+    emit_line("entry:")
+    return 0
+}
+
+func collect_global_max(text str) {
+    var total = len(text)
+    var pos = 0
+    var item_op = ""
+    var item_a = 0
+    var max_slot = -1
+    while pos < total {
+        var line_end = next_line_end(text, pos, total)
+        var line = slice(text, pos, line_end)
+        if find(line, "{") >= 0 {
+            current_item_start_pos = pos
+        }
+        if find(line, "    \"op\":") == 0 {
+            item_op = json_str(line)
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "}") >= 0 {
+            if item_op == "LOAD_G" {
+                if item_a > max_slot {
+                    max_slot = item_a
+                }
+            }
+            if item_op == "STORE_G" {
+                if item_a > max_slot {
+                    max_slot = item_a
+                }
+            }
+            item_op = ""
+            item_a = 0
+        }
+        pos = line_end + 1
+    }
+    return max_slot
+}
+
+func collect_for_max(text str) {
+    var total = len(text)
+    var pos = 0
+    var item_op = ""
+    var item_a = 0
+    var max_slot = -1
+    while pos < total {
+        var line_end = next_line_end(text, pos, total)
+        var line = slice(text, pos, line_end)
+        if find(line, "    \"op\":") == 0 {
+            item_op = json_str(line)
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "}") >= 0 {
+            if item_op == "FE_ST" {
+                if item_a > max_slot {
+                    max_slot = item_a
+                }
+            }
+            if item_op == "FE_CMP" {
+                if item_a > max_slot {
+                    max_slot = item_a
+                }
+            }
+            item_op = ""
+            item_a = 0
+        }
+        pos = line_end + 1
+    }
+    return max_slot
+}
+
+func infer_function_params(start_pos, text str) {
+    var total = len(text)
+    var pos = start_pos + 0
+    var item_op = ""
+    var item_a = 0
+    var max_offset = 0
+    while pos < total {
+        var line_end = next_line_end(text, pos, total)
+        var line = slice(text, pos, line_end)
+        if find(line, "    \"op\":") == 0 {
+            item_op = json_str(line)
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "}") >= 0 {
+            if item_op == "LOAD_P" {
+                if item_a > max_offset {
+                    max_offset = item_a
+                }
+            }
+            if item_op == "STORE_P" {
+                if item_a > max_offset {
+                    max_offset = item_a
+                }
+            }
+            if item_op == "FN_END" {
+                if max_offset == 0 {
+                    return 0
+                }
+                return (max_offset / 8) - 1
+            }
+            item_op = ""
+            item_a = 0
+        }
+        pos = line_end + 1
+    }
+    return 0
+}
+
+func infer_function_local_max(start_pos, text str) {
+    var total = len(text)
+    var pos = start_pos + 0
+    var item_op = ""
+    var item_a = 0
+    var max_slot = 0
+    while pos < total {
+        var line_end = next_line_end(text, pos, total)
+        var line = slice(text, pos, line_end)
+        if find(line, "    \"op\":") == 0 {
+            item_op = json_str(line)
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "}") >= 0 {
+            if item_op == "LOAD_L" {
+                if item_a > max_slot {
+                    max_slot = item_a
+                }
+            }
+            if item_op == "STORE_L" {
+                if item_a > max_slot {
+                    max_slot = item_a
+                }
+            }
+            if item_op == "FN_END" {
+                return max_slot
+            }
+            item_op = ""
+            item_a = 0
+        }
+        pos = line_end + 1
+    }
+    return max_slot
+}
+
+func function_param_is_mutated(offset) {
+    var total = len(current_json_text)
+    var pos = current_function_start_pos + 0
+    var item_op = ""
+    var item_a = 0
+    while pos < total {
+        var line_end = next_line_end(current_json_text, pos, total)
+        var line = slice(current_json_text, pos, line_end)
+        if find(line, "    \"op\":") == 0 {
+            item_op = json_str(line)
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "}") >= 0 {
+            if item_op == "STORE_P" {
+                if item_a == offset {
+                    return 1
+                }
+            }
+            if item_op == "FN_END" {
+                return 0
+            }
+            item_op = ""
+            item_a = 0
+        }
+        pos = line_end + 1
+    }
+    return 0
+}
+
+func emit_function_params(param_count) {
+    var offset = 16
+    var remaining = param_count + 0
+    while remaining > 0 {
+        if function_param_is_mutated(offset) == 1 {
+            var slot_name = param_slot_name(offset) + ""
+            var source_name = param_name(offset) + ""
+            emit_line("  " + slot_name + " = alloca i64")
+            var init_line = "  store i64 "
+            init_line = init_line + source_name
+            init_line = init_line + ", ptr "
+            init_line = init_line + slot_name
+            emit_line(init_line)
+        }
+        offset = offset + 8
+        remaining = remaining - 1
+    }
+    return 0
+}
+
+func emit_function_locals(max_slot) {
+    var slot = 8
+    while slot <= max_slot {
+        emit_line("  %local_" + str(slot) + " = alloca i64")
+        slot = slot + 8
+    }
+    return 0
+}
+
+func emit_for_slots(max_slot) {
+    var slot = 0
+    while slot <= max_slot {
+        emit_line("  %forend_" + str(slot) + " = alloca i64")
+        slot = slot + 8
+    }
+    return 0
+}
+
+func emit_global_slots(max_slot) {
+    var slot = 0
+    while slot <= max_slot {
+        emit_line("@gslot_" + str(slot) + " = global i64 0")
+        slot = slot + 8
+    }
+    return 0
+}
+
+func emit_arg_helpers() {
+    emit_line("")
+    emit_line("define i64 @__nq_atoi_ptr(ptr %ptr) {")
+    emit_line("entry:")
+    emit_line("  %first = load i8, ptr %ptr")
+    emit_line("  %is_minus = icmp eq i8 %first, 45")
+    emit_line("  %start = select i1 %is_minus, i64 1, i64 0")
+    emit_line("  br label %loop")
+    emit_line("loop:")
+    emit_line("  %idx = phi i64 [ %start, %entry ], [ %next_idx, %digit ]")
+    emit_line("  %acc = phi i64 [ 0, %entry ], [ %next_acc, %digit ]")
+    emit_line("  %char_ptr = getelementptr i8, ptr %ptr, i64 %idx")
+    emit_line("  %char = load i8, ptr %char_ptr")
+    emit_line("  %is_zero = icmp eq i8 %char, 0")
+    emit_line("  br i1 %is_zero, label %finish, label %digit_check")
+    emit_line("digit_check:")
+    emit_line("  %below = icmp ult i8 %char, 48")
+    emit_line("  %above = icmp ugt i8 %char, 57")
+    emit_line("  %not_digit = or i1 %below, %above")
+    emit_line("  br i1 %not_digit, label %finish, label %digit")
+    emit_line("digit:")
+    emit_line("  %digit_i8 = sub i8 %char, 48")
+    emit_line("  %digit_i64 = zext i8 %digit_i8 to i64")
+    emit_line("  %scaled = mul i64 %acc, 10")
+    emit_line("  %next_acc = add i64 %scaled, %digit_i64")
+    emit_line("  %next_idx = add i64 %idx, 1")
+    emit_line("  br label %loop")
+    emit_line("finish:")
+    emit_line("  %neg_acc = sub i64 0, %acc")
+    emit_line("  %result = select i1 %is_minus, i64 %neg_acc, i64 %acc")
+    emit_line("  ret i64 %result")
+    emit_line("}")
+    emit_line("")
+    emit_line("define i64 @__nq_arg(i64 %index) {")
+    emit_line("entry:")
+    emit_line("  %neg = icmp slt i64 %index, 0")
+    emit_line("  br i1 %neg, label %oob, label %range")
+    emit_line("range:")
+    emit_line("  %argc = load i64, ptr @nq_argc")
+    emit_line("  %too_high = icmp sge i64 %index, %argc")
+    emit_line("  br i1 %too_high, label %oob, label %load")
+    emit_line("load:")
+    emit_line("  %argv = load ptr, ptr @nq_argv")
+    emit_line("  %slot = getelementptr ptr, ptr %argv, i64 %index")
+    emit_line("  %arg_ptr = load ptr, ptr %slot")
+    emit_line("  %is_null = icmp eq ptr %arg_ptr, null")
+    emit_line("  br i1 %is_null, label %oob, label %parse")
+    emit_line("parse:")
+    emit_line("  %value = call i64 @__nq_atoi_ptr(ptr %arg_ptr)")
+    emit_line("  ret i64 %value")
+    emit_line("oob:")
+    emit_line("  ret i64 0")
+    emit_line("}")
+    return 0
+}
+
+func emit_check_int_overflow_helper() {
+    emit_line("define void @__nq_check_int_overflow(i1 %overflow) {")
+    emit_line("entry:")
+    emit_line("  br i1 %overflow, label %overflow_block, label %ok")
+    emit_line("overflow_block:")
+    emit_line("  %msg = getelementptr [17 x i8], ptr @.int_ovf, i64 0, i64 0")
+    emit_line("  call i32 @puts(ptr %msg)")
+    emit_line("  call void @exit(i32 1)")
+    emit_line("  unreachable")
+    emit_line("ok:")
+    emit_line("  ret void")
+    emit_line("}")
+    return 0
+}
+
+func emit_array_helpers() {
+    emit_line("")
+    emit_line("define i64 @__nq_arr_push_i64(ptr %base, i64 %value) {")
+    emit_line("entry:")
+    emit_line("  %count_slot = getelementptr i64, ptr %base, i64 -1")
+    emit_line("  %capacity_slot = getelementptr i64, ptr %base, i64 -2")
+    emit_line("  %count = load i64, ptr %count_slot")
+    emit_line("  %capacity = load i64, ptr %capacity_slot")
+    emit_line("  %full = icmp sge i64 %count, %capacity")
+    emit_line("  br i1 %full, label %full_block, label %ok")
+    emit_line("ok:")
+    emit_line("  %elem = getelementptr i64, ptr %base, i64 %count")
+    emit_line("  store i64 %value, ptr %elem")
+    emit_line("  %next = add i64 %count, 1")
+    emit_line("  store i64 %next, ptr %count_slot")
+    emit_line("  ret i64 %next")
+    emit_line("full_block:")
+    emit_line("  %msg = getelementptr [24 x i8], ptr @.arr_full, i64 0, i64 0")
+    emit_line("  call i32 @puts(ptr %msg)")
+    emit_line("  call void @exit(i32 1)")
+    emit_line("  unreachable")
+    emit_line("}")
+    emit_line("")
+    emit_line("define i64 @__nq_arr_pop_i64(ptr %base) {")
+    emit_line("entry:")
+    emit_line("  %count_slot = getelementptr i64, ptr %base, i64 -1")
+    emit_line("  %count = load i64, ptr %count_slot")
+    emit_line("  %empty = icmp eq i64 %count, 0")
+    emit_line("  br i1 %empty, label %empty_block, label %ok")
+    emit_line("ok:")
+    emit_line("  %next = sub i64 %count, 1")
+    emit_line("  store i64 %next, ptr %count_slot")
+    emit_line("  %elem = getelementptr i64, ptr %base, i64 %next")
+    emit_line("  %value = load i64, ptr %elem")
+    emit_line("  ret i64 %value")
+    emit_line("empty_block:")
+    emit_line("  %msg = getelementptr [26 x i8], ptr @.arr_empty, i64 0, i64 0")
+    emit_line("  call i32 @puts(ptr %msg)")
+    emit_line("  call void @exit(i32 1)")
+    emit_line("  unreachable")
+    emit_line("}")
+    return 0
+}
+
+func emit_check_div_zero_helper() {
+    emit_line("")
+    emit_line("define void @__nq_check_div_zero(i64 %divisor) {")
+    emit_line("entry:")
+    emit_line("  %is_zero = icmp eq i64 %divisor, 0")
+    emit_line("  br i1 %is_zero, label %zero, label %ok")
+    emit_line("zero:")
+    emit_line("  %msg = getelementptr [17 x i8], ptr @.div_zero, i64 0, i64 0")
+    emit_line("  call i32 @puts(ptr %msg)")
+    emit_line("  call void @exit(i32 1)")
+    emit_line("  unreachable")
+    emit_line("ok:")
+    emit_line("  ret void")
+    emit_line("}")
+    return 0
+}
+
+func emit_check_arr_bounds_helper() {
+    emit_line("")
+    emit_line("define void @__nq_check_arr_bounds(ptr %base, i64 %offset) {")
+    emit_line("entry:")
+    emit_line("  %neg = icmp slt i64 %offset, 0")
+    emit_line("  br i1 %neg, label %oob, label %check")
+    emit_line("check:")
+    emit_line("  %hdr = getelementptr i64, ptr %base, i64 -1")
+    emit_line("  %len = load i64, ptr %hdr")
+    emit_line("  %len_bytes = mul i64 %len, 8")
+    emit_line("  %too_high = icmp sge i64 %offset, %len_bytes")
+    emit_line("  br i1 %too_high, label %oob, label %ok")
+    emit_line("oob:")
+    emit_line("  %msg = getelementptr [26 x i8], ptr @.arr_oob, i64 0, i64 0")
+    emit_line("  call i32 @puts(ptr %msg)")
+    emit_line("  call void @exit(i32 1)")
+    emit_line("  unreachable")
+    emit_line("ok:")
+    emit_line("  ret void")
+    emit_line("}")
+    emit_line("")
+    return 0
+}
+
+func emit_header(max_slot) {
+    emit_line("; Nolqu IR to LLVM IR bridge")
+    emit_line("@nq_argc = private global i64 0")
+    emit_line("@nq_argv = private global ptr null")
+    emit_global_slots(max_slot)
+    emit_line("declare i32 @printf(ptr, ...)")
+    emit_line("declare i32 @puts(ptr)")
+    emit_line("declare i32 @scanf(ptr, ...)")
+    emit_line("declare ptr @fgets(ptr, i32, ptr)")
+    emit_line("declare i32 @snprintf(ptr, i64, ptr, ...)")
+    emit_line("declare i32 @strcmp(ptr, ptr)")
+    emit_line("declare void @exit(i32)")
+    emit_line("declare ptr @calloc(i64, i64)")
+    emit_line("@stdin = external global ptr")
+    emit_line("declare void @llvm.memcpy.p0.p0.i64(ptr, ptr, i64, i1)")
+    emit_line("declare { i64, i1 } @llvm.sadd.with.overflow.i64(i64, i64)")
+    emit_line("declare { i64, i1 } @llvm.ssub.with.overflow.i64(i64, i64)")
+    emit_line("declare { i64, i1 } @llvm.smul.with.overflow.i64(i64, i64)")
+    emit_line("@.fmt = private constant [6 x i8] c\"%lld\\0A\\00\"")
+    emit_line("@.strfmt = private constant [4 x i8] c\"%s\\0A\\00\"")
+    emit_line("@.fmt_d = private constant [5 x i8] c\"%lld\\00\"")
+    emit_line("@.nl = private constant [2 x i8] c\"\\0A\\00\"")
+    emit_line("@.arr_oob = private constant [26 x i8] c\"array index out of bounds\\00\"")
+    emit_line("@.arr_full = private constant [24 x i8] c\"array capacity exceeded\\00\"")
+    emit_line("@.arr_empty = private constant [26 x i8] c\"array pop: array is empty\\00\"")
+    emit_line("@.str_oob = private constant [27 x i8] c\"string index out of bounds\\00\"")
+    emit_line("@.div_zero = private constant [17 x i8] c\"division by zero\\00\"")
+    emit_line("@.int_ovf = private constant [17 x i8] c\"integer overflow\\00\"")
+    emit_line("@.bad_str = private constant [18 x i8] c\"bad string handle\\00\"")
+    emit_line("@.its_fail = private constant [21 x i8] c\"int to string failed\\00\"")
+    emit_line("@.strcat_ovf = private constant [23 x i8] c\"string concat overflow\\00\"")
+    emit_line("")
+    emit_check_int_overflow_helper()
+    emit_arg_helpers()
+    emit_array_helpers()
+    emit_check_div_zero_helper()
+    emit_check_arr_bounds_helper()
+    return 0
+}
+
+func emit_main_entry() {
+    emit_line("define i32 @main(i32 %argc32, ptr %argv) {")
+    emit_line("entry:")
+    emit_line("  %argc64_raw = sext i32 %argc32 to i64")
+    emit_line("  %argc64 = sub i64 %argc64_raw, 1")
+    emit_line("  store i64 %argc64, ptr @nq_argc")
+    emit_line("  %argv_user = getelementptr ptr, ptr %argv, i64 1")
+    emit_line("  store ptr %argv_user, ptr @nq_argv")
+    return 0
+}
+
+func label_name(label_type, label_id) {
+    if label_type == 0 {
+        return "ie_" + str(label_id)
+    }
+    if label_type == 1 {
+        return "id_" + str(label_id)
+    }
+    if label_type == 2 {
+        return "ws_" + str(label_id)
+    }
+    if label_type == 3 {
+        return "we_" + str(label_id)
+    }
+    if label_type == 4 {
+        return "cf_" + str(label_id)
+    }
+    if label_type == 5 {
+        return "cd_" + str(label_id)
+    }
+    if label_type == 6 {
+        return "tc_" + str(label_id)
+    }
+    if label_type == 7 {
+        return "te_" + str(label_id)
+    }
+    if label_type == 8 {
+        return "wc_" + str(label_id)
+    }
+    print "nq_ir_json_to_llvm: unsupported label type " + str(label_type)
+    exit(1)
+    return "bad"
+}
+
+func emit_footer() {
+    emit_line("  ret i32 0")
+    emit_line("}")
+    return 0
+}
+
+func emit_binary_line(out_id, llvm_op str) {
+    emit_line("  %t" + str(out_id) + " = " + llvm_op + " i64 " + rbx_text() + ", " + current_text())
+    return 0
+}
+
+func emit_cmp_line(out_id, pred str) {
+    emit_line("  %t" + str(out_id) + " = icmp " + pred + " i64 " + rbx_text() + ", " + current_text())
+    return 0
+}
+
+func emit_current_zero_test(out_id) {
+    emit_line("  %t" + str(out_id) + " = icmp eq i64 " + current_text() + ", 0")
+    return 0
+}
+
+func cmp_pred(tok) {
+    if tok == 11 {
+        return "sgt"
+    }
+    if tok == 12 {
+        return "slt"
+    }
+    if tok == 13 {
+        return "eq"
+    }
+    if tok == 14 {
+        return "ne"
+    }
+    if tok == 15 {
+        return "sge"
+    }
+    if tok == 16 {
+        return "sle"
+    }
+    print "nq_ir_json_to_llvm: unsupported compare token " + str(tok)
+    exit(1)
+    return "eq"
+}
+
+func count_jmp_label_refs(label_type, label_id) {
+    var total = len(current_json_text)
+    var pos = 0
+    var item_op = ""
+    var item_a = 0
+    var item_b = 0
+    var count = 0
+    while pos < total {
+        var line_end = next_line_end(current_json_text, pos, total)
+        var line = slice(current_json_text, pos, line_end)
+        if find(line, "    \"op\":") == 0 {
+            item_op = json_str(line)
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "    \"b\":") == 0 {
+            item_b = json_int(line)
+        }
+        if find(line, "}") >= 0 {
+            if item_op == "JMP" {
+                if item_b == label_type {
+                    if item_a == label_id {
+                        count = count + 1
+                    }
+                }
+            }
+            item_op = ""
+            item_a = 0
+            item_b = 0
+        }
+        pos = line_end + 1
+    }
+    return count
+}
+
+func cmp_bool_pattern_at(start_pos) {
+    var total = len(current_json_text)
+    var pos = start_pos + 0
+    var item_op = ""
+    var item_code = 0
+    var item_a = 0
+    var item_b = 0
+    var count = 0
+    var code0 = 0
+    var code1 = 0
+    var code2 = 0
+    var code3 = 0
+    var code4 = 0
+    var code5 = 0
+    var a1 = 0
+    var a2 = 0
+    var a3 = 0
+    var a4 = 0
+    var a5 = 0
+    var b0 = 0
+    var b2 = 0
+    var b3 = 0
+    var b5 = 0
+    while pos < total {
+        var line_end = next_line_end(current_json_text, pos, total)
+        var line = slice(current_json_text, pos, line_end)
+        if find(line, "    \"op\":") == 0 {
+            item_op = json_str(line)
+            item_code = 0
+            if item_op == "CMP" {
+                item_code = 1
+            }
+            if item_op == "CONST" {
+                item_code = 2
+            }
+            if item_op == "JMP" {
+                item_code = 3
+            }
+            if item_op == "LBL" {
+                item_code = 4
+            }
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "    \"b\":") == 0 {
+            item_b = json_int(line)
+        }
+        if find(line, "}") >= 0 {
+            if count == 0 {
+                code0 = item_code
+                b0 = item_b
+            }
+            if count == 1 {
+                code1 = item_code
+                a1 = item_a
+            }
+            if count == 2 {
+                code2 = item_code
+                a2 = item_a
+                b2 = item_b
+            }
+            if count == 3 {
+                code3 = item_code
+                a3 = item_a
+                b3 = item_b
+            }
+            if count == 4 {
+                code4 = item_code
+                a4 = item_a
+            }
+            if count == 5 {
+                code5 = item_code
+                a5 = item_a
+                b5 = item_b
+            }
+            count = count + 1
+            item_op = ""
+            item_code = 0
+            item_a = 0
+            item_b = 0
+            if count >= 6 {
+                if code0 == 1 {
+                    if code1 == 2 {
+                        if a1 == 1 {
+                            if code2 == 3 {
+                                if b2 == 5 {
+                                    if code3 == 4 {
+                                        if b3 == 4 {
+                                            if a3 == b0 {
+                                                if code4 == 2 {
+                                                    if a4 == 0 {
+                                                        if code5 == 4 {
+                                                            if b5 == 5 {
+                                                                if a5 == a2 {
+                                                                    if count_jmp_label_refs(b2, a2) == 1 {
+                                                                        return 1
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return 0
+            }
+        }
+        pos = line_end + 1
+    }
+    return 0
+}
+
+func next_block_name_after(start_pos) {
+    var total = len(current_json_text)
+    var pos = start_pos + 0
+    var item_code = 0
+    var item_index = 0
+    var item_a = 0
+    var item_b = 0
+    var count = 0
+    fallthrough_is_label = 0
+    while pos < total {
+        var line_end = next_line_end(current_json_text, pos, total)
+        var line = slice(current_json_text, pos, line_end)
+        if find(line, "    \"index\":") == 0 {
+            item_index = json_int(line)
+        }
+        if find(line, "    \"op\":") == 0 {
+            var op_name = json_str(line)
+            item_code = 0
+            if op_name == "LBL" {
+                item_code = 4
+            }
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "    \"b\":") == 0 {
+            item_b = json_int(line)
+        }
+        if find(line, "}") >= 0 {
+            if count == 1 {
+                if item_code == 4 {
+                    fallthrough_is_label = 1
+                    return label_name(item_b, item_a)
+                }
+                return "bb_" + str(item_index)
+            }
+            count = count + 1
+            item_code = 0
+            item_index = 0
+            item_a = 0
+            item_b = 0
+        }
+        pos = line_end + 1
+    }
+    print "nq_ir_json_to_llvm: control flow requires a fallthrough block"
+    exit(1)
+    return "bb_0"
+}
+
+func lower_binary(llvm_op str) {
+    temp_id = temp_id + 1
+    var out_id = temp_id
+    emit_binary_line(out_id, llvm_op)
+    current_kind = 1
+    current_temp = out_id
+    return 0
+}
+
+func lower_checked_binary(intrinsic str) {
+    var left = rbx_text() + ""
+    var right = current_text() + ""
+    temp_id = temp_id + 1
+    var pair_id = temp_id
+    emit_line("  %t" + str(pair_id) + " = call { i64, i1 } @llvm." + intrinsic + ".with.overflow.i64(i64 " + left + ", i64 " + right + ")")
+    temp_id = temp_id + 1
+    var out_id = temp_id
+    emit_line("  %t" + str(out_id) + " = extractvalue { i64, i1 } %t" + str(pair_id) + ", 0")
+    temp_id = temp_id + 1
+    var overflow_id = temp_id
+    emit_line("  %t" + str(overflow_id) + " = extractvalue { i64, i1 } %t" + str(pair_id) + ", 1")
+    emit_line("  call void @__nq_check_int_overflow(i1 %t" + str(overflow_id) + ")")
+    current_kind = 1
+    current_temp = out_id
+    return 0
+}
+
+func lower_shift(llvm_op str) {
+    var shift_count = current_text() + ""
+    pop_stack_to_rbx()
+    var shift_left = rbx_text() + ""
+    temp_id = temp_id + 1
+    var count_id = temp_id
+    emit_line("  %t" + str(count_id) + " = and i64 " + shift_count + ", 63")
+    temp_id = temp_id + 1
+    var out_id = temp_id
+    emit_line("  %t" + str(out_id) + " = " + llvm_op + " i64 " + shift_left + ", %t" + str(count_id))
+    current_kind = 1
+    current_temp = out_id
+    return 0
+}
+
+func emit_print_call(fmt_id) {
+    emit_line("  call i32 (ptr, ...) @printf(ptr %t" + str(fmt_id) + ", i64 " + current_text() + ")")
+    return 0
+}
+
+func lower_item(op str, a, b, name str) {
+    if op == "CONST" {
+        current_kind = 0
+        current_const = a
+        return 0
+    }
+    if op == "PUSH" {
+        return push_current()
+    }
+    if op == "POP_RBX" {
+        return pop_stack_to_rbx()
+    }
+    if op == "POP_RAX" {
+        return pop_stack_to_current()
+    }
+    if op == "MOV_RBX" {
+        rbx_kind = current_kind
+        rbx_const = current_const
+        rbx_temp = current_temp
+        rbx_name = current_name
+        return 0
+    }
+    if op == "MOV_RCX" {
+        rcx_kind = current_kind
+        rcx_const = current_const
+        rcx_temp = current_temp
+        rcx_name = current_name
+        return 0
+    }
+    if op == "INC_RAX" {
+        temp_id = temp_id + 1
+        var inc_id = temp_id
+        var inc_value = current_text() + ""
+        emit_line("  %t" + str(inc_id) + " = add i64 " + inc_value + ", 1")
+        current_kind = 1
+        current_temp = inc_id
+        return 0
+    }
+    if op == "ADD" {
+        return lower_checked_binary("sadd")
+    }
+    if op == "SUB" {
+        return lower_checked_binary("ssub")
+    }
+    if op == "MUL" {
+        return lower_checked_binary("smul")
+    }
+    if op == "DIV" {
+        return lower_binary("sdiv")
+    }
+    if op == "MOD" {
+        return lower_binary("srem")
+    }
+    if op == "BAND" {
+        return lower_binary("and")
+    }
+    if op == "BOR" {
+        return lower_binary("or")
+    }
+    if op == "BXOR" {
+        return lower_binary("xor")
+    }
+    if op == "SHL" {
+        return lower_shift("shl")
+    }
+    if op == "SHR" {
+        return lower_shift("ashr")
+    }
+    if op == "BNOT" {
+        temp_id = temp_id + 1
+        var bnot_id = temp_id
+        var bnot_value = current_text() + ""
+        emit_line("  %t" + str(bnot_id) + " = xor i64 " + bnot_value + ", -1")
+        current_kind = 1
+        current_temp = bnot_id
+        return 0
+    }
+    if op == "LNOT" {
+        temp_id = temp_id + 1
+        var lnot_cmp_id = temp_id
+        emit_current_zero_test(lnot_cmp_id)
+        temp_id = temp_id + 1
+        var lnot_id = temp_id
+        emit_line("  %t" + str(lnot_id) + " = zext i1 %t" + str(lnot_cmp_id) + " to i64")
+        current_kind = 1
+        current_temp = lnot_id
+        return 0
+    }
+    if op == "HEAP_ST" {
+        if len(stack_kinds) <= 0 {
+            print "nq_ir_json_to_llvm: HEAP_ST missing operand state"
+            exit(1)
+        }
+        temp_id = temp_id + 1
+        emit_line("  %t" + str(temp_id) + " = add i64 " + stack_value_text(len(stack_kinds) - 1) + ", " + str(a))
+        temp_id = temp_id + 1
+        emit_line("  %t" + str(temp_id) + " = inttoptr i64 %t" + str(temp_id - 1) + " to ptr")
+        emit_line("  store i64 " + current_text() + ", ptr %t" + str(temp_id))
+        return 0
+    }
+    if op == "ARR_LEN" {
+        var arr_len_base = current_text() + ""
+        temp_id = temp_id + 1
+        var arr_len_slot = temp_id
+        emit_line("  %t" + str(arr_len_slot) + " = sub i64 " + arr_len_base + ", 8")
+        temp_id = temp_id + 1
+        var arr_len_ptr = temp_id
+        emit_line("  %t" + str(arr_len_ptr) + " = inttoptr i64 %t" + str(arr_len_slot) + " to ptr")
+        temp_id = temp_id + 1
+        current_kind = 1
+        current_temp = temp_id
+        emit_line("  %t" + str(current_temp) + " = load i64, ptr %t" + str(arr_len_ptr))
+        return 0
+    }
+    if op == "ARR_LD" {
+        var arr_index = current_text() + ""
+        pop_stack_to_rbx()
+        var arr_base = rbx_text() + ""
+        temp_id = temp_id + 1
+        var arr_base_ptr = temp_id
+        emit_line("  %t" + str(arr_base_ptr) + " = inttoptr i64 " + arr_base + " to ptr")
+        emit_line("  call void @__nq_check_arr_bounds(ptr %t" + str(arr_base_ptr) + ", i64 " + arr_index + ")")
+        temp_id = temp_id + 1
+        var arr_addr_i64 = temp_id
+        emit_line("  %t" + str(arr_addr_i64) + " = add i64 " + arr_base + ", " + arr_index)
+        temp_id = temp_id + 1
+        var arr_addr_ptr = temp_id
+        emit_line("  %t" + str(arr_addr_ptr) + " = inttoptr i64 %t" + str(arr_addr_i64) + " to ptr")
+        temp_id = temp_id + 1
+        current_kind = 1
+        current_temp = temp_id
+        emit_line("  %t" + str(current_temp) + " = load i64, ptr %t" + str(arr_addr_ptr))
+        return 0
+    }
+    if op == "ARR_ST" {
+        pop_stack_to_rbx()
+        rcx_kind = rbx_kind
+        rcx_const = rbx_const
+        rcx_temp = rbx_temp
+        rcx_name = rbx_name
+        pop_stack_to_rbx()
+        temp_id = temp_id + 1
+        emit_line("  %t" + str(temp_id) + " = inttoptr i64 " + rbx_text() + " to ptr")
+        emit_line("  call void @__nq_check_arr_bounds(ptr %t" + str(temp_id) + ", i64 " + rcx_text() + ")")
+        temp_id = temp_id + 1
+        emit_line("  %t" + str(temp_id) + " = add i64 " + rbx_text() + ", " + rcx_text())
+        temp_id = temp_id + 1
+        emit_line("  %t" + str(temp_id) + " = inttoptr i64 %t" + str(temp_id - 1) + " to ptr")
+        emit_line("  store i64 " + current_text() + ", ptr %t" + str(temp_id))
+        return 0
+    }
+    if op == "ARR_PUSH" {
+        pop_stack_to_rbx()
+        temp_id = temp_id + 1
+        emit_line("  %t" + str(temp_id) + " = inttoptr i64 " + rbx_text() + " to ptr")
+        temp_id = temp_id + 1
+        emit_line("  %t" + str(temp_id) + " = call i64 @__nq_arr_push_i64(ptr %t" + str(temp_id - 1) + ", i64 " + current_text() + ")")
+        current_kind = 1
+        current_temp = temp_id
+        return 0
+    }
+    if op == "ARR_POP" {
+        temp_id = temp_id + 1
+        emit_line("  %t" + str(temp_id) + " = inttoptr i64 " + current_text() + " to ptr")
+        temp_id = temp_id + 1
+        emit_line("  %t" + str(temp_id) + " = call i64 @__nq_arr_pop_i64(ptr %t" + str(temp_id - 1) + ")")
+        current_kind = 1
+        current_temp = temp_id
+        return 0
+    }
+    if op == "ABS" {
+        var abs_value = current_text() + ""
+        temp_id = temp_id + 1
+        var abs_neg_id = temp_id
+        emit_line("  %t" + str(abs_neg_id) + " = sub i64 0, " + abs_value)
+        temp_id = temp_id + 1
+        var abs_cmp_id = temp_id
+        emit_line("  %t" + str(abs_cmp_id) + " = icmp slt i64 " + abs_value + ", 0")
+        temp_id = temp_id + 1
+        var abs_id = temp_id
+        emit_line("  %t" + str(abs_id) + " = select i1 %t" + str(abs_cmp_id) + ", i64 %t" + str(abs_neg_id) + ", i64 " + abs_value)
+        current_kind = 1
+        current_temp = abs_id
+        return 0
+    }
+    if op == "MIN" {
+        var min_left = rbx_text() + ""
+        var min_right = current_text() + ""
+        temp_id = temp_id + 1
+        var min_cmp_id = temp_id
+        emit_line("  %t" + str(min_cmp_id) + " = icmp slt i64 " + min_left + ", " + min_right)
+        temp_id = temp_id + 1
+        var min_id = temp_id
+        emit_line("  %t" + str(min_id) + " = select i1 %t" + str(min_cmp_id) + ", i64 " + min_left + ", i64 " + min_right)
+        current_kind = 1
+        current_temp = min_id
+        return 0
+    }
+    if op == "MAX" {
+        var max_left = rbx_text() + ""
+        var max_right = current_text() + ""
+        temp_id = temp_id + 1
+        var max_cmp_id = temp_id
+        emit_line("  %t" + str(max_cmp_id) + " = icmp sgt i64 " + max_left + ", " + max_right)
+        temp_id = temp_id + 1
+        var max_id = temp_id
+        emit_line("  %t" + str(max_id) + " = select i1 %t" + str(max_cmp_id) + ", i64 " + max_left + ", i64 " + max_right)
+        current_kind = 1
+        current_temp = max_id
+        return 0
+    }
+    if op == "LOAD_G" {
+        temp_id = temp_id + 1
+        current_kind = 1
+        current_temp = temp_id
+        emit_line("  %t" + str(current_temp) + " = load i64, ptr @gslot_" + str(a))
+        return 0
+    }
+    if op == "STORE_G" {
+        emit_line("  store i64 " + current_text() + ", ptr @gslot_" + str(a))
+        return 0
+    }
+    if op == "LOAD_L" {
+        temp_id = temp_id + 1
+        current_kind = 1
+        current_temp = temp_id
+        var local_tmp_name = "%t" + str(current_temp) + ""
+        var local_slot_name = "%local_" + str(a) + ""
+        var load_line = "  " + local_tmp_name
+        load_line = load_line + " = load i64, ptr "
+        load_line = load_line + local_slot_name
+        emit_line(load_line)
+        return 0
+    }
+    if op == "STORE_L" {
+        var store_slot_name = "%local_" + str(a) + ""
+        var store_line = "  store i64 "
+        store_line = store_line + current_text()
+        store_line = store_line + ", ptr "
+        store_line = store_line + store_slot_name
+        emit_line(store_line)
+        return 0
+    }
+    if op == "STORE_P" {
+        var param_store_slot = param_slot_name(a) + ""
+        var param_store_line = "  store i64 "
+        param_store_line = param_store_line + current_text()
+        param_store_line = param_store_line + ", ptr "
+        param_store_line = param_store_line + param_store_slot
+        emit_line(param_store_line)
+        return 0
+    }
+    if op == "LOAD_P" {
+        if function_param_is_mutated(a) == 1 {
+            current_kind = 1
+            current_temp = 0
+            temp_id = temp_id + 1
+            current_temp = temp_id
+            current_name = ""
+            var param_tmp_name = "%t" + str(current_temp) + ""
+            var param_load_slot = param_slot_name(a) + ""
+            var param_load_line = "  " + param_tmp_name
+            param_load_line = param_load_line + " = load i64, ptr "
+            param_load_line = param_load_line + param_load_slot
+            emit_line(param_load_line)
+        } else {
+            current_kind = 2
+            current_const = 0
+            current_temp = param_index(a)
+            current_name = ""
+        }
+        return 0
+    }
+    if op == "RET" {
+        emit_pending_call(0)
+        emit_line("  ret i64 " + current_text())
+        block_terminated = 1
+        return 0
+    }
+    if op == "CALL" {
+        if len(name) <= 0 {
+            print "nq_ir_json_to_llvm: CALL missing name"
+            exit(1)
+        }
+        pending_call_name = name
+        return 0
+    }
+    if op == "ADD_RSP" {
+        return emit_pending_call(a / 8)
+    }
+    if op == "ARGC" {
+        temp_id = temp_id + 1
+        var raw_id = temp_id
+        emit_line("  %t" + str(raw_id) + " = sext i32 %argc32 to i64")
+        temp_id = temp_id + 1
+        current_kind = 1
+        current_temp = temp_id
+        emit_line("  %t" + str(current_temp) + " = sub i64 %t" + str(raw_id) + ", 1")
+        return 0
+    }
+    if op == "ARG" {
+        var index_kind = current_kind
+        var index_const = current_const
+        var index_temp = current_temp
+        temp_id = temp_id + 1
+        current_kind = 1
+        current_temp = temp_id
+        if index_kind == 0 {
+            emit_line("  %t" + str(current_temp) + " = call i64 @__nq_arg(i64 " + str(index_const) + ")")
+        } else {
+            emit_line("  %t" + str(current_temp) + " = call i64 @__nq_arg(i64 %t" + str(index_temp) + ")")
+        }
+        return 0
+    }
+    if op == "FE_ST" {
+        emit_line("  store i64 " + current_text() + ", ptr %forend_" + str(a))
+        return 0
+    }
+    if op == "FE_CMP" {
+        var for_cmp_value = current_text() + ""
+        temp_id = temp_id + 1
+        var for_end_id = temp_id
+        emit_line("  %t" + str(for_end_id) + " = load i64, ptr %forend_" + str(a))
+        temp_id = temp_id + 1
+        pending_for_cmp_temp = temp_id
+        pending_for_cmp_active = 1
+        emit_line("  %t" + str(pending_for_cmp_temp) + " = icmp sge i64 " + for_cmp_value + ", %t" + str(for_end_id))
+        return 0
+    }
+    if op == "CMP" {
+        if cmp_bool_pattern_at(current_item_start_pos) == 1 {
+            temp_id = temp_id + 1
+            var folded_cmp_id = temp_id
+            var folded_pred = cmp_pred(a)
+            emit_cmp_line(folded_cmp_id, folded_pred)
+            temp_id = temp_id + 1
+            current_kind = 1
+            current_temp = temp_id
+            emit_line("  %t" + str(current_temp) + " = zext i1 %t" + str(folded_cmp_id) + " to i64")
+            skip_lower_items = 5
+            return 0
+        }
+        temp_id = temp_id + 1
+        var cmp_id = temp_id
+        var pred = cmp_pred(a)
+        var false_label = label_name(4, b)
+        var true_label = "cmp_true_" + str(cmp_id)
+        emit_cmp_line(cmp_id, pred)
+        emit_line("  br i1 %t" + str(cmp_id) + ", label %" + true_label + ", label %" + false_label)
+        emit_line(true_label + ":")
+        block_terminated = 0
+        return 0
+    }
+    if op == "BOOL_CMP" {
+        temp_id = temp_id + 1
+        var bool_cmp_id = temp_id
+        var bool_pred = cmp_pred(a)
+        emit_cmp_line(bool_cmp_id, bool_pred)
+        temp_id = temp_id + 1
+        current_kind = 1
+        current_temp = temp_id
+        emit_line("  %t" + str(current_temp) + " = zext i1 %t" + str(bool_cmp_id) + " to i64")
+        return 0
+    }
+    if op == "JMP" {
+        var target_jmp = label_name(b, a)
+        emit_line("  br label %" + target_jmp)
+        block_terminated = 1
+        return 0
+    }
+    if op == "JZ" {
+        temp_id = temp_id + 1
+        var zero_id = temp_id
+        var target_jz = label_name(b, a)
+        var next_label = next_block_name_after(current_item_start_pos)
+        emit_current_zero_test(zero_id)
+        emit_line("  br i1 %t" + str(zero_id) + ", label %" + target_jz + ", label %" + next_label)
+        if fallthrough_is_label == 1 {
+            block_terminated = 1
+        } else {
+            emit_line(next_label + ":")
+            block_terminated = 0
+        }
+        return 0
+    }
+    if op == "JGE" {
+        if pending_for_cmp_active == 0 {
+            print "nq_ir_json_to_llvm: JGE without FE_CMP compare state"
+            exit(1)
+        }
+        var target_jge = label_name(b, a)
+        var next_jge = "jge_next_" + str(pending_for_cmp_temp)
+        emit_line("  br i1 %t" + str(pending_for_cmp_temp) + ", label %" + target_jge + ", label %" + next_jge)
+        emit_line(next_jge + ":")
+        pending_for_cmp_active = 0
+        block_terminated = 0
+        return 0
+    }
+    if op == "LBL" {
+        var target_lbl = label_name(b, a)
+        if block_terminated == 0 {
+            emit_line("  br label %" + target_lbl)
+        }
+        emit_line(target_lbl + ":")
+        block_terminated = 0
+        return 0
+    }
+    if op == "MOD_BGN" {
+        return 0
+    }
+    if op == "MOD_END" {
+        return 0
+    }
+    if op == "PRINT_INT" {
+        temp_id = temp_id + 1
+        var fmt_id = temp_id
+        emit_line("  %t" + str(fmt_id) + " = getelementptr [6 x i8], ptr @.fmt, i64 0, i64 0")
+        emit_print_call(fmt_id)
+        return 0
+    }
+    if op == "PRINT_NL" {
+        temp_id = temp_id + 1
+        var nl_id = temp_id
+        emit_line("  %t" + str(nl_id) + " = getelementptr [2 x i8], ptr @.nl, i64 0, i64 0")
+        emit_line("  call i32 (ptr, ...) @printf(ptr %t" + str(nl_id) + ")")
+        return 0
+    }
+    print "nq_ir_json_to_llvm: unsupported IR op " + op
+    exit(1)
+    return -1
+}
+
+func scan_functions(text str) {
+    var total = len(text)
+    var pos = 0
+    var in_function = 0
+    var item_op = ""
+    var item_a = 0
+    var item_b = 0
+    var item_name = ""
+    var item_code = 0
+    while pos < total {
+        var line_end = next_line_end(text, pos, total)
+        var line = slice(text, pos, line_end)
+        if find(line, "{") >= 0 {
+            current_item_start_pos = pos
+        }
+        if find(line, "    \"op\":") == 0 {
+            item_op = json_str(line)
+            item_code = 99
+            if item_op == "FN_BGN" {
+                item_code = 1
+            }
+            if item_op == "CALL" {
+                item_code = 2
+            }
+            if item_op == "FN_END" {
+                item_code = 3
+            }
+            if item_op == "MOD_BGN" {
+                item_code = 0
+            }
+            if item_op == "MOD_END" {
+                item_code = 0
+            }
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "    \"b\":") == 0 {
+            item_b = json_int(line)
+        }
+        if find(line, "    \"name\":") == 0 {
+            var is_fn_name = 0
+            var is_call_name = 0
+            if item_code == 1 {
+                is_fn_name = 1
+            }
+            if item_code == 2 {
+                is_call_name = 1
+            }
+            if is_fn_name == 1 {
+                reset_lower_state()
+                current_function_start_pos = pos
+                current_param_count = infer_function_params(pos, text)
+            }
+            item_name = json_str(line)
+            if is_fn_name == 1 {
+                emit_function_header(item_name + "", current_param_count)
+                emit_function_params(current_param_count)
+                emit_function_locals(infer_function_local_max(pos, text))
+                emit_for_slots(collect_for_max(text))
+                in_function = 1
+                item_op = ""
+                item_a = 0
+                item_b = 0
+                item_name = ""
+                item_code = 0
+            } else {
+                if in_function == 1 {
+                    if is_call_name == 1 {
+                        pending_call_name = item_name + ""
+                        item_op = ""
+                        item_a = 0
+                        item_b = 0
+                        item_name = ""
+                        item_code = 0
+                    }
+                }
+            }
+        }
+        if find(line, "}") >= 0 {
+            if item_code > 0 {
+            if item_code == 1 {
+                reset_lower_state()
+                current_function_start_pos = pos
+                current_param_count = infer_function_params(pos, text)
+                emit_function_header(item_name, current_param_count)
+                emit_function_params(current_param_count)
+                emit_for_slots(collect_for_max(text))
+                in_function = 1
+            } else {
+                if in_function == 1 {
+                    if item_code == 3 {
+                        emit_pending_call(0)
+                        if block_terminated == 0 {
+                            emit_line("  ret i64 0")
+                        }
+                        emit_line("}")
+                        emit_line("")
+                        in_function = 0
+                        reset_lower_state()
+                    } else {
+                        if skip_lower_items > 0 {
+                            skip_lower_items = skip_lower_items - 1
+                        } else {
+                            if len(pending_call_name) > 0 {
+                                if item_op != "ADD_RSP" {
+                                    emit_pending_call(0)
+                                }
+                            }
+                            lower_item(item_op, item_a, item_b, item_name)
+                        }
+                    }
+                }
+            }
+            }
+            item_op = ""
+            item_a = 0
+            item_b = 0
+            item_name = ""
+            item_code = 0
+        }
+        pos = line_end + 1
+    }
+    return 0
+}
+
+func scan_main(text str) {
+    var total = len(text)
+    var pos = 0
+    var skip_function = 0
+    var item_op = ""
+    var item_a = 0
+    var item_b = 0
+    var item_name = ""
+    var item_code = 0
+    while pos < total {
+        var line_end = next_line_end(text, pos, total)
+        var line = slice(text, pos, line_end)
+        if find(line, "{") >= 0 {
+            current_item_start_pos = pos
+        }
+        if find(line, "    \"op\":") == 0 {
+            item_op = json_str(line)
+            item_code = 99
+            if item_op == "FN_BGN" {
+                item_code = 1
+            }
+            if item_op == "CALL" {
+                item_code = 2
+            }
+            if item_op == "FN_END" {
+                item_code = 3
+            }
+            if item_op == "MOD_BGN" {
+                item_code = 0
+            }
+            if item_op == "MOD_END" {
+                item_code = 0
+            }
+        }
+        if find(line, "    \"a\":") == 0 {
+            item_a = json_int(line)
+        }
+        if find(line, "    \"b\":") == 0 {
+            item_b = json_int(line)
+        }
+        if find(line, "    \"name\":") == 0 {
+            var is_call_name = 0
+            if item_code == 2 {
+                is_call_name = 1
+            }
+            item_name = json_str(line)
+            if skip_function == 0 {
+                if is_call_name == 1 {
+                    pending_call_name = item_name + ""
+                    item_op = ""
+                    item_a = 0
+                    item_b = 0
+                    item_name = ""
+                    item_code = 0
+                }
+            }
+        }
+        if find(line, "}") >= 0 {
+            if item_code > 0 {
+            if item_code == 1 {
+                skip_function = 1
+            } else {
+                if item_code == 3 {
+                    skip_function = 0
+                } else {
+                    if skip_function == 0 {
+                        if skip_lower_items > 0 {
+                            skip_lower_items = skip_lower_items - 1
+                        } else {
+                            if len(pending_call_name) > 0 {
+                                if item_op != "ADD_RSP" {
+                                    emit_pending_call(0)
+                                }
+                            }
+                            lower_item(item_op, item_a, item_b, item_name)
+                        }
+                    }
+                }
+            }
+            }
+            item_op = ""
+            item_a = 0
+            item_b = 0
+            item_name = ""
+            item_code = 0
+        }
+        pos = line_end + 1
+    }
+    return 0
+}
+
+func lower_json(text str) {
+    temp_id = 0
+    current_json_text = text
+    var max_global_slot = collect_global_max(text)
+    emit_header(max_global_slot)
+    scan_functions(text)
+    reset_lower_state()
+    emit_main_entry()
+    emit_for_slots(collect_for_max(text))
+    scan_main(text)
+    emit_pending_call(0)
+    emit_footer()
+    return 0
+}
+
+if argc < 1 {
+    print "usage: nq_ir_json_to_llvm.nq input.json [output.ll]"
+    exit(1)
+} else {
+    var input_path = arg_str(0)
+    if argc > 1 {
+        output_path = arg_str(1)
+        output_to_file = 1
+        var clear = write_file(output_path, "")
+        if clear < 0 {
+            exit(1)
+        }
+    }
+    var input_text = read_file(input_path)
+    lower_json(input_text)
+    if output_to_file == 1 {
+        print "OK: " + output_path + " written"
+    }
+}

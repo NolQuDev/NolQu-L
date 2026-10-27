@@ -1,0 +1,5 @@
+fn main() {
+    byte_store(16, 78)
+    output_write(16, 1)
+    return 0
+}
