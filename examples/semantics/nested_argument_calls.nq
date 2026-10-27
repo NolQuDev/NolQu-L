@@ -1,0 +1,14 @@
+func add(a, b, c, d) {
+return a + b + c + d
+}
+
+func inc(x) {
+return x + 1
+}
+
+func at(a, i) {
+return a[i]
+}
+
+var g = [10,20,30]
+print add(inc(1), inc(2), at(g, 0), at(g, 2))

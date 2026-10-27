@@ -1,0 +1,14 @@
+fn main() {
+    input_read(32, 4)
+    byte_store(0, 32)
+    byte_store(2, 160)
+    byte_load_at(0, 1)
+    while byte_load(1) {
+        byte_store_at(2, 1)
+        byte_store(0, byte_load(0) - 255)
+        byte_store(2, byte_load(2) - 255)
+        byte_load_at(0, 1)
+    }
+    output_write(160, 4)
+    return 0
+}

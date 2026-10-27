@@ -1,0 +1,4 @@
+fn main() {
+    let count = input_read(65535, 2)
+    return count
+}

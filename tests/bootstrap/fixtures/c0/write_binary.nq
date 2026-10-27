@@ -1,0 +1,4 @@
+fn main() {
+    write("A\x00B\n")
+    return 7
+}

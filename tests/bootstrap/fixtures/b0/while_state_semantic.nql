@@ -1,0 +1,12 @@
+fn main() {
+    let counter = 0
+    let divisor = 2
+    while counter < 2 {
+        counter = counter + 1
+        divisor = divisor + 1
+    }
+    while counter < 4 {
+        counter = counter + 1
+    }
+    return 8 / counter + (divisor == 4)
+}

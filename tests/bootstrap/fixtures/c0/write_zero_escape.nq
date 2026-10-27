@@ -1,0 +1,4 @@
+fn main() {
+    write("A\0B")
+    return 0
+}

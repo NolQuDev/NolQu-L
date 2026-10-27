@@ -1,0 +1,12 @@
+{
+  "sources": {
+    "b0.nql0": "4c115dfa566f1368d2a35371163709af4d5802ab6c2bfa488f685a982493ef8c",
+    "frontend.nql": "2cd11f6fd219bfbd84555d85998c286301b8798f7523785c385add26ed947d0a",
+    "backend.nql": "56f9b2bddde5161fe6f0afb3d3b2dcb097a7ec91f44b1d6eea1f82c4e7a23782"
+  },
+  "artifacts": {
+    "b0.seed": "7b71089df23551ea55444f132834046cc619a93cf45ad78f285d64d615ce495c",
+    "c0-frontend.seed": "8b745978c63387126ba18b6a75524551b6352b296440cadc504a4468f3ce76ad",
+    "c0-backend.seed": "46a08a95224f7171b7fd9b948fecaf1e7b6e819c4a8b4b8471b980361d708405"
+  }
+}

@@ -1,0 +1,5 @@
+fn main() {
+    output_write(0, 0)
+    output_write(0, 1)
+    return 0
+}

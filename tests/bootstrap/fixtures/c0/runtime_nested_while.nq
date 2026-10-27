@@ -1,0 +1,10 @@
+fn main() {
+    byte_store(1, 1)
+    while byte_load(1) {
+        while byte_load(2) {
+            byte_store(2, byte_load(2) - 1)
+        }
+        byte_store(1, byte_load(1) - 1)
+    }
+    return byte_load(1)
+}

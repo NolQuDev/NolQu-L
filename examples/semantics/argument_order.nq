@@ -1,0 +1,13 @@
+var g = [0]
+
+func step(x) {
+g[0] = g[0] * 10 + x
+return x
+}
+
+func pack(a, b, c) {
+return a + b + c
+}
+
+print pack(step(1), step(2), step(3))
+print g[0]

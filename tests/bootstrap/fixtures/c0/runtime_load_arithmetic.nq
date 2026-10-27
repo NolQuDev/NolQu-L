@@ -1,0 +1,3 @@
+fn main() {
+    return byte_load(0) + 1
+}

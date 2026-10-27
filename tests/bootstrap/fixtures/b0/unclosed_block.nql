@@ -1,0 +1,5 @@
+fn main() {
+    let answer = 42
+    if answer {
+        return 1
+    }

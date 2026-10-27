@@ -1,0 +1,4 @@
+fn main() {
+    byte_parse_stmts(51, 0)
+    return 0
+}
