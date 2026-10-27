@@ -12,7 +12,9 @@ one flat level.
 
 ## Start Here
 
-- [Major Architecture](../NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md)
+- [Architecture](compiler/ARCHITECTURE.md)
+- [Changelog](project/CHANGELOG.md)
+- [Validation Status](project/VALIDATION.md)
 - [Canonical Bootstrap](/root/Nolqu/bootstrap/README.md)
 - [Repo Index](/root/Nolqu/docs/project/REPO_INDEX.md)
 - [Language Reference](/root/Nolqu/docs/language/LANGUAGE.md)

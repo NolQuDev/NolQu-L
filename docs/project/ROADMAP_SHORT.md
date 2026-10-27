@@ -39,7 +39,7 @@ the capability and limits; [STATE_OF_PROJECT.md](STATE_OF_PROJECT.md) separates
 measured results from open assurance limits.
 The 1079 full-main checkpoint predates the diagnostic formatter repair. Current
 post-repair component/proof/MCP/public/assurance evidence is recorded separately
-in the [session report](C032_SESSION_REPORT.md); full main was not rerun.
+in the [session report](VALIDATION.md); full main was not rerun.
 
 ## Following Engineering Objectives
 

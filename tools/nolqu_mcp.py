@@ -3809,7 +3809,7 @@ def bootstrap_diff(stage_a: str, stage_b: str) -> dict[str, Any]:
 
 _C031_SCOPE: ContextVar[dict[str, Any] | None] = ContextVar("c031_probe", default=None)
 _C031_PROBE_SECONDS = 2400.0
-_C031_TEST_SHA256 = "b946a1ffba60572117f740ef73a3f6ac92ac688ea76532f8118761788c13ad34"
+_C031_TEST_SHA256 = "fc2b4ecadefa9d955e0aa78161cde519d72e4e582854eda71b100d28b2fa8356"
 _C031_GATE_SHA256 = "9e66e6942a945e9243ee6322ceafe12cae42e9440d352f4e84d0931b6e50d056"
 _C031_LOADED_SHA256 = _sha256(pathlib.Path(__file__))
 _C031_FLAGS = ("capacity_verified", "compiler_profile_verified", "component_generation_verified",
@@ -6215,7 +6215,9 @@ def develop_c0_milestone() -> str:
         "not alter B0 unless a measured capacity limit requires it. Do not "
         "generalize beyond evidence. Rebuild predecessor and successor twice, "
         "compare bytes, rerun the probe, run bootstrap tests, then update "
-        f"{DEVELOPMENT_DOCUMENT} with only verified facts."
+        "docs/project/CHANGELOG.md and the relevant public bootstrap contracts "
+        "with only verified facts. Keep internal plans, session notes, concept "
+        f"attachments and optional {DEVELOPMENT_DOCUMENT} out of public pushes."
     )
 
 

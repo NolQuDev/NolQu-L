@@ -38,7 +38,7 @@ raw receipts. Their success remains separate from Full Compiler/self-hosting;
 see [CAPACITY.md](CAPACITY.md). All final postinstallation checks passed.
 
 The historical C0.31 seed and source implement the capacity design in
-[the binding specification](../../../docs/superpowers/specs/2026-10-13-c031-compiler-capacity-design.md).
+[the binding specification](CAPACITY.md).
 Prevalidation, installed identities and remaining final gates are recorded in
 CAPACITY.md and the C0.31 execution ledger, not implied by source presence. No Full
 Compiler or self-hosting claim is made.

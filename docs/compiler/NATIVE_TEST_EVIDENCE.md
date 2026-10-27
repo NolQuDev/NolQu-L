@@ -2,7 +2,7 @@
 
 Status: EXPERIMENTAL host-test capability. Source integration2026-10-26;
 exact-input full-gate evidence is recorded in the
-[reliability report](../project/C032_RELIABILITY_REPORT.md).
+[reliability report](../project/VALIDATION.md).
 
 This is host inspection/test tooling for `tests/bootstrap/c031_support.py`.
 It is outside the canonical compiler pipeline. It changes no source-language,

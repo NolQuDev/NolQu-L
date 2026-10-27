@@ -128,7 +128,10 @@ available for C0 development, regression investigation, codegen review,
 bootstrap audit, and release preparation.
 The section-backed resources read `NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md`
 from the repository root, match complete top-level headings, and do not fall
-back to obsolete development documents. Tests use the configured MCP interpreter:
+back to obsolete development documents. That internal attachment is optional
+and excluded from public snapshots. When absent, those resources explicitly
+return `ERROR` instead of claiming the design text is available. Public change
+notes and contracts live under `docs/` and `bootstrap/`. Tests use the configured MCP interpreter:
 
 ```sh
 .venv-mcp/bin/python -m unittest discover -s tests/mcp -v

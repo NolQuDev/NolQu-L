@@ -44,7 +44,7 @@ recorded in [NATIVE_OS.md](NATIVE_OS.md).
 ## C0.31: Wide Syntax Frontend
 
 This completed capacity foundation implements the frontend portion of the approved
-[compiler-capacity design](../../../docs/superpowers/specs/2026-10-13-c031-compiler-capacity-design.md).
+[compiler-capacity design](CAPACITY.md).
 It is built by the pinned B0 with `--compiler-profile`, which maps a bounded
 16 MiB read/write, non-executable arena and releases it on normal and error
 exits. Sources, seeds and pins were installed together after the complete

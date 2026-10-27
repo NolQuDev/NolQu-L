@@ -103,5 +103,5 @@ Android controls AB01–AB12 cover independent copies, malformed/partial bundles
 pin and path failures, host classification, exact compiler behavior, unchecked
 pyc rejection, rename-failure reporting, and a real adapter exceeding 8 MiB.
 Focused controls complement the full main/MCP/assurance gates; they do not
-replace them. See the [session report](../project/ANDROID_HOST_SESSION_REPORT.md)
+replace them. See the [session report](../project/VALIDATION.md)
 for actual run results and remaining blockers.

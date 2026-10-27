@@ -8,7 +8,8 @@ design constraints.
 - read [CORE_LANGUAGE.md](/root/Nolqu/docs/language/CORE_LANGUAGE.md)
 - read [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md)
 - read [SEMANTICS.md](/root/Nolqu/docs/language/SEMANTICS.md)
-- read [NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md](../../NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md)
+- read [ARCHITECTURE.md](../compiler/ARCHITECTURE.md) and the relevant `bootstrap/` contract
+- follow [PUBLICATION.md](../project/PUBLICATION.md) when selecting files for GitHub
 - read [bootstrap/README.md](/root/Nolqu/bootstrap/README.md)
 
 ## Contribution Priorities

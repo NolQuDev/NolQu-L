@@ -19,3 +19,11 @@ __pycache__/
 .claude/
 .cursor/
 NATIVE_HANDOFF.md
+
+# Internal design inputs and agent work records are retained only locally.
+/NOLQU_MAJOR*.md
+/*.docx
+/.agents/
+/Guildline/
+/docs/superpowers/
+/docs/project/*_REPORT.md

@@ -703,6 +703,8 @@ class NolQuMcpCoreTests(unittest.TestCase):
         self.assertIn("first measured blocker", workflow)
         self.assertIn("Do not generalize", workflow)
         self.assertIn("NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md", workflow)
+        self.assertIn("docs/project/CHANGELOG.md", workflow)
+        self.assertIn("out of public pushes", workflow)
 
     def test_authority_resources_read_exact_headings_from_revised_document(self):
         sections = (
@@ -1748,10 +1750,13 @@ class McpProtocolTests(unittest.TestCase):
         from mcp.client.stdio import stdio_client
         from pydantic import AnyUrl
 
-        async def inspect_server(directory):
+        async def inspect_server(directory, authority_root=None):
+            environment = {"NOLQU_MCP_AUDIT": "0"}
+            if authority_root is not None:
+                environment["NOLQU_ROOT"] = str(authority_root)
             server = StdioServerParameters(
                 command=sys.executable, args=[str(MCP_SOURCE)], cwd=directory,
-                env={"NOLQU_MCP_AUDIT": "0"},
+                env=environment,
             )
             async with asyncio.timeout(60):
                 async with stdio_client(server) as (read, write):
@@ -1771,6 +1776,14 @@ class McpProtocolTests(unittest.TestCase):
                         ):
                             response = await session.read_resource(AnyUrl(f"nolqu://{uri}"))
                             text = response.contents[0].text
+                            # Design attachments are optional in the public tree.
+                            # Missing authority must stay an explicit error; the
+                            # fixture tests above exercise present/obsolete input.
+                            selected_root = authority_root or REPO_ROOT
+                            if not (selected_root / "NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md").is_file():
+                                error = "ERROR: NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md is missing"
+                                self.assertEqual(text, error + "\n" + error if uri == "grammar" else error)
+                                continue
                             self.assertTrue(text.startswith(f"# {heading}\n"), text[:200])
                             self.assertNotIn("ERROR:", text)
                             if uri == "nine-pillars":
@@ -1788,6 +1801,11 @@ class McpProtocolTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="nolqu-mcp-cwd-") as directory:
             asyncio.run(inspect_server(directory))
+            missing = pathlib.Path(directory) / "without-design"
+            missing.mkdir()
+            (missing / "NOLQU_MAJOR_DEVELOPMENT.md").write_text(
+                "# 1. NINE PILLARS OF NOLQU-L\nObsolete policy.\n", encoding="utf-8")
+            asyncio.run(inspect_server(directory, missing))
 
 
 class CanonicalCliMigrationTests(unittest.TestCase):

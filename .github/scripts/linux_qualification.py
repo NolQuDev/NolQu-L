@@ -15,6 +15,8 @@ from bounded_runner import BoundedRunner
 PYTHON = ["python3", "-B", "-W", "error::ResourceWarning"]
 GATES = [
     ("ci-controls", PYTHON + ["tests/ci/test_linux_qualification.py", "-v"]),
+    ("publication-controls", PYTHON + ["tests/meta/test_publication.py", "-v"]),
+    ("publication", PYTHON + ["tools/check_publication.py"]),
     ("hardlinks", PYTHON + ["-m", "unittest", "-v",
         "test_canonical_toolchain.CanonicalForwardingTests.test_default_output_rejects_source_tool_and_component_aliases",
         "test_canonical_cli.CanonicalCliTests.test_repeated_hardlinks_keep_public_installation_discoverable",

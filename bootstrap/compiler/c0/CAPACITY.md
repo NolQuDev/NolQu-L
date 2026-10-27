@@ -60,9 +60,9 @@ wire grammar of these compiler sources and success-path semantics remain fixed.
 The original main1079 checkpoint predates the formatter repair. A fresh unchanged
 post-formatter baseline now passes1079; the host evidence revision passes1080,
 with every baseline label retained, fresh MCP/proof/assurance and unchanged compiler
-source/pins. The [reliability report](../../../docs/project/C032_RELIABILITY_REPORT.md)
+source/pins. The [reliability report](../../../docs/project/VALIDATION.md)
 distinguishes those receipts from the
-[original session report](../../../docs/project/C032_SESSION_REPORT.md). The earlier
+[original session report](../../../docs/project/VALIDATION.md). The earlier
 unexplained comparison-backend SIGKILL remains OPEN; component equality is not
 stable/security qualification or Full Compiler/self-hosting promotion.
 
@@ -76,9 +76,9 @@ source/pin set and completed evidence. This
 does not establish Full Compiler, public nqlc self-hosting or the later Verified
 bootstrap stage.
 
-The [binding design](../../../docs/superpowers/specs/2026-10-13-c031-compiler-capacity-design.md)
-and [implementation report](../../../.superpowers/sdd/2026-10-13-c031-compiler-capacity/task-6-report.md)
-define the contracts, measured failures and exact receipts. Evidence for this
+This document records the public contracts, measured failures and artifact
+identities. Detailed implementation notes and raw receipts remain internal.
+Evidence for this
 implementation is under
 `/tmp/nql-c031-execution-20261014.SWSw0P/task6.bqAEOO`.
 
@@ -340,7 +340,7 @@ warning remains visible in the logs. No public release/version change is made.
 
 ## Final Milestone Closure
 
-The independent [final whole-change review](../../../.superpowers/sdd/2026-10-13-c031-compiler-capacity/task-7-whole-change-review.md#final-whole-change-closure-2026-10-23)
+The independent final whole-change review, retained with the internal records,
 approved C0.31 capacity and Task 7 closure, with no actionable findings remaining.
 Its report SHA-256 is
 `d95f1eccbd3b9ca655c500830bba631bde71ec41df539e24018d3af49924d79b`.

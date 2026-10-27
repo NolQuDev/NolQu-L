@@ -28,7 +28,7 @@ readiness remains PARTIAL because an earlier comparison-backend SIGKILL is
 unexplained; see [assurance](../../tests/security/README.md).
 Full main is the pre-formatter checkpoint. Current post-repair component,
 MCP/public and bounded assurance evidence is distinguished in the
-[session report](../project/C032_SESSION_REPORT.md); full main was not rerun.
+[session report](../project/VALIDATION.md); full main was not rerun.
 This subset provides no general types/modules/FFI/inline assembly, ownership or
 lifetime checker, full Safety modes, Full Compiler or full self-hosting. Unsafe
 source containment is checked independently by the backend; it is not proof of

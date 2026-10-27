@@ -44,8 +44,6 @@ grep -q "## $VERSION -" "$ROOT_DIR/docs/project/CHANGELOG.md" || grep -q "## Unr
 pass "changelog-version"
 
 for path in \
-    "$ROOT_DIR/NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md" \
-    "$ROOT_DIR/NolQu-LConcept.docx" \
     "$ROOT_DIR/bootstrap/README.md" \
     "$ROOT_DIR/bootstrap/manifest.tsv" \
     "$ROOT_DIR/bootstrap/machine/x86_64-linux/hex0.seed" \

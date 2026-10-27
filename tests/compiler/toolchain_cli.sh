@@ -54,6 +54,13 @@ printf '%s\n' '-S' '-o' "$asm" > "$flags"
 [[ -s "$asm" ]] || { printf 'FAIL nqlc-response-file\n' >&2; exit 1; }
 printf 'PASS nqlc-response-file\n'
 
+if ! nasm -Werror -f elf64 "$asm" -o "$TMP_DIR/strict-assembly.o" 2>"$TMP_DIR/strict-assembly.err"; then
+    printf 'FAIL nqlc-explicit-addressing\n' >&2
+    cat "$TMP_DIR/strict-assembly.err" >&2
+    exit 1
+fi
+printf 'PASS nqlc-explicit-addressing\n'
+
 direct_bin="$TMP_DIR/direct-hello"
 "$ROOT_DIR/nqlc" "$ROOT_DIR/examples/core/hello.nq" -o "$direct_bin"
 assert_eq "nqlc-legacy-extension-run" "$(run_output "$direct_bin")" "42"
@@ -85,6 +92,14 @@ mkdir -p "$script_run_dir"
     assert_eq "nqlc-script-run" "$("$ROOT_DIR/nqlc" "$ROOT_DIR/examples/core/hello.nq")" "42"
     [[ -x hello ]] || { printf 'FAIL nqlc-script-default-output\n' >&2; exit 1; }
     assert_eq "nolqulc-script-run" "$("$ROOT_DIR/nolqulc" "$ROOT_DIR/examples/core/hello.nq")" "42"
+    mkdir "$TMP_DIR/path-shadow"
+    cat > "$TMP_DIR/path-shadow/hello" <<'SHADOW'
+#!/usr/bin/env bash
+printf 'wrong PATH executable\n'
+exit 91
+SHADOW
+    chmod +x "$TMP_DIR/path-shadow/hello"
+    assert_eq "nqlc-script-run-path-shadow" "$(PATH="$TMP_DIR/path-shadow:$PATH" "$ROOT_DIR/nqlc" "$ROOT_DIR/examples/core/hello.nq")" "42"
 )
 assert_eq "nqlc-run-direct" "$("$ROOT_DIR/nqlc" --run "$ROOT_DIR/examples/core/hello.nq")" "42"
 assert_eq "nolqulc-run-direct" "$("$ROOT_DIR/nolqulc" --run "$ROOT_DIR/examples/core/hello.nq")" "42"
@@ -336,7 +351,7 @@ mkdir -p "$install_root/opt/nolqu-test/bin"
 for removed_command in nq nqc nolqu nolquc; do
     touch "$install_root/opt/nolqu-test/bin/$removed_command"
 done
-NQL_HOME="/opt/nolqu-test" DESTDIR="$install_root" "$ROOT_DIR/install.sh" >/dev/null
+env -u PREFIX NQL_HOME="/opt/nolqu-test" DESTDIR="$install_root" "$ROOT_DIR/install.sh" >/dev/null
 [[ -f "$install_root/opt/nolqu-test/bin/nql" && ! -L "$install_root/opt/nolqu-test/bin/nql" ]]
 [[ -f "$install_root/opt/nolqu-test/bin/nqlc" && ! -L "$install_root/opt/nolqu-test/bin/nqlc" ]]
 [[ -L "$install_root/opt/nolqu-test/bin/nolqul" && "$(readlink "$install_root/opt/nolqu-test/bin/nolqul")" == "nql" ]]
@@ -358,7 +373,7 @@ mkdir -p "$installed_run_dir"
 for removed_command in nq nqc nolqu nolquc; do
     touch "$install_root/opt/nolqu-test/bin/$removed_command"
 done
-NQL_HOME="/opt/nolqu-test" DESTDIR="$install_root" "$ROOT_DIR/install.sh" --uninstall >/dev/null
+env -u PREFIX NQL_HOME="/opt/nolqu-test" DESTDIR="$install_root" "$ROOT_DIR/install.sh" --uninstall >/dev/null
 [[ ! -e "$install_root/opt/nolqu-test/bin/nql" ]]
 [[ ! -e "$install_root/opt/nolqu-test/bin/nqlc" ]]
 [[ ! -e "$install_root/opt/nolqu-test/bin/nolqul" ]]

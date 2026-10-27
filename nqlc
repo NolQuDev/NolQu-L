@@ -190,6 +190,8 @@ trap on_pipe PIPE
 run_binary() {
     local bin="$1"
     shift
+    # A bare output filename names this directory's artifact, not a PATH tool.
+    case "$bin" in */*) ;; *) bin="./$bin" ;; esac
     if [[ "$(uname -m)" == "x86_64" ]]; then
         "$bin" "$@"
     else

@@ -2,10 +2,14 @@
 
 ## Architectural Authority
 
-The canonical architecture is defined by
-[NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md](../../NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md)
-and [NolQu-LConcept.docx](../../NolQu-LConcept.docx). Passing tests define the behavior that is
-actually implemented. Directory names alone do not prove bootstrap status.
+The public implementation contracts are recorded under `bootstrap/`, with
+artifact identities and stage evidence in [manifest.tsv](../../bootstrap/manifest.tsv).
+Passing tests define the behavior that is actually implemented. Directory names
+alone do not prove bootstrap status. The maintainer removed the earlier root
+development prompts and concept attachment from the public source tree; they
+are not build dependencies. This does not replace their design decisions or
+promote unimplemented features. MCP resources that need the optional design
+document explicitly report its absence instead of inventing replacement text.
 
 ## Canonical Bootstrap Chain
 
@@ -36,16 +40,19 @@ prove deterministic instruction emission, memory and control-flow patches,
 symbol resolution, runnable ELF generation, diagnostics, and resource cleanup.
 
 Bootstrap Compiler B0 is implemented and built by Stage 0. It builds the C0.25
-bounded emitter and the separate C0.30 source frontend and AST backend. These
-components compile checked i64 functions, lexical control flow and byte/stream
-operations directly to ELF64. NQAF/1..4 is the explicit frontend/backend
+bounded emitter and the separate C0.32 source frontend and AST backend. These
+components compile checked i64 functions, lexical control flow, byte/stream
+operations and explicitly scoped native operations directly to ELF64. NQAF/1..6 is the explicit frontend/backend
 boundary; the backend validates the stream independently before code generation.
 The runtime contract and gates are in
-[RUNTIME_IO.md](../../bootstrap/compiler/c0/RUNTIME_IO.md).
+[RUNTIME_IO.md](../../bootstrap/compiler/c0/RUNTIME_IO.md),
+[CAPACITY.md](../../bootstrap/compiler/c0/CAPACITY.md) and
+[NATIVE_OS.md](../../bootstrap/compiler/c0/NATIVE_OS.md).
 
 Full Compiler, self-hosting and Verified nqlc remain `NOT_IMPLEMENTED`. The C0
-components cannot compile their own source within the current source/token/node
-bounds; larger spans or bounded compilation units need a separate contract.
+components have bounded full-source generation comparisons; this remains a
+Core component proof, with the limitations and open signal-attribution issue
+recorded in `CAPACITY.md` and `NATIVE_OS.md`.
 
 Exact statuses live in `bootstrap/manifest.tsv`.
 

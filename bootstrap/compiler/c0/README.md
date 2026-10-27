@@ -15,7 +15,7 @@ self-hosting or release readiness follows from the component designation.
 The passing full main predates a four-immediate diagnostic repair. Current
 post-repair MCP, generation/proof, impacted public and bounded assurance gates
 pass; full main after that repair was not rerun. The
-[session report](../../../docs/project/C032_SESSION_REPORT.md) records both
+[session report](../../../docs/project/VALIDATION.md) records both
 identities and the failed assurance budget calibration without erasing either.
 
 Canonical predecessor:

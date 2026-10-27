@@ -55,10 +55,10 @@ unchanged baseline passed 1079 markers, then the observed host-helper revision
 passed 1080, retaining every baseline label. MCP 124, fresh combined proof,
 594 assurance invocations and 9 release checks pass on the new bound inputs.
 The experimental [host evidence option](docs/compiler/NATIVE_TEST_EVIDENCE.md)
-retains PID/input/executable/streams through temporary cleanup. See the
-[reliability report](docs/project/C032_RELIABILITY_REPORT.md); the
-[compiler session report](docs/project/C032_SESSION_REPORT.md) preserves the
-prior checkpoints and the historical signal, whose cause remains OPEN.
+retains PID/input/executable/streams through temporary cleanup. See the public
+[validation status](docs/project/VALIDATION.md) for current qualification limits
+and the historical signal, whose cause remains OPEN. Detailed session records
+remain internal.
 The Full Compiler and self-hosting generations are not implemented. Reference
 Compiler R0 remains the default `nasm` compatibility backend. Public `nqlc`
 and `nql` also expose the experimental C0.32 subset through explicit
@@ -293,30 +293,30 @@ Expected output after compiling and running generated `output`:
 
 ## Project Files
 
-- [NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md](NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md): canonical architecture and active development contract
+- [Architecture](docs/compiler/ARCHITECTURE.md): implemented stages, boundaries and current limitations
 - `bootstrap/`: canonical machine foundation and future compiler stages
 - `src/`: Reference Compiler R0 sources
 - `nql`: canonical project manager and run executable (`nolqul -> nql`)
 - `nqlc`: canonical direct compiler executable (`nolqulc -> nqlc`)
-- [LICENSE](/root/Nolqu/LICENSE): current project license notice
+- [LICENSE](LICENSE): current project license notice
 - `.github/`: issue and pull request templates for GitHub
-- [docs/README.md](/root/Nolqu/docs/README.md): docs landing page
-- [language docs](/root/Nolqu/docs/language): language surface, semantics, and design rules
-- [compiler docs](/root/Nolqu/docs/compiler): architecture, backends, IR, and testing
-- [project docs](/root/Nolqu/docs/project): roadmap, release workflow, commands, and repo structure
-- [community docs](/root/Nolqu/docs/community): governance, support, contribution, and policy
-- [REPO_INDEX.md](/root/Nolqu/docs/project/REPO_INDEX.md): full one-page index of documentation
+- [docs/README.md](docs/README.md): docs landing page
+- [language docs](docs/language): language surface, semantics, and design rules
+- [compiler docs](docs/compiler): architecture, backends, IR, and testing
+- [project docs](docs/project): roadmap, release workflow, commands, and repo structure
+- [community docs](docs/community): governance, support, contribution, and policy
+- [REPO_INDEX.md](docs/project/REPO_INDEX.md): full one-page index of documentation
 - `tools/`: frozen legacy backend and inspection tooling
-- [tools/README.md](/root/Nolqu/tools/README.md): tooling index
+- [tools/README.md](tools/README.md): tooling index
 - `examples/core/`: minimal starter programs
 - `examples/semantics/`: language and semantic behavior examples
 - `examples/llvm/`: LLVM bootstrap and bridge-oriented examples
-- [examples/README.md](/root/Nolqu/examples/README.md): examples index
+- [examples/README.md](examples/README.md): examples index
 - `tests/`: grouped bootstrap, R0 compiler, legacy LLVM/IR, meta, and shared test utilities
-- [tests/README.md](/root/Nolqu/tests/README.md): tests index
+- [tests/README.md](tests/README.md): tests index
 - `build/`: compiler and generated build artifacts
-- [VERSION](/root/Nolqu/VERSION): current project version
-- [CHANNEL](/root/Nolqu/CHANNEL): current release track
+- [VERSION](VERSION): current project version
+- [CHANNEL](CHANNEL): current release track
 
 ## Examples
 
@@ -359,25 +359,25 @@ make test
 
 - The wrapper keeps generated artifacts in `build/` by default.
 - The docs tree is now grouped by purpose under `docs/language`, `docs/compiler`, `docs/project`, and `docs/community`.
-- Core language scope is intentionally smaller than the full set of parser experiments. See [CORE_LANGUAGE.md](/root/Nolqu/docs/language/CORE_LANGUAGE.md) and [FEATURE_STATUS.md](/root/Nolqu/docs/language/FEATURE_STATUS.md).
-- For the shortest statement of current behavior, see [SEMANTICS.md](/root/Nolqu/docs/language/SEMANTICS.md).
-- The project is currently released under the MIT license: see [LICENSE](/root/Nolqu/LICENSE).
-- Naming and branding guidance lives in [TRADEMARK.md](/root/Nolqu/docs/community/TRADEMARK.md).
-- Contact addresses for the project are listed in [CONTACT.md](/root/Nolqu/docs/community/CONTACT.md).
-- Contributor workflow guidance lives in [CONTRIBUTING.md](/root/Nolqu/docs/community/CONTRIBUTING.md), with conduct expectations in [CODE_OF_CONDUCT.md](/root/Nolqu/docs/community/CODE_OF_CONDUCT.md).
-- Support guidance lives in [SUPPORT.md](/root/Nolqu/docs/community/SUPPORT.md), and project authority is summarized in [GOVERNANCE.md](/root/Nolqu/docs/community/GOVERNANCE.md).
-- Quick project answers live in [FAQ.md](/root/Nolqu/docs/community/FAQ.md), and contribution/documentation style guidance lives in [STYLE_GUIDE.md](/root/Nolqu/docs/community/STYLE_GUIDE.md).
-- Host/toolchain expectations are summarized in [COMPATIBILITY.md](/root/Nolqu/docs/project/COMPATIBILITY.md), and current distribution layout is described in [PACKAGING.md](/root/Nolqu/docs/project/PACKAGING.md).
-- Setup notes live in [INSTALL.md](/root/Nolqu/docs/project/INSTALL.md), and backend roles are summarized in [BACKENDS.md](/root/Nolqu/docs/compiler/BACKENDS.md).
-- Repo layout is summarized in [PROJECT_STRUCTURE.md](/root/Nolqu/docs/project/PROJECT_STRUCTURE.md), and the current test model is described in [TESTING.md](/root/Nolqu/docs/compiler/TESTING.md).
-- Command reference lives in [COMMANDS.md](/root/Nolqu/docs/project/COMMANDS.md), and the current exported IR role is summarized in [IR.md](/root/Nolqu/docs/compiler/IR.md).
-- Tooling roles are summarized in [tools/README.md](/root/Nolqu/tools/README.md).
-- GitHub ownership and triage policy are summarized in [CODEOWNERS](/root/Nolqu/.github/CODEOWNERS) and [LABELS.md](/root/Nolqu/docs/project/LABELS.md).
-- Shared vocabulary lives in [TERMINOLOGY.md](/root/Nolqu/docs/language/TERMINOLOGY.md), and current design choices are summarized in [DECISIONS.md](/root/Nolqu/docs/language/DECISIONS.md).
-- Current limitations are summarized in [KNOWN_LIMITATIONS.md](/root/Nolqu/docs/language/KNOWN_LIMITATIONS.md), and error behavior is summarized in [ERRORS.md](/root/Nolqu/docs/language/ERRORS.md).
-- A short project direction summary lives in [ROADMAP_SHORT.md](/root/Nolqu/docs/project/ROADMAP_SHORT.md), and a current snapshot lives in [STATE_OF_PROJECT.md](/root/Nolqu/docs/project/STATE_OF_PROJECT.md).
-- A one-page docs map lives in [REPO_INDEX.md](/root/Nolqu/docs/project/REPO_INDEX.md), and maintainer operations are summarized in [MAINTAINER_CHECKLIST.md](/root/Nolqu/docs/project/MAINTAINER_CHECKLIST.md).
-- Release-note drafting lives in [RELEASE_NOTES_TEMPLATE.md](/root/Nolqu/docs/project/RELEASE_NOTES_TEMPLATE.md), and the short-form philosophy lives in [DESIGN_PRINCIPLES.md](/root/Nolqu/docs/language/DESIGN_PRINCIPLES.md).
+- Core language scope is intentionally smaller than the full set of parser experiments. See [CORE_LANGUAGE.md](docs/language/CORE_LANGUAGE.md) and [FEATURE_STATUS.md](docs/language/FEATURE_STATUS.md).
+- For the shortest statement of current behavior, see [SEMANTICS.md](docs/language/SEMANTICS.md).
+- The project is currently released under the MIT license: see [LICENSE](LICENSE).
+- Naming and branding guidance lives in [TRADEMARK.md](docs/community/TRADEMARK.md).
+- Contact addresses for the project are listed in [CONTACT.md](docs/community/CONTACT.md).
+- Contributor workflow guidance lives in [CONTRIBUTING.md](docs/community/CONTRIBUTING.md), with conduct expectations in [CODE_OF_CONDUCT.md](docs/community/CODE_OF_CONDUCT.md).
+- Support guidance lives in [SUPPORT.md](docs/community/SUPPORT.md), and project authority is summarized in [GOVERNANCE.md](docs/community/GOVERNANCE.md).
+- Quick project answers live in [FAQ.md](docs/community/FAQ.md), and contribution/documentation style guidance lives in [STYLE_GUIDE.md](docs/community/STYLE_GUIDE.md).
+- Host/toolchain expectations are summarized in [COMPATIBILITY.md](docs/project/COMPATIBILITY.md), and current distribution layout is described in [PACKAGING.md](docs/project/PACKAGING.md).
+- Setup notes live in [INSTALL.md](docs/project/INSTALL.md), and backend roles are summarized in [BACKENDS.md](docs/compiler/BACKENDS.md).
+- Repo layout is summarized in [PROJECT_STRUCTURE.md](docs/project/PROJECT_STRUCTURE.md), and the current test model is described in [TESTING.md](docs/compiler/TESTING.md).
+- Command reference lives in [COMMANDS.md](docs/project/COMMANDS.md), and the current exported IR role is summarized in [IR.md](docs/compiler/IR.md).
+- Tooling roles are summarized in [tools/README.md](tools/README.md).
+- GitHub ownership and triage policy are summarized in [CODEOWNERS](.github/CODEOWNERS) and [LABELS.md](docs/project/LABELS.md).
+- Shared vocabulary lives in [TERMINOLOGY.md](docs/language/TERMINOLOGY.md), and current design choices are summarized in [DECISIONS.md](docs/language/DECISIONS.md).
+- Current limitations are summarized in [KNOWN_LIMITATIONS.md](docs/language/KNOWN_LIMITATIONS.md), and error behavior is summarized in [ERRORS.md](docs/language/ERRORS.md).
+- A short project direction summary lives in [ROADMAP_SHORT.md](docs/project/ROADMAP_SHORT.md), and a current snapshot lives in [STATE_OF_PROJECT.md](docs/project/STATE_OF_PROJECT.md).
+- A one-page docs map lives in [REPO_INDEX.md](docs/project/REPO_INDEX.md), and maintainer operations are summarized in [MAINTAINER_CHECKLIST.md](docs/project/MAINTAINER_CHECKLIST.md).
+- Release-note drafting lives in [RELEASE_NOTES_TEMPLATE.md](docs/project/RELEASE_NOTES_TEMPLATE.md), and the short-form philosophy lives in [DESIGN_PRINCIPLES.md](docs/language/DESIGN_PRINCIPLES.md).
 - Function calls use a simple stack-based calling convention.
 - Function arguments are currently positional-only; there are no default, named, or variadic arguments yet.
 - Return values are passed in `rax`.

@@ -6,8 +6,12 @@
 - `bootstrap/machine/x86_64-linux/`: machine-code trust root
 - `bootstrap/stage0/x86_64-linux/`: canonical symbolic Stage 0 seed
 - `tests/bootstrap/`: reproducible evidence for canonical stages
-- `NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md`: operational architecture specification
-- `NolQu-LConcept.docx`: design authority
+- `docs/compiler/ARCHITECTURE.md`: public architecture and implemented boundaries
+- `docs/project/CHANGELOG.md`: public change summaries
+- `docs/project/VALIDATION.md`: tested scope and open qualification limits
+
+Internal design attachments, agent plans and session records stay local; see
+[PUBLICATION.md](PUBLICATION.md). They are not public build inputs.
 
 ## Reference Compiler R0
 

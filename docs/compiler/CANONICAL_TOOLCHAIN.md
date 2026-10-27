@@ -297,7 +297,7 @@ SIGKILL remains OPEN; these local passes do not qualify stable/security release.
 The first isolated attempt lacked prebuilt R0; the unchanged legacy installer
 fallback fails NASM include resolution from a foreign cwd in that situation.
 This existing limitation is not fixed by C0.32. Canonical-only relocation passed
-without host compilers. See the [session report](../project/C032_SESSION_REPORT.md)
+without host compilers. See the [session report](../project/VALIDATION.md)
 and [supplemental assurance](../../tests/security/README.md) for exact scope and gaps.
 
 The intended six fresh proof flags include existing capacity/profile/generation
@@ -315,5 +315,5 @@ then passed1080 markers, retaining every baseline label. Fresh MCP124,
 installed combined proof722/275 and594 bounded assurance invocations bind that
 revision. The [experimental host observer](NATIVE_TEST_EVIDENCE.md) retains exact
 available bytes/PID observations without changing compiler source/seed/pins.
-See the [reliability report](../project/C032_RELIABILITY_REPORT.md). The original
+See the [reliability report](../project/VALIDATION.md). The original
 SIGKILL cause stays OPEN and no stable/security promotion follows.

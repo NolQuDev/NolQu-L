@@ -6,6 +6,11 @@ Development continues on the `dev` channel.
 
 ### Changed
 
+- Keep internal master prompts, concept attachments, agent plans and session
+  reports outside public source snapshots. Public summaries use this changelog,
+  implementation contracts and `VALIDATION.md`; a required publication path
+  check also rejects already-tracked internal files. Earlier Git history is
+  unchanged by removing files from the current branch.
 - Current version metadata and CLI display use `1.0.0-alpha.1` at the maintainer's
   request. `v1.0.0-alpha.1` is the intended tag spelling if a tag is later made.
   This is a development naming reset from `1.0.2a1`, not a claim of SemVer upgrade,
@@ -79,6 +84,12 @@ Development continues on the `dev` channel.
 
 ### Fixed
 
+- GitHub qualification defines runner paths in step scope, where the runner
+  context is available; local controls cover the validation failure.
+- Reference Compiler R0 states its existing absolute-addressing default
+  explicitly, avoiding NASM 3 deprecation output during successful quiet builds.
+- Direct execution selects the generated file in the current directory when
+  its output name has no slash, preserving `PATH` isolation.
 - Host-test evidence publication works without Android Python's unavailable
   `os.link`, using directory-locked complete-file rename and existing-blob
   validation. Native descriptor/path controls and GNU/LLVM entry-address hex
@@ -107,7 +118,7 @@ Development continues on the `dev` channel.
 - an earlier full run's frozen comparison backend received unexplained SIGKILL;
   the later identical-input serial pass does not fix or explain it. Stable and
   security-qualified promotion remain blocked pending attribution and required
-  assurance. See [the session record](C032_SESSION_REPORT.md).
+  assurance. See [the session record](VALIDATION.md).
 - combined installation from an unbuilt foreign cwd still needs the normal
   legacy `make compiler` prerequisite; canonical-only relocation does not need it.
 

@@ -851,6 +851,7 @@ kw_init_data:
 
 ; ─── Generated output.asm boilerplate ───────────────────────
 asm_hdr_data  db "BITS 64", 10
+              db "DEFAULT ABS", 10
               db "section .data", 10
               db "    _nl db 10", 10
               db "    _arr_oom db 'array heap overflow',10", 10

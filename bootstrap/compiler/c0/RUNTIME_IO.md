@@ -12,7 +12,7 @@ unexplained comparison-backend SIGKILL remains OPEN; stable/security readiness
 is PARTIAL. See the current [assurance profile](../../../tests/security/README.md).
 The full-main result predates the later four-immediate C0R-008/009 formatter
 repair. Post-repair canonical/MCP/public/assurance gates pass within the
-[session report's scope](../../../docs/project/C032_SESSION_REPORT.md);
+[session report's scope](../../../docs/project/VALIDATION.md);
 post-repair full main was not rerun.
 
 Arg-count alone needs no byte arena. The other new operations use the existing
@@ -47,7 +47,7 @@ historical evidence; the native additions above supersede their capability scope
 [CAPACITY.md](CAPACITY.md) records the integration boundary.
 
 The coherent C0.31 seeds and sources implement the mapped-runtime part of the
-[binding capacity design](../../../docs/superpowers/specs/2026-10-13-c031-compiler-capacity-design.md).
+[binding capacity design](CAPACITY.md).
 Fresh prevalidation and the same final postinstallation checks passed;
 CAPACITY.md records actual receipts. Source presence alone does not establish
 component-generation or self-hosting claims. Candidate-stage notes below are

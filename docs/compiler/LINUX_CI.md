@@ -19,7 +19,8 @@ credential is supplied to tests.
 The runner first verifies the actual Linux architecture, required executables,
 and a real shared inode with mutation through its second name. Failure produces
 a BLOCKED report and nonzero status before compiler gates. Required gates run
-sequentially: CI controls, five existing hard-link methods, full make test,
+sequentially: CI/publication controls, tracked-publication path validation,
+five existing hard-link methods, full make test,
 complete MCP discovery, runner/Android controls, finite native-boundary assurance
 and release metadata checks. Each command runs once. A later successful command
 cannot mask an earlier failure. Missing tools and unsupported checks are not PASS.

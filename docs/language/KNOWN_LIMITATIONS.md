@@ -29,7 +29,7 @@ the toolchain.
   full-language Self-Hosting and the later Verified compiler remain unimplemented
 - full main1079 predates the diagnostic formatter repair; current post-repair
   canonical/MCP/public/assurance gates pass, while post-repair full main was not
-  rerun; the [session report](../project/C032_SESSION_REPORT.md) records the scope
+  rerun; the [session report](../project/VALIDATION.md) records the scope
 - native unsafe blocks check permission/headers/source containment, not general
   ownership, lifetimes, syscall-specific kernel effects or full Safety modes
 - `byte_address` exposes raw bits after checking a span; later pointer use is

@@ -2,7 +2,10 @@
 
 ## Core Entry Points
 
-- [NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md](../../NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md)
+- [Architecture](../compiler/ARCHITECTURE.md)
+- [Changelog](CHANGELOG.md)
+- [Validation status](VALIDATION.md)
+- [Publication boundary](PUBLICATION.md)
 - [Canonical bootstrap](/root/Nolqu/bootstrap/README.md)
 - [README.md](/root/Nolqu/README.md)
 - [LICENSE](/root/Nolqu/LICENSE)

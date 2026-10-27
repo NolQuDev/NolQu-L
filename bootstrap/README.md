@@ -67,7 +67,7 @@ public VERSION1.0.2a1/CHANNELdev are unchanged.
 The full-main1079 result predates the four-immediate diagnostic formatter fix.
 Current post-fix component/proof/MCP/public/assurance results and the unrun
 post-fix full main are distinguished in the
-[session report](../docs/project/C032_SESSION_REPORT.md).
+[session report](../docs/project/VALIDATION.md).
 
 The older 49-byte token-table helper is retained only
 as a bounded proof, not as an untrusted-stream framing validator.

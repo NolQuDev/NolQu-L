@@ -25,7 +25,7 @@ LLVM and Python tooling is retained only as frozen legacy/reference tooling.
 - C0.32 AST backend (checked ELF/native argv/syscalls): scoped/generation tests pass, experimental
 - C0.32 post-formatter baseline: `PASS`, 1079 markers; observed host-helper revision: `PASS`, 1080 markers, every baseline label retained
 - Current C0.32 canonical/MCP/public/assurance execution: `PASS` within the
-  [current reliability scope](C032_RELIABILITY_REPORT.md); MCP 124, fresh proof 722/275,
+  [current reliability scope](VALIDATION.md); MCP 124, fresh proof 722/275,
   17 host evidence controls, 16 actual adapter comparisons, unchanged runner 11 baseline,
   and 594 assurance invocations; host retention is experimental
 - Stable/security readiness: `PARTIAL / BELUM SIAP`; earlier comparison-backend
@@ -138,7 +138,7 @@ markers, retaining all 1079 baseline labels; MCP 124, fresh installed combined p
 594 assurance invocations and nine release checks pass on the host-helper revision.
 Exact public protocol schemas are unchanged. An earlier comparison-backend
 SIGKILL is unresolved; no stable/security promotion is justified by the later
-pass. See the [session report](C032_SESSION_REPORT.md) and
+pass. See the [session report](VALIDATION.md) and
 [assurance profile](../../tests/security/README.md). Target execution uses QEMU
 on this aarch64 host. This is an experimental engineering checkpoint, not a new release or
 claim of hardware-native/full-language verification. VERSION1.0.2a1/CHANNELdev

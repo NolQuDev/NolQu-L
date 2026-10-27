@@ -17,13 +17,13 @@ The reliability continuation subsequently passed a1079-marker post-formatter
 baseline and1080 markers with opt-in host retention, plus fresh MCP124,
 combined proof and594 assurance invocations. It adds17 host controls while
 preserving every original gate and compiler artifact. See the
-[reliability report](../../../docs/project/C032_RELIABILITY_REPORT.md).
+[reliability report](../../../docs/project/VALIDATION.md).
 
 One earlier full main run observed the frozen C0.30 comparison backend receiving
 SIGKILL. The same input set later passed serially; cause and signal sender are
 unknown. This incident remains **OPEN**, without quarantine, OOM attribution or
 retry-as-fix. Stable/security readiness is **PARTIAL / BELUM SIAP**. See the
-[session report](../../../docs/project/C032_SESSION_REPORT.md) and
+[session report](../../../docs/project/VALIDATION.md) and
 [bounded assurance profile](../../../tests/security/README.md).
 These local results do not establish Full Compiler, full-language self-hosting,
 the later Verified stage or full NolQu-L Safety.
@@ -52,8 +52,10 @@ signal-incident resolution or overall release approval is inferred from this.
 All four requested authorities were available and compared:
 `NolQu-LConcept.docx`, the repository's encoded-name
 `NolQu-L%20Concept%20-%20Refined%20v10%20Assembly-Level(1).docx`,
-[`NOLQU_MAJOR_DEVELOPMENT_ASSEMBLY_LEVEL.md`](../../../NOLQU_MAJOR_DEVELOPMENT_ASSEMBLY_LEVEL.md)
-and [`NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md`](../../../NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md).
+`NOLQU_MAJOR_DEVELOPMENT_ASSEMBLY_LEVEL.md`
+and `NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md`.
+These were internal design inputs at that checkpoint and are not shipped in
+the public source tree; the API contract is recorded in this document.
 The concepts supply the Nine Pillars, explicit unsafe responsibility and
 Assembly-Level direction; v10's maturity boundary leaves concrete syntax/API
 to implementation evidence. Current source and closed verification supersede
