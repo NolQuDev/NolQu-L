@@ -6,6 +6,9 @@ Development continues on the `dev` channel.
 
 ### Fixed
 
+- Bind offline host-smoke success to the complete check inventory and unchanged
+  initial bundle manifest; recheck native Termux context after execution when
+  required. Partial checks or a changed manifest cannot publish a passing result.
 - Use English for remaining MCP messages, comments, readiness labels and
   language/test examples. Document lookup accepts English headings and version
   wording while retaining exact historical input aliases. Compiler semantics,
@@ -47,6 +50,11 @@ Development continues on the `dev` channel.
 
 ### Added
 
+- Offer `run --differential` in the offline Termux host bundle: the existing
+  independent 48-program corpus runs on both runtime profiles, with exact
+  full-width results, byte-effect order and two sensitivity controls. Schema-2
+  bundles include the verified oracle; old bundles retain ordinary smoke.
+  Linux controls remain separate from actual native Termux qualification.
 - A finite independent differential compiler gate in `make test` and
   `make bootstrap-test`: 48 defined scalar/call/control/byte-effect programs
   under both runtime profiles, full-width signed result checks, exact effect

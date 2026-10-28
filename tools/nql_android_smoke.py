@@ -22,9 +22,19 @@ EXTRAS = {
     "bounded_runner.py": "tests/security/bounded_runner.py",
     "native_cat.nql": "examples/canonical/native_cat.nql",
     "android_smoke.py": "tools/nql_android_smoke.py",
+    "differential_oracle.py": "tests/security/differential_oracle.py",
 }
 FILE_SET = {role + ".seed" for role in SEEDS} | set(EXTRAS)
+LEGACY_FILE_SET = FILE_SET - {"differential_oracle.py"}
 FILE_LIMIT = 8 * 1024 * 1024
+SMOKE_CHECKS = (
+    "HS01-b0-help", "HS02-b0-return", "HS03-scalar-determinism",
+    "HS04-nested-calls", "HS05-binary-stream", "HS06-bounds", "HS07-overflow",
+    "HS08-located-syntax-rejection", "HS09-located-semantic-rejection",
+    "HS10-malformed-ast-rejection", "HS11-native-cat-argv-syscall",
+    "HS12-native-cat-error", "HS13-source-dependent-code",
+)
+DIFFERENTIAL_CHECKS = ("HS14-defined-program-differential", "HS15-differential-sensitivity")
 
 
 def _read_regular(path, limit):
@@ -112,7 +122,7 @@ def prepare_bundle(root, destination):
         payloads[role + ".seed"] = data
     for name, relative in EXTRAS.items():
         payloads[name] = _read_regular(root / relative, FILE_LIMIT)
-    manifest = {"schema": "NQL-ANDROID-SMOKE/1", "pins": pins,
+    manifest = {"schema": "NQL-ANDROID-SMOKE/2", "pins": pins,
                 "compiler_version": _read_regular(root / "VERSION", 128).decode().strip(),
                 "channel": _read_regular(root / "CHANNEL", 128).decode().strip(),
                 "files": {name: _identity(data) for name, data in payloads.items()},
@@ -130,10 +140,12 @@ def verify_bundle(bundle):
     if (bundle / "manifest.json").is_symlink():
         raise ValueError("bundle manifest must be an independent regular file")
     manifest = json.loads(_read_regular(bundle / "manifest.json", 65536))
-    if not isinstance(manifest, dict) or manifest.get("schema") != "NQL-ANDROID-SMOKE/1":
+    if not isinstance(manifest, dict) or manifest.get("schema") not in (
+            "NQL-ANDROID-SMOKE/1", "NQL-ANDROID-SMOKE/2"):
         raise ValueError("unsupported bundle schema")
     files = manifest.get("files")
-    if not isinstance(files, dict) or set(files) != FILE_SET:
+    expected_files = LEGACY_FILE_SET if manifest["schema"] == "NQL-ANDROID-SMOKE/1" else FILE_SET
+    if not isinstance(files, dict) or set(files) != expected_files:
         raise ValueError("invalid bundle file set")
     if not isinstance(manifest.get("pins"), dict) or set(manifest["pins"]) != set(SEEDS):
         raise ValueError("invalid bundle pins")
@@ -185,7 +197,97 @@ def _save_report(output, report):
         Path(staging).unlink(missing_ok=True)
 
 
-def _run_smoke(bundle, output, report, manifest):
+def _load_verified_module(bundle, name, manifest):
+    path = bundle / name
+    source = _read_regular(path, FILE_LIMIT)
+    if _identity(source) != manifest["files"][name]:
+        raise ValueError(f"bundle identity mismatch: {name}")
+    # SourceFileLoader can use unchecked cached bytecode, including with -B.
+    # Register during execution for dataclasses; execute only verified source.
+    module = types.ModuleType("nql_android_" + path.stem)
+    module.__file__ = str(path)
+    previous = sys.modules.get(module.__name__)
+    sys.modules[module.__name__] = module
+    try:
+        exec(compile(source, str(path), "exec", dont_inherit=True), module.__dict__)
+    finally:
+        if previous is None:
+            sys.modules.pop(module.__name__, None)
+        else:
+            sys.modules[module.__name__] = previous
+    return module
+
+
+def _run_differential(bundle, output, report, manifest, image, invoke):
+    oracle = _load_verified_module(bundle, "differential_oracle.py", manifest)
+    cases = oracle.corpus()
+    if len(cases) != 48 or len({case.identifier for case in cases}) != 48:
+        raise RuntimeError("incomplete differential corpus")
+    evidence = output / "differential"
+    evidence.mkdir(mode=0o700)
+    corpus = []
+    for case in cases:
+        _write_new(evidence / (case.identifier + ".nql"), case.source)
+        corpus.append(dict(id=case.identifier, model=case.model,
+                           source_sha256=hashlib.sha256(case.source).hexdigest(),
+                           expected_exit=case.expected_exit,
+                           expected_stdout_hex=case.expected_stdout.hex()))
+    corpus_bytes = _json_bytes(corpus)
+    _write_new(evidence / "corpus.json", corpus_bytes)
+    proof = dict(passed=False, defined_cases=len(cases),
+                 corpus_sha256=hashlib.sha256(corpus_bytes).hexdigest(),
+                 matched_profiles={"default": 0, "compiler": 0}, sensitivity_rejections=[])
+    report["differential"] = proof
+    _save_report(output, report)
+
+    def execute(label, source, profile=False):
+        payload = b"NQSC\x01\x01" + b"\0" * 10 + source if profile else source
+        program, wire, _ = image(label, payload)
+        wide = wire[4] in (5, 6)
+        size = 32 if wide else 16
+        source_length = int.from_bytes(wire[8:12 if wide else 10], "little")
+        actual_profile = wire[25] if wide else 0
+        if wire[size:size + source_length] != source or actual_profile != int(profile):
+            raise RuntimeError("differential source/profile framing mismatch: " + label)
+        return invoke(label + "-execute", program)
+
+    for profile in (False, True):
+        name = "compiler" if profile else "default"
+        for case in cases:
+            result = execute("diff-" + name + "-" + case.identifier, case.source, profile)
+            if (result.returncode, result.stdout, result.stderr) != (
+                    case.expected_exit, case.expected_stdout, b""):
+                raise RuntimeError("differential result mismatch: " + name + "/" + case.identifier)
+            proof["matched_profiles"][name] += 1
+        _save_report(output, report)
+
+    case = cases[0]
+    variants = (
+        ("wrong-exit", case.source.replace(b"return value\n", b"return value+1\n")),
+        ("wrong-stream", case.source.replace(b"output_write(0,byte_load(0)+1)",
+                                            b"output_write(1,byte_load(0))")),
+    )
+    for label, source in variants:
+        if source == case.source:
+            raise RuntimeError("differential sensitivity source was not changed")
+        result = execute("diff-" + label, source)
+        if result.stderr or result.returncode not in range(256):
+            raise RuntimeError("differential sensitivity guest failure: " + label)
+        if label == "wrong-exit":
+            detected = result.returncode != case.expected_exit and result.stdout == case.expected_stdout
+        else:
+            # The source removes the leading count from the final trace, not
+            # its last byte; compare the exact independently known stream.
+            trace_length = case.model["trace_bytes"]
+            expected = case.expected_stdout[:-trace_length - 1] + case.expected_stdout[-trace_length:]
+            detected = result.returncode == case.expected_exit and result.stdout == expected
+        if not detected:
+            raise RuntimeError("differential sensitivity did not isolate " + label)
+        proof["sensitivity_rejections"].append(label)
+    proof["passed"] = True
+
+
+def _run_smoke(bundle, output, report, manifest, differential=False):
     adapter = []
     if platform.machine() != "x86_64":
         qemu = shutil.which("qemu-x86_64")
@@ -194,25 +296,17 @@ def _run_smoke(bundle, output, report, manifest):
         adapter = [str(Path(qemu).resolve())]
     report["adapter"] = {"argv_prefix": adapter, "identity":
                          _file_identity(adapter[0]) if adapter else None}
-    runner_path = bundle / "bounded_runner.py"
-    source = _read_regular(runner_path, FILE_LIMIT)
-    if _identity(source) != manifest["files"]["bounded_runner.py"]:
-        raise ValueError("bundle identity mismatch: bounded_runner.py")
-    # SourceFileLoader may read unchecked cached bytecode even with Python -B.
-    # Execute exactly the source bytes just checked against the verified pin.
-    module = types.ModuleType("nql_android_bounded_runner")
-    module.__file__ = str(runner_path)
-    sys.modules[module.__name__] = module
-    try:
-        exec(compile(source, str(runner_path), "exec", dont_inherit=True), module.__dict__)
-    finally:
-        sys.modules.pop(module.__name__, None)
-    runner = module.BoundedRunner(output / "calls", timeout=15.0, budget=300.0,
+    module = _load_verified_module(bundle, "bounded_runner.py", manifest)
+    runner = module.BoundedRunner(output / "calls", timeout=15.0,
+                                  budget=600.0 if differential else 300.0,
                                   output_limit=FILE_LIMIT, max_input=3 * 1024 * 1024)
     report["limits"] = runner.limits
 
     def invoke(label, program, data=b"", args=()):
-        return runner.run(label, [*adapter, str(program), *map(os.fspath, args)], data)
+        try:
+            return runner.run(label, [*adapter, str(program), *map(os.fspath, args)], data)
+        finally:
+            report["invocations"] = len(runner.records)
 
     def expect(result, code=0, stdout=b"", diagnostic=None):
         if result.returncode != code or (stdout is not None and result.stdout != stdout):
@@ -303,19 +397,25 @@ def _run_smoke(bundle, output, report, manifest):
         raise RuntimeError("different source values produced the same executable")
     expect(invoke("changed-run", changed), code=43)
     checked("HS13-source-dependent-code")
+    if differential:
+        _run_differential(bundle, output, report, manifest, image, invoke)
+        checked(DIFFERENTIAL_CHECKS[0])
+        checked(DIFFERENTIAL_CHECKS[1])
     if adapter and _file_identity(adapter[0]) != report["adapter"]["identity"]:
         raise RuntimeError("adapter identity changed during execution")
     report["invocations"] = len(runner.records)
 
 
-def run_bundle(bundle, output, require_native_termux=False):
+def run_bundle(bundle, output, require_native_termux=False, differential=False):
     bundle, output = Path(bundle).resolve(), Path(output)
     manifest = verify_bundle(bundle)
     output.mkdir(mode=0o700, exist_ok=False)
     report = {"schema": "NQL-ANDROID-HOST-RESULT/1", "ok": False,
               "status": "BLOCKED", "host": host_context(), "checks": [],
+              "native_termux_verified": False,
+              "profile": "smoke+differential" if differential else "smoke",
               "bundle_manifest": _identity(_read_regular(bundle / "manifest.json", 65536)),
-              "scope": "finite host smoke, not full regression or self-host verification"}
+              "scope": "finite host smoke and optional differential; not full regression or self-host verification"}
     if require_native_termux and not report["host"]["native_termux"]:
         report["error"] = "native Termux required; current context is traced or unconfirmed"
         _save_report(output, report)
@@ -323,11 +423,30 @@ def run_bundle(bundle, output, require_native_termux=False):
     report["status"] = "RUNNING"
     _save_report(output, report)
     try:
-        _run_smoke(bundle, output, report, manifest)
-        verify_bundle(bundle)
+        if differential and manifest["schema"] != "NQL-ANDROID-SMOKE/2":
+            raise ValueError("differential profile requires a newly prepared schema-2 bundle")
+        _run_smoke(bundle, output, report, manifest, differential)
+        required = SMOKE_CHECKS + (DIFFERENTIAL_CHECKS if differential else ())
+        if report["checks"] != [{"id": name, "passed": True} for name in required]:
+            raise RuntimeError("incomplete host check inventory")
+        if differential:
+            proof = report.get("differential", {})
+            if (proof.get("passed") is not True or proof.get("defined_cases") != 48
+                    or proof.get("matched_profiles") != {"default": 48, "compiler": 48}
+                    or proof.get("sensitivity_rejections") != ["wrong-exit", "wrong-stream"]):
+                raise RuntimeError("incomplete differential execution")
+        if (verify_bundle(bundle) != manifest
+                or _identity(_read_regular(bundle / "manifest.json", 65536)) != report["bundle_manifest"]):
+            raise RuntimeError("bundle manifest changed during execution")
+        report["host_after"] = host_context()
+        report["native_termux_verified"] = bool(report["host"]["native_termux"]
+                                                and report["host_after"]["native_termux"])
+        if require_native_termux and not report["host_after"]["native_termux"]:
+            raise RuntimeError("native Termux required after execution; context changed or unconfirmed")
         report.update(ok=True, status="PASS")
     except BaseException as exc:
-        report.update(ok=False, status="FAILED", error=f"{type(exc).__name__}: {exc}")
+        report.update(ok=False, status="FAILED", native_termux_verified=False,
+                      error=f"{type(exc).__name__}: {exc}")
         if not isinstance(exc, Exception):
             _save_report(output, report)
             raise
@@ -345,6 +464,8 @@ def main(argv=None):
     run.add_argument("--bundle", type=Path, default=Path(__file__).resolve().parent)
     run.add_argument("--output", required=True, type=Path)
     run.add_argument("--require-native-termux", action="store_true")
+    run.add_argument("--differential", action="store_true",
+                     help="also compare 48 defined programs on both runtime profiles")
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare":
@@ -352,8 +473,9 @@ def main(argv=None):
             print(json.dumps({"status": "PREPARED", "bundle": str(args.bundle),
                               "files": len(manifest["files"])}))
             return 0
-        report = run_bundle(args.bundle, args.output, args.require_native_termux)
+        report = run_bundle(args.bundle, args.output, args.require_native_termux, args.differential)
         print(json.dumps({"status": report["status"], "host": report["host"],
+                          "native_termux_verified": report["native_termux_verified"],
                           "result": str(args.output / "result.json")}))
         return 0 if report["ok"] else 2
     except (OSError, ValueError, RuntimeError) as exc:

@@ -1,5 +1,45 @@
 # Canonical native boundary assurance
 
+## Offline Termux differential profile
+
+Prepare a new private bundle, then run its copied host tool from native Termux:
+
+```sh
+python3 -B tools/nql_android_smoke.py prepare --root . --bundle "$HOME/nql-bundle-new"
+python3 -B "$HOME/nql-bundle-new/android_smoke.py" run \
+  --bundle "$HOME/nql-bundle-new" --output "$HOME/nql-result-new" \
+  --require-native-termux --differential
+```
+
+Both destination directories must be new. Preparation copies the three pinned
+B0/frontend/backend seeds, the existing smoke utility, bounded supervisor,
+native-cat source and independent `differential_oracle.py`. Schema-2 bundles
+include the oracle; schema-1 bundles still support ordinary smoke, but an
+extended run requires a newly prepared bundle. No network, repository checkout
+or additional package is needed at execution beyond Python and `qemu-x86_64`
+on non-x86_64 hosts. This is host test tooling, not a bootstrap compiler stage.
+
+`--differential` retains the thirteen smoke checks and adds the same 48 defined
+programs on both runtime profiles, plus two deliberately changed valid sources
+that isolate wrong exit status and wrong stdout. It records the exact corpus
+and expectation manifest, sources, all supervised input/output, generated ELF
+and `result.json`. A successful extended run requires fifteen complete checks,
+96 exact matches and both sensitivity detections. Timeouts, signals, diagnostics,
+partial runs and changed bundle inputs cannot satisfy that verdict. The shared
+supervisor retains its 15-second per-invocation bound, 8 MiB per stream and
+3 MiB input bound; the opt-in profile uses a 600-second total budget instead of
+ordinary smoke's 300 seconds. No RSS limit or throughput improvement is claimed.
+
+Verified Python source is executed directly; unchecked cached bytecode cannot
+replace either the runner or oracle. Final verification compares all bundle
+bytes and the manifest with their initial identities. Hashes establish identity
+relative to the prepared bundle, not signed provenance or trust in an arbitrary
+third-party bundle. Native Termux requires an untraced Termux Python on Android
+at both host snapshots. `native_termux_verified` remains false for Linux/QEMU,
+PRoot, missing context, or a failed run. Two snapshots do not continuously detect
+every possible tracer attachment between them. Linux host-control results do
+not establish that this profile has passed on native Termux.
+
 ## Defined-program differential gate
 
 `make test` and `make bootstrap-test` also run
