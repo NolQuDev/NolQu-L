@@ -22,7 +22,7 @@ preserving every original gate and compiler artifact. See the
 One earlier full main run observed the frozen C0.30 comparison backend receiving
 SIGKILL. The same input set later passed serially; cause and signal sender are
 unknown. This incident remains **OPEN**, without quarantine, OOM attribution or
-retry-as-fix. Stable/security readiness is **PARTIAL / BELUM SIAP**. See the
+retry-as-fix. Stable/security readiness is **PARTIAL / NOT READY**. See the
 [session report](../../../docs/project/VALIDATION.md) and
 [bounded assurance profile](../../../tests/security/README.md).
 These local results do not establish Full Compiler, full-language self-hosting,

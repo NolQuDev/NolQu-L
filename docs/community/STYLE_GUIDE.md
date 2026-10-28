@@ -26,6 +26,10 @@
 
 ## Documentation Style
 
+- use English for project documentation, comments, generated tool messages and
+  example text
+- preserve identifiers, artifact identities and exact historical input fixtures;
+  explain retained compatibility text in English
 - keep language docs honest about what is core, experimental, or incomplete
 - separate syntax reference from semantic explanation when needed
 - avoid promising stability where the implementation is still moving

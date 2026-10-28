@@ -39,8 +39,8 @@ assert_backend_parity "ir-parity-max-params" "$TMP_DIR/parity_max_params.nq"
 
 write_case "$TMP_DIR/parity_println.nq" <<'EOF'
 println
-println "halo"
-println 1, "dua"
+println "hello"
+println 1, "two"
 EOF
 assert_backend_parity "ir-parity-println" "$TMP_DIR/parity_println.nq"
 
@@ -237,7 +237,7 @@ return x + 1
 }
 
 var g = [7,8,9]
-print 1, bump(2), g[1], "halo"
+print 1, bump(2), g[1], "hello"
 EOF
 assert_backend_parity "ir-parity-print-multi" "$TMP_DIR/parity_print_multi.nq"
 
@@ -540,7 +540,7 @@ EOF
 assert_backend_parity "ir-parity-for-recursive-array-break-continue" "$TMP_DIR/parity_for_recursive_array_break_continue.nq"
 
 write_case "$TMP_DIR/parity_str.nq" <<'EOF'
-print "halo"
+print "hello"
 EOF
 assert_backend_parity "ir-parity-str" "$TMP_DIR/parity_str.nq"
 

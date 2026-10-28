@@ -56,10 +56,10 @@ arithmetic only. String concatenation stays explicit with `x = x + "text"`.
 ```txt
 print 123
 print x
-print "halo"
-print 1, x, "halo"
+print "hello"
+print 1, x, "hello"
 println
-println "halo"
+println "hello"
 ```
 
 `print` may contain multiple comma-separated items. Each item is emitted in source order using the existing integer or string print path.

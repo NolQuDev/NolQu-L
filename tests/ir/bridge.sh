@@ -425,7 +425,7 @@ return x + 1
 }
 
 var g = [7,8,9]
-print 1, bump(2), g[1], "halo"
+print 1, bump(2), g[1], "hello"
 EOF
 
 "$ROOT_DIR/nql" --export-ir "$TMP_DIR/ir_bridge_print_multi.ir" "$TMP_DIR/ir_bridge_print_multi.nq" >/dev/null
@@ -435,7 +435,7 @@ clang -Wno-override-module "$TMP_DIR/ir_bridge_print_multi.ll" -o "$TMP_DIR/ir_b
 
 assert_file_contains "ir-bridge-print-multi-bump-call" "$TMP_DIR/ir_bridge_print_multi.ll" 'call i64 @bump'
 assert_file_contains "ir-bridge-print-multi-str" "$TMP_DIR/ir_bridge_print_multi.json" '"op": "PRINT_STR"'
-assert_eq "ir-bridge-print-multi-run" "$("$TMP_DIR/ir_bridge_print_multi")" $'1\n3\n8\nhalo'
+assert_eq "ir-bridge-print-multi-run" "$("$TMP_DIR/ir_bridge_print_multi")" $'1\n3\n8\nhello'
 cleanup_bridge_case "ir_bridge_print_multi"
 
 write_case "$TMP_DIR/ir_bridge_call_stmt.nq" <<'EOF'
@@ -516,7 +516,7 @@ assert_eq "ir-bridge-loop-run" "$("$TMP_DIR/ir_bridge_loop")" "10"
 cleanup_bridge_case "ir_bridge_loop"
 
 write_case "$TMP_DIR/ir_bridge_str.nq" <<'EOF'
-print "halo"
+print "hello"
 EOF
 
 "$ROOT_DIR/nql" --export-ir "$TMP_DIR/ir_bridge_str.ir" "$TMP_DIR/ir_bridge_str.nq" >/dev/null
@@ -525,10 +525,10 @@ assert_nq_ir_dump_parser_parity "ir-bridge-nq-parser-text" "$TMP_DIR/ir_bridge_s
 python3 "$ROOT_DIR/tools/nq_ir_json_to_llvm.py" "$TMP_DIR/ir_bridge_str.json" "$TMP_DIR/ir_bridge_str.ll" >/dev/null
 clang -Wno-override-module "$TMP_DIR/ir_bridge_str.ll" -o "$TMP_DIR/ir_bridge_str"
 
-assert_file_contains "ir-bridge-str-ir-text" "$TMP_DIR/ir_bridge_str.ir" 'TEXT=halo'
-assert_file_contains "ir-bridge-str-json-text" "$TMP_DIR/ir_bridge_str.json" '"text": "halo"'
+assert_file_contains "ir-bridge-str-ir-text" "$TMP_DIR/ir_bridge_str.ir" 'TEXT=hello'
+assert_file_contains "ir-bridge-str-json-text" "$TMP_DIR/ir_bridge_str.json" '"text": "hello"'
 assert_file_contains "ir-bridge-str-llvm-global" "$TMP_DIR/ir_bridge_str.ll" '@strlit_0 = private constant'
-assert_eq "ir-bridge-str-run" "$("$TMP_DIR/ir_bridge_str")" "halo"
+assert_eq "ir-bridge-str-run" "$("$TMP_DIR/ir_bridge_str")" "hello"
 cleanup_bridge_case "ir_bridge_str"
 
 write_case "$TMP_DIR/ir_bridge_str_var.nq" <<'EOF'

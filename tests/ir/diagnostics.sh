@@ -169,7 +169,7 @@ EOF
 assert_frontend_export_ir_fail_parity "ir-diag-int-expr-stmt" "$TMP_DIR/ir_diag_int_expr_stmt.nq" "only call expressions may be used as statements"
 
 write_case "$TMP_DIR/ir_diag_string_expr_stmt.nq" <<'EOF'
-"halo"
+"hello"
 print 7
 EOF
 assert_frontend_export_ir_fail_parity "ir-diag-string-expr-stmt" "$TMP_DIR/ir_diag_string_expr_stmt.nq" "only call expressions may be used as statements"

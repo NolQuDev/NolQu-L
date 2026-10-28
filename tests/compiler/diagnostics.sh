@@ -330,7 +330,7 @@ EOF
 assert_compile_fail "int-expr-stmt" "$TMP_DIR/int-expr-stmt.nq" "only call expressions may be used as statements"
 
 write_case "$TMP_DIR/string-expr-stmt.nq" <<'EOF'
-"halo"
+"hello"
 print 7
 EOF
 assert_compile_fail "string-expr-stmt" "$TMP_DIR/string-expr-stmt.nq" "only call expressions may be used as statements"

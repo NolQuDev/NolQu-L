@@ -707,6 +707,8 @@ class NolQuMcpCoreTests(unittest.TestCase):
         self.assertIn("out of public pushes", workflow)
 
     def test_authority_resources_read_exact_headings_from_revised_document(self):
+        # Original headings below are exact legacy input fixtures. Generated
+        # messages use English; reading a source section preserves its bytes.
         sections = (
             ("1. NINE PILLARS OF NOLQU-L", "Revised compatibility policy."),
             ("7. LEXER", "Lexer contract."),
@@ -738,6 +740,27 @@ class NolQuMcpCoreTests(unittest.TestCase):
             with self.subTest(resource=resource.__name__):
                 self.assertEqual(resource(), expected)
 
+    def test_abi_resource_prefers_english_heading_and_keeps_legacy_input(self):
+        authority = self.root / "NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md"
+        english = "# 33. FFI AND ABI\n\nEnglish ABI contract.\n"
+        legacy = "# 33. FFI DAN ABI\n\nLegacy ABI contract.\n"
+        authority.write_text(legacy + english, encoding="utf-8")
+        self.assertEqual(self.mcp.abi_resource(), english)
+        authority.write_text(legacy, encoding="utf-8")
+        self.assertEqual(self.mcp.abi_resource(), legacy)
+
+    def test_c0_version_reads_english_authority_without_overriding_source(self):
+        authority = self.root / "NOLQU_MAJOR_DEVELOPMENT_UPD_REVISED.md"
+        authority.write_text(
+            "Core Compiler through subphase C0.18\n"
+            "Core Compiler emitter through subphase C0.25\n", encoding="utf-8"
+        )
+        self.assertEqual(self.mcp._current_c0_version(), "C0.25")
+        c0_dir = self.root / "bootstrap/compiler/c0"
+        c0_dir.mkdir(parents=True)
+        (c0_dir / "compiler.nql").write_text("# C0.19 emitter\n", encoding="utf-8")
+        self.assertEqual(self.mcp._current_c0_version(), "C0.19")
+
     def test_authority_resources_do_not_fall_back_to_obsolete_document(self):
         (self.root / "NOLQU_MAJOR_DEVELOPMENT.md").write_text(
             "# 1. NINE PILLARS OF NOLQU-L\nObsolete policy.\n", encoding="utf-8"
@@ -756,6 +779,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
         )
 
     def test_c0_version_fallback_uses_revised_authority_but_source_wins(self):
+        # Preserve the original wording to test historical input compatibility.
         (self.root / "NOLQU_MAJOR_DEVELOPMENT.md").write_text(
             "Core Compiler sampai subfase C0.99\n", encoding="utf-8"
         )

@@ -112,4 +112,4 @@ SIGKILL while the candidate compilation succeeded. A serial run on identical
 inputs later passed. The signal sender/cause was not retained, so the incident
 is **OPEN**, not fixed or quarantined; no OOM attribution is established. Local
 passing results do not remove this stable-release blocker. Overall readiness
-remains **PARTIAL / BELUM SIAP** for stable or security-qualified promotion.
+remains **PARTIAL / NOT READY** for stable or security-qualified promotion.

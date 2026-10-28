@@ -359,20 +359,20 @@ return x + 1
 }
 
 var g = [7,8,9]
-print 1, bump(2), g[1], "halo"
+print 1, bump(2), g[1], "hello"
 EOF
 "$ROOT_DIR/nql" "$TMP_DIR/print_multi.nq" >/dev/null
 build_generated
-assert_eq "print-multi" "$(run_output "$TMP_DIR/output")" $'1\n3\n8\nhalo'
+assert_eq "print-multi" "$(run_output "$TMP_DIR/output")" $'1\n3\n8\nhello'
 
 write_case "$TMP_DIR/println_basic.nq" <<'EOF'
 println
-println "halo"
-println 1, "dua"
+println "hello"
+println 1, "two"
 EOF
 "$ROOT_DIR/nql" "$TMP_DIR/println_basic.nq" >/dev/null
 build_generated
-assert_eq "println-basic" "$(run_output "$TMP_DIR/output")" $'\nhalo\n\n1\ndua'
+assert_eq "println-basic" "$(run_output "$TMP_DIR/output")" $'\nhello\n\n1\ntwo'
 
 write_case "$TMP_DIR/call_stmt.nq" <<'EOF'
 func bump(x) {

@@ -131,7 +131,15 @@ from the repository root, match complete top-level headings, and do not fall
 back to obsolete development documents. That internal attachment is optional
 and excluded from public snapshots. When absent, those resources explicitly
 return `ERROR` instead of claiming the design text is available. Public change
-notes and contracts live under `docs/` and `bootstrap/`. Tests use the configured MCP interpreter:
+notes and contracts live under `docs/` and `bootstrap/`.
+
+Generated messages use English. Section lookup prefers `33. FFI AND ABI` and
+also accepts the original heading as an input alias. C0 version lookup accepts
+English and historical wording. Selected source text is returned without
+translation, subject to the existing output limit. Legacy input fixtures
+preserve exact original text.
+
+Tests use the configured MCP interpreter:
 
 ```sh
 .venv-mcp/bin/python -m unittest discover -s tests/mcp -v

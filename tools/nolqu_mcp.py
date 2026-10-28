@@ -101,7 +101,7 @@ _CAPABILITY_OVERRIDES = {
 }
 
 # ---------------------------------------------------------------------------
-# Blocklist untuk exec_shell
+# Blocklist for exec_shell
 # ---------------------------------------------------------------------------
 _SHELL_BLOCKLIST = [
     "rm -rf /", "rm -rf ~", "dd if=",
@@ -939,7 +939,7 @@ def write_file(
     """
     content_bytes = len(content.encode("utf-8"))
     if content_bytes > MAX_WRITE_BYTES:
-        return "ERROR: content terlalu besar (max 50MB)"
+        return "ERROR: content too large (max 50MB)"
     try:
         p = _safe_path(file_path)
     except ValueError as e:
@@ -986,9 +986,9 @@ def patch_file(
         return f"ERROR: cannot read file — {e}"
     count = content.count(old_str)
     if count == 0:
-        return f"ERROR: string tidak ditemukan di '{p.relative_to(ROOT)}'"
+        return f"ERROR: string not found in '{p.relative_to(ROOT)}'"
     if count > 1:
-        return f"ERROR: string ditemukan {count} kali — harus unik"
+        return f"ERROR: string found {count} times — expected a unique match"
     new_content = content.replace(old_str, new_str, 1)
     try:
         _atomic_write_text(
@@ -1053,10 +1053,10 @@ def get_version() -> str:
     """Read and return the NolQu-L version from the VERSION file."""
     version_file = ROOT / "VERSION"
     if not version_file.exists():
-        return "ERROR: file VERSION tidak ditemukan di root project"
+        return "ERROR: VERSION file not found in the project root"
     content = version_file.read_text(encoding="utf-8").strip()
     if not content:
-        return "ERROR: file VERSION kosong"
+        return "ERROR: VERSION file is empty"
     return f"NolQu-L version: {content}"
 
 
@@ -1124,7 +1124,7 @@ def read_file(file_path: str, max_lines: int = 200, start_line: int = 1) -> str:
     if not p.exists():
         return f"ERROR: file not found — '{file_path}'"
     if p.stat().st_size > MAX_READ_FILE_BYTES:
-        return "ERROR: file terlalu besar (max 200MB)"
+        return "ERROR: file too large (max 200MB)"
     lines = p.read_text(errors="replace").splitlines()
     total = len(lines)
     start = max(0, start_line - 1)
@@ -1169,7 +1169,7 @@ def tail_file(file_path: str, lines: int = 20) -> str:
     if not p.exists():
         return f"ERROR: file not found — '{file_path}'"
     if p.stat().st_size > MAX_READ_FILE_BYTES:
-        return "ERROR: file terlalu besar (max 200MB)"
+        return "ERROR: file too large (max 200MB)"
     all_lines = p.read_text(errors="replace").splitlines()
     total     = len(all_lines)
     start     = max(0, total - lines)
@@ -1231,7 +1231,7 @@ def delete_file(file_path: str, confirm: bool = False) -> str:
     if not p.exists():
         return f"ERROR: file not found — '{file_path}'"
     if p.is_dir():
-        return f"ERROR: '{file_path}' adalah direktori. Gunakan exec_shell."
+        return f"ERROR: '{file_path}' is a directory. Use exec_shell."
     try:
         p.unlink()
         return f"OK: deleted → {file_path}"
@@ -1287,7 +1287,7 @@ def copy_file(src_path: str, dst_path: str) -> str:
     if not src.exists():
         return f"ERROR: source not found — '{src_path}'"
     if src.is_dir():
-        return f"ERROR: '{src_path}' adalah direktori. Hanya file yang didukung."
+        return f"ERROR: '{src_path}' is a directory. Only files are supported."
     try:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(str(src), str(dst))
@@ -1311,7 +1311,7 @@ def mkdir(dir_path: str) -> str:
     except ValueError as e:
         return f"ERROR: {e}"
     if p.exists():
-        return f"EXISTS: '{dir_path}' sudah ada"
+        return f"EXISTS: '{dir_path}' already exists"
     try:
         p.mkdir(parents=True, exist_ok=True)
         return f"OK: created → {dir_path}"
@@ -1335,16 +1335,16 @@ def list_files(directory: str = "", pattern: str = "") -> str:
     except ValueError as e:
         return f"ERROR: {e}"
     if not target.exists():
-        return f"ERROR: direktori tidak ditemukan — '{directory}'"
+        return f"ERROR: directory not found — '{directory}'"
     if not target.is_dir():
-        return f"ERROR: '{directory}' bukan direktori"
+        return f"ERROR: '{directory}' is not a directory"
     try:
         entries = sorted(target.glob(pattern) if pattern else target.iterdir())
     except OSError as e:
         return f"ERROR: {e}"
     if not entries:
         suffix = f" (pattern: {pattern})" if pattern else ""
-        return f"(kosong){suffix} — {directory or '.'}"
+        return f"(empty){suffix} — {directory or '.'}"
     lines = []
     for e in entries:
         rel  = e.relative_to(ROOT)
@@ -1370,7 +1370,7 @@ def find_files(name_pattern: str, directory: str = "") -> str:
     except ValueError as e:
         return f"ERROR: {e}"
     if not target.exists():
-        return f"ERROR: direktori tidak ditemukan — '{directory}'"
+        return f"ERROR: directory not found — '{directory}'"
     cmd = ["find", str(target), "-name", name_pattern, "-type", "f"]
     return _run(cmd, timeout=15)
 
@@ -1638,14 +1638,14 @@ def compare_output(program_a: str, program_b: str, args: str = "") -> str:
     except subprocess.TimeoutExpired:
         return "ERROR: timed out"
     if ra.stdout == rb.stdout:
-        return f"OK: output identik ({len(ra.stdout)} chars)"
+        return f"OK: identical output ({len(ra.stdout)} chars)"
     import difflib
     diff = list(difflib.unified_diff(
         ra.stdout.splitlines(keepends=True),
         rb.stdout.splitlines(keepends=True),
         fromfile=program_a, tofile=program_b,
     ))
-    return f"DIFF (output berbeda):\n{''.join(diff)}"
+    return f"DIFF (outputs differ):\n{''.join(diff)}"
 
 
 # ---------------------------------------------------------------------------
@@ -1843,7 +1843,7 @@ def run_pipeline_step(source_file: str, step: str, output_file: str = "") -> str
     step = step.lower().strip()
     steps = {"parse": "--check", "ir": "--emit-ir", "asm": "-S", "compile": "-c", "full": ""}
     if step not in steps:
-        return f"ERROR: step tidak dikenal — '{step}'. Pilih: parse, ir, asm, compile, full"
+        return f"ERROR: unknown step — '{step}'. Choose: parse, ir, asm, compile, full"
     return _format_result(_compile_result(source_file, steps[step], output_file,
                                           compiler=COMPILER, timeout=30))
 
@@ -2174,7 +2174,7 @@ def git_log(max_entries: int = 10) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Git extended (prioritas sedang)
+# Git extended (medium priority)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -2205,7 +2205,7 @@ def git_commit(message: str) -> str:
         message: Commit message.
     """
     if not message.strip():
-        return "ERROR: commit message tidak boleh kosong"
+        return "ERROR: commit message must not be empty"
     return _run(["git", "commit", "-m", message], timeout=15)
 
 
@@ -2253,12 +2253,12 @@ def git_stash(
     elif action == "list":
         cmd = ["git", "stash", "list"]
     else:
-        return f"ERROR: action tidak dikenal — '{action}'. Pilih: push, pop, list"
+        return f"ERROR: unknown action — '{action}'. Choose: push, pop, list"
     return _run(cmd, timeout=10)
 
 
 # ---------------------------------------------------------------------------
-# Directory operations (prioritas sedang)
+# Directory operations (medium priority)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -2276,7 +2276,7 @@ def tree(directory: str = "", max_depth: int = 3) -> str:
     except ValueError as e:
         return f"ERROR: {e}"
     if not target.exists():
-        return f"ERROR: direktori tidak ditemukan — '{directory}'"
+        return f"ERROR: directory not found — '{directory}'"
     max_depth = min(max_depth, 5)
     result = _run(["tree", "-L", str(max_depth), str(target)], timeout=10)
     if "command not found" in result:
@@ -2323,7 +2323,7 @@ def copy_dir(src_path: str, dst_path: str) -> str:
     if not src.exists():
         return f"ERROR: source not found — '{src_path}'"
     if not src.is_dir():
-        return f"ERROR: '{src_path}' bukan direktori. Gunakan copy_file."
+        return f"ERROR: '{src_path}' is not a directory. Use copy_file."
     if dst.exists():
         return f"ERROR: destination already exists — '{dst_path}'"
     try:
@@ -2359,7 +2359,7 @@ def touch_file(file_path: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Environment & system info (prioritas sedang)
+# Environment & system info (medium priority)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -2394,7 +2394,7 @@ def which_tool(name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Test & regression (prioritas sedang)
+# Test & regression (medium priority)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -2434,9 +2434,9 @@ def check_ir_valid(ir_file: str) -> str:
     try:
         content = p.read_text(encoding="utf-8")
     except UnicodeDecodeError:
-        return f"ERROR: '{ir_file}' bukan file UTF-8 yang valid"
+        return f"ERROR: '{ir_file}' is not a valid UTF-8 file"
     if not content.strip():
-        return f"ERROR: '{ir_file}' kosong"
+        return f"ERROR: '{ir_file}' is empty"
     lines  = content.splitlines()
     issues = []
     blank_streak = 0
@@ -2444,7 +2444,7 @@ def check_ir_valid(ir_file: str) -> str:
         if not line.strip():
             blank_streak += 1
             if blank_streak > 3:
-                issues.append(f"  line {i}: banyak baris kosong berturut-turut")
+                issues.append(f"  line {i}: too many consecutive blank lines")
                 break
         else:
             blank_streak = 0
@@ -2461,7 +2461,7 @@ def check_ir_valid(ir_file: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Git lanjutan (prioritas rendah)
+# Advanced Git (low priority)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -2480,18 +2480,18 @@ def git_branch(action: str = "list", name: str = "", confirm: bool = False) -> s
         return _run(["git", "branch", "-a"], timeout=10)
     elif action == "create":
         if not name:
-            return "ERROR: name diperlukan untuk create"
+            return "ERROR: name is required for create"
         return _run(["git", "checkout", "-b", name], timeout=10)
     elif action == "switch":
         if not name:
-            return "ERROR: name diperlukan untuk switch"
+            return "ERROR: name is required for switch"
         return _run(["git", "checkout", name], timeout=10)
     elif action == "delete":
         if not name:
-            return "ERROR: name diperlukan untuk delete"
+            return "ERROR: name is required for delete"
         return _run(["git", "branch", "-d", name], timeout=10)
     else:
-        return f"ERROR: action tidak dikenal — '{action}'. Pilih: list, create, switch, delete"
+        return f"ERROR: unknown action — '{action}'. Choose: list, create, switch, delete"
 
 
 @mcp.tool()
@@ -2553,7 +2553,7 @@ def git_push(
 
 
 # ---------------------------------------------------------------------------
-# File utilities (prioritas rendah)
+# File utilities (low priority)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -2572,7 +2572,7 @@ def symlink(target: str, link_path: str) -> str:
     except ValueError as e:
         return f"ERROR: {e}"
     if link.exists() or link.is_symlink():
-        return f"ERROR: '{link_path}' sudah ada"
+        return f"ERROR: '{link_path}' already exists"
     try:
         link.parent.mkdir(parents=True, exist_ok=True)
         link.symlink_to(tgt)
@@ -2653,7 +2653,7 @@ def lines_of_code(directory: str = "", file_glob: str = "*.nql") -> str:
 
 
 # ---------------------------------------------------------------------------
-# Binary tools lanjutan (prioritas rendah)
+# Advanced binary tools (low priority)
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -2797,7 +2797,7 @@ def generate_ccdb() -> str:
         return f"ERROR: compiler not found at '{COMPILER}'. Run build_compiler() first."
     src_dir = ROOT / "src"
     if not src_dir.exists():
-        return "ERROR: direktori src/ tidak ditemukan"
+        return "ERROR: src/ directory not found"
     source_files = sorted(src_dir.glob("**/*.nql"))
     legacy_mode = False
     if not source_files:
@@ -2876,7 +2876,7 @@ def benchmark(test_file: str = "", iterations: int = 5) -> str:
 
 
 # ---------------------------------------------------------------------------
-# File ops lanjutan
+# Advanced file operations
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -2931,7 +2931,7 @@ def replace_lines(
     lines = p.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
     total = len(lines)
     if start_line < 1 or end_line < start_line or start_line > total:
-        return f"ERROR: range {start_line}-{end_line} tidak valid (total: {total} baris)"
+        return f"ERROR: invalid range {start_line}-{end_line} (total: {total} lines)"
     end_line = min(end_line, total)
     replacement = new_content if new_content.endswith("\n") else new_content + "\n"
     new_lines = lines[:start_line - 1] + [replacement] + lines[end_line:]
@@ -2972,7 +2972,7 @@ def insert_lines(
     lines = p.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
     total = len(lines)
     if after_line < 0 or after_line > total:
-        return f"ERROR: after_line {after_line} tidak valid (total: {total} baris)"
+        return f"ERROR: invalid after_line {after_line} (total: {total} lines)"
     insert = content if content.endswith("\n") else content + "\n"
     new_lines = lines[:after_line] + [insert] + lines[after_line:]
     try:
@@ -3037,11 +3037,11 @@ def check_dependencies() -> str:
     Checks: nasm, ld, make, git, python3, objdump, nm, readelf, xxd, size.
     """
     required = {
-        "nasm":    "assembler — butuh untuk compile .asm",
-        "ld":      "linker — butuh untuk link object files",
-        "make":    "build tool — butuh untuk build project",
+        "nasm":    "assembler — required to compile .asm",
+        "ld":      "linker — required to link object files",
+        "make":    "build tool — required to build the project",
         "git":     "version control",
-        "python3": "butuh untuk Python tools (sebelum self-hosting selesai)",
+        "python3": "required for Python tools (until self-hosting is complete)",
         "objdump": "disassembler",
         "nm":      "symbol listing",
         "readelf": "ELF inspector",
@@ -3053,8 +3053,8 @@ def check_dependencies() -> str:
         "valgrind": "memory checker",
         "perf":     "profiler",
         "tree":     "directory tree display",
-        "llvm-as":  "LLVM assembler (untuk LLVM IR path)",
-        "clang":    "LLVM compiler (untuk LLVM IR path)",
+        "llvm-as":  "LLVM assembler (for the LLVM IR path)",
+        "clang":    "LLVM compiler (for the LLVM IR path)",
     }
     lines = ["=== Dependency Check ===\n", "Required:"]
     all_ok = True
@@ -3084,7 +3084,7 @@ def make_targets() -> str:
     """
     makefile = ROOT / "Makefile"
     if not makefile.exists():
-        return "ERROR: Makefile tidak ditemukan di root project"
+        return "ERROR: Makefile not found in the project root"
     return _run(["make", "-qp"], timeout=10)
 
 
@@ -3183,7 +3183,7 @@ def project_status() -> dict[str, Any]:
         },
     }
 # ---------------------------------------------------------------------------
-# ASM analisis
+# Assembly analysis
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -3245,7 +3245,7 @@ def check_label_duplicates(asm_file: str = "") -> str:
     else:
         files = list((ROOT / "src").glob("**/*.asm"))
         if not files:
-            return "ERROR: tidak ada file .asm di src/"
+            return "ERROR: no .asm files in src/"
 
     all_labels: dict[str, list[str]] = {}
     for p in files:
@@ -3287,11 +3287,11 @@ def asm_stats(directory: str = "src") -> str:
     except ValueError as e:
         return f"ERROR: {e}"
     if not target.exists():
-        return f"ERROR: direktori tidak ditemukan — '{directory}'"
+        return f"ERROR: directory not found — '{directory}'"
 
     files = list(target.glob("**/*.asm"))
     if not files:
-        return f"ERROR: tidak ada file .asm di '{directory}'"
+        return f"ERROR: no .asm files in '{directory}'"
 
     total_lines    = 0
     code_lines     = 0
@@ -3465,7 +3465,8 @@ def _current_c0_version() -> str:
     if not document.is_file():
         return "unknown"
     versions = [int(value) for value in re.findall(
-        r"Core Compiler (?:emitter )?sampai subfase C0\.(\d+)",
+        # The Indonesian phrase is an exact legacy input token.
+        r"Core Compiler (?:emitter )?(?:through subphase|sampai subfase) C0\.(\d+)",
         document.read_text(encoding="utf-8", errors="replace"),
     )]
     return f"C0.{max(versions)}" if versions else "unknown"
@@ -5743,7 +5744,7 @@ def mcp_self_test() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Self-hosting / migrasi
+# Self-hosting / migration
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -6050,7 +6051,7 @@ def verify_migration(
             "duration_ms": round((time.monotonic() - started) * 1000),
         }
 # ---------------------------------------------------------------------------
-# Git lanjutan
+# Advanced Git
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
@@ -6075,7 +6076,7 @@ def git_tag(
         return _run(["git", "tag", "--sort=-version:refname"], timeout=10)
     elif action == "create":
         if not name:
-            return "ERROR: name diperlukan untuk create"
+            return "ERROR: name is required for create"
         cmd = ["git", "tag"]
         if message:
             cmd += ["-a", name, "-m", message]
@@ -6084,10 +6085,10 @@ def git_tag(
         return _run(cmd, timeout=10)
     elif action == "delete":
         if not name:
-            return "ERROR: name diperlukan untuk delete"
+            return "ERROR: name is required for delete"
         return _run(["git", "tag", "-d", name], timeout=10)
     else:
-        return f"ERROR: action tidak dikenal — '{action}'. Pilih: list, create, delete"
+        return f"ERROR: unknown action — '{action}'. Choose: list, create, delete"
 
 
 @mcp.tool()
@@ -6108,12 +6109,16 @@ def git_show(ref: str = "HEAD") -> str:
 # Canonical MCP resources and workflow prompts
 # ---------------------------------------------------------------------------
 
-def _development_section(title: str) -> str:
+def _development_section(title: str, *legacy_titles: str) -> str:
     document = ROOT / DEVELOPMENT_DOCUMENT
     if not document.is_file():
         return f"ERROR: {document.name} is missing"
     text = document.read_text(encoding="utf-8", errors="replace")
-    heading = re.search(r"^# " + re.escape(title) + r"[ \t]*$", text, re.MULTILINE)
+    heading = None
+    for candidate in (title, *legacy_titles):
+        heading = re.search(r"^# " + re.escape(candidate) + r"[ \t]*$", text, re.MULTILINE)
+        if heading is not None:
+            break
     if heading is None:
         return f"ERROR: section not found: {title}"
     next_heading = text.find("\n# ", heading.end())
@@ -6184,7 +6189,8 @@ def ir_resource() -> str:
 @mcp.resource("nolqu://abi", mime_type="text/markdown")
 def abi_resource() -> str:
     """Canonical FFI and ABI design section."""
-    return _development_section("33. FFI DAN ABI")
+    # Keep the exact historical heading as an input alias, not display prose.
+    return _development_section("33. FFI AND ABI", "33. FFI DAN ABI")
 
 
 @mcp.resource("nolqu://diagnostics", mime_type="text/markdown")

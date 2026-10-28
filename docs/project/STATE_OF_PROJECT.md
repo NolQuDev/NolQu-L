@@ -28,7 +28,7 @@ LLVM and Python tooling is retained only as frozen legacy/reference tooling.
   [current reliability scope](VALIDATION.md); MCP 124, fresh proof 722/275,
   17 host evidence controls, 16 actual adapter comparisons, unchanged runner 11 baseline,
   and 594 assurance invocations; host retention is experimental
-- Stable/security readiness: `PARTIAL / BELUM SIAP`; earlier comparison-backend
+- Stable/security readiness: `PARTIAL / NOT READY`; earlier comparison-backend
   SIGKILL remains `OPEN`, not explained by later passing runs
 - Full canonical compiler: `NOT_IMPLEMENTED`
 - Self-Hosting `nqlc`: `NOT_IMPLEMENTED`

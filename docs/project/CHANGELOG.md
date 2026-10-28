@@ -6,6 +6,10 @@ Development continues on the `dev` channel.
 
 ### Fixed
 
+- Use English for remaining MCP messages, comments, readiness labels and
+  language/test examples. Document lookup accepts English headings and version
+  wording while retaining exact historical input aliases. Compiler semantics,
+  canonical source/artifact identities and release maturity are unchanged.
 - Publish a complete English translation of the Nine Pillars from Concept v10
   Assembly-Level, preserving all original sections, requirements, exceptions
   and examples. README, documentation and contributor navigation expose the
