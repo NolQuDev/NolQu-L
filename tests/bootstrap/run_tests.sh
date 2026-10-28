@@ -22,3 +22,5 @@ ROOT_DIR="$ROOT_DIR" "$ROOT_DIR/tests/shared/run_suite.sh" \
     "$ROOT_DIR/tests/bootstrap/c0_backend.sh"
 ROOT_DIR="$ROOT_DIR" "$ROOT_DIR/tests/shared/run_suite.sh" \
     "$ROOT_DIR/tests/bootstrap/c0_capacity.sh"
+python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/security/test_compiler_differential.py" -v
+printf 'PASS c0-differential\n'

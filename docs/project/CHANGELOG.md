@@ -47,6 +47,13 @@ Development continues on the `dev` channel.
 
 ### Added
 
+- A finite independent differential compiler gate in `make test` and
+  `make bootstrap-test`: 48 defined scalar/call/control/byte-effect programs
+  under both runtime profiles, full-width signed result checks, exact effect
+  order, two real wrong-result sensitivity controls and bounded retained
+  evidence. Compiler syntax, ABI, source/seeds/pins and release version remain
+  unchanged; this does not qualify the Full Compiler or full NolQu-L Safety.
+
 - Experimental offline Android host smoke bundles with independent pinned seed
   copies, actual native-Termux context checks and retained bounded invocations.
   The optional profile does not promote a compiler stage or add a target backend.

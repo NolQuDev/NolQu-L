@@ -1,5 +1,51 @@
 # Canonical native boundary assurance
 
+## Defined-program differential gate
+
+`make test` and `make bootstrap-test` also run
+`test_compiler_differential.py`, a separate finite wrong-code detector:
+
+```sh
+python3 -B -W error::ResourceWarning tests/security/test_compiler_differential.py -v
+```
+
+The host-only `differential_oracle.py` builds 48 bounded valid source programs:
+40 seeded arithmetic/comparison combinations and eight exact i64 edge values.
+They combine six mutable parameters, outer/inner local shadowing, forward and
+nested calls, nested terminating loops, and left-to-right byte-memory effects.
+Both runtime profiles must match an independent Python arithmetic model, exact
+stdout bytes, empty stderr and exit status. A sign plus eight quotient bytes
+observes the full signed result, including MIN/MAX, rather than only Linux's
+low exit byte. The Python expectation uses magnitude byte encoding instead of
+interpreting the compiler's AST or emitted instructions. Signed division follows
+truncation toward zero, with explicit oracle overflow/division controls.
+
+The complete gate requires 96 matching profile/program pairs and two real
+negative controls. Those controls compile deliberately changed **valid source**
+to prove independent detection of altered exit status and altered stdout. They
+are expected sensitivity mismatches, not reported compiler defects. Compile
+errors, signals, timeouts and supervisor failures cannot count as those controls.
+No arbitrary mutated source, wire or ELF is executed.
+
+`NQL_DIFFERENTIAL_OUTPUT` may name a new evidence directory; otherwise a unique
+directory is created below `TMPDIR`. It retains all source/model/expected bytes,
+294 supervised invocations for a successful complete run, generated executables,
+streams, compiler/pin/helper identities and `summary.json`. Only a completed
+successful full unittest process with unchanged inputs and full corpus counts
+publishes `passed: true`. Discovery/selected-method runs retain invocation files
+but do not independently publish that full-gate summary.
+
+The existing supervisor supplies a 600-second total budget, five seconds per
+invocation, 8 MiB per stream and 3 MiB input bound. These are host test budgets,
+not language limits or compiler performance claims. Python is an independent
+host oracle and QEMU is an execution adapter off x86_64; neither enters canonical
+semantic compilation. This is finite generated-program differential testing,
+not coverage-guided fuzzing, a memory sanitizer, an RSS cap, optimizer comparison
+or proof of absence of miscompilation. Existing native-boundary assurance and
+historical signal/retention limits below remain separate.
+
+## Native-boundary mutation profile
+
 This host-only profile supplements the existing canonical compiler tests. It
 does not supply language semantics or enter the bootstrap chain. Its scope is
 the experimental C0.32 source/NQAF6/native boundary, not a repository-wide audit
