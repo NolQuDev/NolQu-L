@@ -23,7 +23,7 @@ import time
 # supervisor exits and captured streams are hashed. This is lifecycle control,
 # not an OS sandbox. The target stays in the supervisor's disposable session.
 _SUPERVISOR = r'''
-import ctypes,json,os,pathlib,signal,subprocess,sys
+import ctypes,json,os,pathlib,resource,signal,subprocess,sys
 libc=ctypes.CDLL(None,use_errno=True)
 if libc.prctl(36,1,0,0,0) != 0:
     raise OSError(ctypes.get_errno(), 'cannot enable child subreaper')
@@ -83,6 +83,18 @@ finally:
             record['reaped_descendants']+=1
         except ChildProcessError:
             break
+    # This private supervisor owns one invocation. Account only after cleanup;
+    # Linux maxrss is the largest waited child's KiB high-water mark, not a
+    # simultaneous tree peak, virtual memory size or signal-cause attribution.
+    usage={'available':False,'source':'getrusage(RUSAGE_CHILDREN)'}
+    try:
+        counters=resource.getrusage(resource.RUSAGE_CHILDREN)
+        usage.update(available=True,user_cpu_seconds=counters.ru_utime,
+                     system_cpu_seconds=counters.ru_stime,maxrss_kib=counters.ru_maxrss)
+    except (AttributeError,OSError) as error:
+        usage['error']={'type':type(error).__name__,'errno':getattr(error,'errno',None),
+                        'message':str(error)}
+    record['waited_child_usage']=usage
     record['complete']=True
     save()
 '''

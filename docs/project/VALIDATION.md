@@ -36,6 +36,28 @@ is created by these checks. Historical C032-SIGNAL-01 remains OPEN and still
 blocks stronger stable/security claims. The published Alpha 1 tag/assets stay
 unchanged; a later release needs new versioned artifacts and its own gates.
 
+## Supervisor resource accounting continuation — 2026-10-29
+
+The next internal addition starts from exact revision
+`397d18e7726b9a75712eba36e6da07c424b24dde`, whose full eleven-gate
+[Main](https://github.com/NolQuDev/NolQu-L/actions/runs/40882914399) and
+[Dev](https://github.com/NolQuDev/NolQu-L/actions/runs/40882931172) receipts
+were audited before further edits. Its 1,084 main markers, 129 MCP methods
+and fifteen runner controls are the unchanged-source baseline for this work.
+
+The private supervisor now collects optional waited-child CPU/RSS observations
+after cleanup. Four added methods first produced six missing-field assertion
+failures, then passed; all nineteen runner methods pass locally with
+ResourceWarning treated as error. They cover real allocation, ordinary/signal
+exit, waited grandchildren, isolation, interrupted cleanup and explicit accounting
+failure. This is experimental host evidence, not a compiler semantic, memory
+limit, native qualification or retrospective diagnosis. Exact-source full CI
+is still required before integrating any addition; successful Linux observations
+cannot stand in for the unrun native profile. The
+[resource contract](../../tests/security/README.md#waited-child-resource-accounting)
+defines units, scope and unavailable states. Canonical source/seed identities,
+Alpha 1 release assets, VERSION and CHANNEL are preserved.
+
 ## Compiler and bootstrap
 
 Machine Foundation, Stage 0, B0 and the bounded Core components have real

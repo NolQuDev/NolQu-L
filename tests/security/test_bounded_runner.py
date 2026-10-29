@@ -1,5 +1,6 @@
 """Check that the host-only assurance runner detects failures, not retries them."""
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -287,6 +288,104 @@ print('orphan reaped before target exit')
                     self.assertFalse(runner.records[0]["supervisor_ok"])
                     self.assertIn("type", runner.records[0]["control_error"])
                 self.assertEqual((runner.directory / "0001.control.json").stat().st_size, size)
+
+    def assert_waited_child_usage(self, record):
+        self.assertIn("waited_child_usage", record["control"],
+                      "final control lost the waited-child resource observation")
+        usage = record["control"]["waited_child_usage"]
+        self.assertIs(usage["available"], True)
+        self.assertEqual(usage["source"], "getrusage(RUSAGE_CHILDREN)")
+        for name in ("user_cpu_seconds", "system_cpu_seconds"):
+            self.assertIs(type(usage[name]), float)
+            self.assertTrue(math.isfinite(usage[name]))
+            self.assertGreaterEqual(usage[name], 0)
+        self.assertIs(type(usage["maxrss_kib"]), int)
+        self.assertGreaterEqual(usage["maxrss_kib"], 0)
+        return usage
+
+    def test_waited_child_usage_records_resources_and_terminal_status(self):
+        allocation = ("import os,signal,sys;buf=bytearray(16*1024*1024);"
+                      "buf[::4096]=b'N'*len(buf[::4096]);"
+                      "os.write(1,b'\\x00NQL');os.write(2,b'usage fixture\\n');")
+        runner = self.runner()
+        for status in (7, -signal.SIGTERM):
+            with self.subTest(status=status):
+                tail = "sys.exit(7)" if status == 7 else "os.kill(os.getpid(),signal.SIGTERM)"
+                if status == 7:
+                    result = runner.run("usage-exit", [sys.executable, "-c", allocation + tail], b"")
+                    self.assertEqual((result.returncode, result.stdout, result.stderr),
+                                     (7, b"\0NQL", b"usage fixture\n"))
+                else:
+                    with self.assertRaisesRegex(AssuranceFailure, "signal"):
+                        runner.run("usage-signal", [sys.executable, "-c", allocation + tail], b"")
+                record = runner.records[-1]
+                self.assertEqual(record["exit_code"], status)
+                usage = self.assert_waited_child_usage(record)
+                self.assertGreaterEqual(usage["maxrss_kib"], 16 * 1024)
+                self.assertEqual((runner.directory / record["stdout"]["path"]).read_bytes(), b"\0NQL")
+                self.assertEqual(json.loads((runner.directory / "invocations.json").read_text())
+                                 ["records"], runner.records)
+
+    def test_waited_child_usage_is_private_to_each_invocation(self):
+        # A waited grandchild must count, but never a preceding invocation.
+        allocation = ("buf=bytearray(48*1024*1024);"
+                      "buf[::4096]=b'N'*len(buf[::4096])")
+        parent = "import subprocess,sys;subprocess.run([sys.executable,'-c',sys.argv[1]],check=True)"
+        runner = self.runner()
+        self.assertEqual(runner.run("usage-tree", [sys.executable, "-c", parent, allocation], b"").returncode, 0)
+        self.assertEqual(runner.run("usage-light", [sys.executable, "-c", "pass"], b"").returncode, 0)
+        heavy, light = (self.assert_waited_child_usage(record) for record in runner.records)
+        self.assertGreaterEqual(heavy["maxrss_kib"], 48 * 1024)
+        self.assertLess(light["maxrss_kib"], heavy["maxrss_kib"],
+                        "usage leaked from another invocation or ignored the waited grandchild")
+
+    def test_waited_child_usage_follows_supervisor_cleanup(self):
+        runner = self.runner()
+        target = r'''
+import os,pathlib,signal,sys,time
+control=pathlib.Path(sys.argv[1])
+deadline=time.monotonic()+2
+while not control.exists() and time.monotonic()<deadline:
+    time.sleep(.01)
+if not control.exists():
+    sys.exit(19)
+buf=bytearray(16*1024*1024)
+buf[::4096]=b'N'*len(buf[::4096])
+os.kill(os.getppid(),signal.SIGTERM)
+time.sleep(60)
+'''
+        with self.assertRaisesRegex(AssuranceFailure, "supervisor/cleanup"):
+            runner.run("usage-cleanup", [sys.executable, "-c", target,
+                                         str(runner.directory / "0001.control.json")], b"")
+        record = runner.records[0]
+        self.assertIs(record["control"]["complete"], True)
+        self.assertIn("interrupted", record["control"])
+        self.assertEqual(record["control"]["target_exit_code"], -signal.SIGKILL)
+        self.assertGreaterEqual(self.assert_waited_child_usage(record)["maxrss_kib"], 16 * 1024)
+        with self.assertRaises(ProcessLookupError):
+            os.kill(record["control"]["target_pid"], 0)
+
+    def test_unavailable_child_usage_preserves_target_result(self):
+        from bounded_runner import _SUPERVISOR
+        for index, error in enumerate(("OSError(5,'accounting fixture')",
+                                       "AttributeError('accounting fixture')")):
+            with self.subTest(error=error):
+                fixture = ("import resource\ndef unavailable(*args):\n raise " + error +
+                           "\nresource.getrusage=unavailable\n" + _SUPERVISOR)
+                runner = BoundedRunner(Path(self.tmp.name) / f"usage-unavailable-{index}")
+                with mock.patch("bounded_runner._SUPERVISOR", fixture):
+                    result = runner.run("usage-unavailable", [sys.executable, "-c",
+                                        "import sys;sys.stdout.buffer.write(b'\\x00NQL');sys.exit(7)"], b"")
+                self.assertEqual((result.returncode, result.stdout, result.stderr), (7, b"\0NQL", b""))
+                control = runner.records[0]["control"]
+                self.assertIn("waited_child_usage", control)
+                usage = control["waited_child_usage"]
+                self.assertIs(usage["available"], False)
+                self.assertEqual(usage["source"], "getrusage(RUSAGE_CHILDREN)")
+                self.assertEqual(usage["error"]["type"], "OSError" if index == 0 else "AttributeError")
+                self.assertEqual(usage["error"]["errno"], 5 if index == 0 else None)
+                self.assertIn("accounting fixture", usage["error"]["message"])
+                self.assertNotIn("maxrss_kib", usage, "unavailable usage became a zero measurement")
 
     def test_nonregular_control_never_blocks_or_reports_success(self):
         # An outer watchdog bounds the old FIFO read. The synthetic producer

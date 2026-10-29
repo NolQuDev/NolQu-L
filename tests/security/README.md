@@ -45,8 +45,9 @@ not establish that this profile has passed on native Termux.
 The host runner reads its private supervisor control as a regular, non-symlink
 UTF-8 JSON file, with a 4,096-byte bound. It checks the opened descriptor before
 reading, uses nonblocking open for special files, and closes that descriptor on
-all read/decode paths. Current eleven-gate receipts contain 86–87-byte controls;
-the larger explicit bound is a host protocol budget, not a compiler capacity.
+all read/decode paths. Before resource accounting, eleven-gate receipts contained
+86–87-byte controls; the larger explicit bound is a host protocol budget, not
+a compiler capacity.
 The exact bound is accepted and byte 4,097 is rejected. Metadata must be an
 object with boolean `complete` and integer-or-null `target_exit_code` fields.
 The existing completion, interruption and target-status checks still decide
@@ -68,8 +69,45 @@ The three permanent control methods are
 `test_bounded_runner.py`. They exercise real files/processes with synthetic
 protocol mutations; an independent watchdog bounds the FIFO counterexample.
 The malformed cases also check descriptor counts. All twelve earlier runner
-methods remain, for fifteen total. This repairs a host failure-retention and
-bounded-read defect; it does not attribute historical `C032-SIGNAL-01`.
+methods remain; these three brought the control count to fifteen. This repairs
+a host failure-retention and bounded-read defect; it does not attribute
+historical `C032-SIGNAL-01`.
+
+## Waited-child resource accounting
+
+After all target/descendant cleanup, the existing private supervisor records
+optional `control.waited_child_usage`. `available: true` supplies
+`user_cpu_seconds`, `system_cpu_seconds` and `maxrss_kib`, with source
+`getrusage(RUSAGE_CHILDREN)`. A new supervisor owns each invocation, so counters
+do not accumulate across commands or include the caller's unrelated children.
+This uses the existing Python resource module once; reaping, limits, target
+exit status and captured streams follow the same contract.
+
+On Linux, RSS is in KiB and is the largest waited child's high-water mark;
+it is neither a sum nor a simultaneous process-tree peak. Accounting can include
+descendants waited on by the target. QEMU results describe host process/adapter
+accounting, not guest virtual mappings. See
+[getrusage(2)](https://man7.org/linux/man-pages/man2/getrusage.2.html).
+These observations do not identify an OOM event, a signal sender, a leak or the
+cause of historical `C032-SIGNAL-01`; that incident remains OPEN.
+
+If the API is unavailable or returns an OS error, `available: false` retains
+error type/errno/message without inventing a zero measurement or rewriting the
+target result. Missing fields in old or interrupted controls mean NOT OBSERVED.
+Consumers requiring resource evidence must require `available: true`; an
+otherwise passing command does not establish that measurement was available.
+The existing 4 KiB control bound remains; no RSS cap or polling is added.
+
+Four methods in `test_bounded_runner.py` test actual allocations/terminal status,
+a waited grandchild and per-invocation isolation, supervisor cancellation cleanup,
+and injected unavailable/error accounting respectively:
+`test_waited_child_usage_records_resources_and_terminal_status`,
+`test_waited_child_usage_is_private_to_each_invocation`,
+`test_waited_child_usage_follows_supervisor_cleanup` and
+`test_unavailable_child_usage_preserves_target_result`.
+They join the unchanged fifteen controls, for nineteen total. The touched
+16/48 MiB allocations are deliberate test workloads, not performance thresholds
+or compiler capacity increases. Native Termux qualification remains separate.
 
 ## Defined-program differential gate
 
@@ -156,7 +194,7 @@ The summary binds source, installed seed/pin identity, harness and corpus bytes.
 | Invalid framing, reserved fields, spans and node IDs never produce an artifact | `NativeBoundaryAssurance.test_wire_framing_reserved_fields_and_spans` | 360 truncation/field/trailing-byte rejections in both profiles; diagnostic, status 1 and empty stdout required |
 | Unsafe permission ends at the real source scope | `NativeBoundaryAssurance.test_safety_headers_and_scope_restoration_metamorphic` | comment/newline/brace variants; outside raw call must report exact C0S-001 location |
 | Defined transformations preserve observable machine behavior | `NativeBoundaryAssurance.test_defined_pure_program_metamorphic_behavior` | 12 fixed executions: rename, grouping, untaken branch, loop, unused unsafe scope and function call; expected exit 42/stdout `NQL`/empty stderr |
-| Test infrastructure cannot turn process/cleanup/setup failure into rejection PASS | fifteen `BoundedRunnerTests` methods | real host children; binary status/streams, signal, timeout, output cap, acquisition cancellation, detached/reaped descendants, unrelated-child survival, setup failure/corpus preservation, interrupted-supervisor controls and bounded malformed/nonregular metadata retention |
+| Test infrastructure cannot turn process/cleanup/setup failure into rejection PASS | nineteen `BoundedRunnerTests` methods | real host children; existing fifteen lifecycle/protocol controls plus terminal resource accounting, waited descendants, per-invocation isolation, cleanup ordering and explicit unavailable observations |
 
 Only the fixed pure oracle programs are executed. Arbitrary mutated ELF output
 is never run. This is deterministic mutation testing, **LIMITED fuzzing**; no

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Retain optional CPU time and largest-waited-child RSS from each private test
+  supervisor after cleanup. New controls cover actual allocations, descendants,
+  isolation, ordinary/signal exits and unavailable accounting. These host
+  observations add no memory cap and do not diagnose the historical SIGKILL.
+
 ### Fixed
 
 - Keep supervisor metadata ingestion bounded to a 4 KiB regular-file JSON

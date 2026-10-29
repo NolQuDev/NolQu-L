@@ -38,6 +38,11 @@ file bound. Missing, malformed, oversized or nonregular controls retain a
 failed invocation with `control_error` and cannot satisfy `supervisor_ok`;
 the FIFO/error path is bounded too. See the
 [control contract](../../tests/security/README.md#supervisor-metadata-and-failure-retention).
+Final controls also retain optional CPU and largest-waited-child RSS accounting
+after cleanup, scoped to that invocation's private supervisor. Missing or
+unavailable observations are not measured zero, an RSS limit, a tree peak,
+an OOM verdict or attribution of the historical signal. See the
+[resource contract](../../tests/security/README.md#waited-child-resource-accounting).
 Limits selected for this
 workflow are45 minutes per command,50 minutes aggregate and32MiB per captured
 stream, within a60-minute job. These are execution budgets, not measured compiler
