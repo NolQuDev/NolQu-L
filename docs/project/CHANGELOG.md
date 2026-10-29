@@ -12,6 +12,10 @@ Development continues on the `dev` channel.
 
 ### Fixed
 
+- Clarify NolQu-Lang as the full name and NolQu-L as the short form, with L
+  already meaning Language. Remove redundant name suffixes from active
+  references, and correct stale CLI terminology. Command/artifact identifiers,
+  historical version labels and canonical source/seed/pin bytes are preserved.
 - Bind offline host-smoke success to the complete check inventory and unchanged
   initial bundle manifest; recheck native Termux context after execution when
   required. Partial checks or a changed manifest cannot publish a passing result.

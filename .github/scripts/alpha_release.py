@@ -321,7 +321,8 @@ def main():
         raise ValueError('release archives did not reproduce exactly')
     assets = {name + '-source.tar.gz': source, name + '-termux-bundle.tar.gz': bundle,
               'QUALIFICATION.json': (json.dumps(receipts, sort_keys=True, indent=2) + '\n').encode()}
-    metadata = dict(version=version, channel=channel, source_revision=revision,
+    metadata = dict(project='NolQu-Lang', short_name='NolQu-L',
+        version=version, channel=channel, source_revision=revision,
         source_tree_state='clean committed snapshot', target='x86_64-linux',
         command='python3 -B .github/scripts/alpha_release.py',
         environment=dict(python=sys.version, platform=platform.platform(), git=command(ROOT, 'git', '--version').decode().strip()),
@@ -364,7 +365,7 @@ def main():
     bind_tag(api, tag, revision)
     if release is None:
         release = api.request('POST', api_path('releases'), dict(tag_name=tag,
-            target_commitish=revision, name='NolQu-L ' + version, body=body,
+            target_commitish=revision, name='NolQu-Lang ' + version, body=body,
             draft=True, prerelease=True, make_latest='false'))
     release_id = str(int(release['id']))
     check_draft(api, release_id, tag, revision, body)

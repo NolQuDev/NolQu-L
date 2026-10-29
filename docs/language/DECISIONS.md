@@ -8,10 +8,13 @@ Implementation decisions and historical notes below do not override those pillar
 
 ## Current Decisions
 
-### Formal Name Is NolQu-L
+### Full Name And Short Form
 
-`NolQu-L` is the formal language and architecture name. Existing lowercase
-command names and old paths remain compatibility interfaces.
+`NolQu-Lang` is the full name and `NolQu-L` is the established short form.
+The L already means Language; neither form receives an additional Language
+suffix. `NolQu` names the broader ecosystem. Canonical commands remain `nql`
+and `nqlc`, with long aliases `nolqul` and `nolqulc`. Historical artifact/path
+identifiers stay intact; obsolete command names are not installed aliases.
 
 ### Bootstrap Has One Canonical Chain
 

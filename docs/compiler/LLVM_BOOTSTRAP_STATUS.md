@@ -5,15 +5,16 @@
 This document freezes the supported surface of `tools/nq_llvm_bootstrap.py` as
 a legacy compatibility path outside the canonical NolQu-L bootstrap.
 
-It is not the same thing as "the full NolQu-L language".
+It is not the same thing as "full NolQu-L".
 
 ## Current Bootstrap Surface
 
 The following surface is the frozen source-level bootstrap parser surface.
 
-The user-facing `nq --backend llvm` compatibility path currently routes through
-the R0 frontend IR bridge; this document only describes the separate legacy
-translator in `tools/nq_llvm_bootstrap.py`.
+Historical `nq --backend llvm` invocations belonged to the older tooling.
+The current `nqlc` interface exposes `nasm` and `canonical`; it does not expose
+that legacy LLVM backend selector. This document describes only the separate
+retained translator in `tools/nq_llvm_bootstrap.py`.
 
 ### Supported
 

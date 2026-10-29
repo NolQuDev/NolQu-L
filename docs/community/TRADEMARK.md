@@ -1,6 +1,7 @@
 # NolQu-L Trademark
 
-`NolQu-L` is the formal project and language name. Canonical commands are
+`NolQu-Lang` is the full name and `NolQu-L` is its established short form.
+The L already means Language. Canonical commands are
 `nql`/`nolqul` and `nqlc`/`nolqulc`; older spellings survive only in historical
 records and do not name installed compatibility commands.
 

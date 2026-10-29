@@ -23,7 +23,7 @@ For the currently frozen supported subset, see [LLVM_BOOTSTRAP_STATUS.md](LLVM_B
 ### Not Allowed As New Architecture
 
 - introducing major new language semantics in the bootstrap parser first
-- treating bootstrap support as proof that a feature belongs to the NolQu-L core language
+- treating bootstrap support as proof that a feature belongs to NolQu-L Core
 - expanding the bootstrap parser faster than the real frontend and IR path
 - quietly widening the bootstrap subset without updating its status document
 

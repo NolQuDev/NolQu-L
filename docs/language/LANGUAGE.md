@@ -1,6 +1,6 @@
-# NolQu-L Language Reference 1.0.2a1
+# NolQu-L Reference 1.0.2a1
 
-This document describes the user-facing NolQu-L language surface as of `1.0.2a1`.
+This document describes the user-facing NolQu-L syntax and behavior as of `1.0.2a1`.
 
 It does not treat every parser feature as equally stable. For the official status split, see [CORE_LANGUAGE.md](CORE_LANGUAGE.md) and [FEATURE_STATUS.md](FEATURE_STATUS.md).
 

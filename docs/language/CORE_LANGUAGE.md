@@ -1,4 +1,4 @@
-# NolQu-L Core Language
+# NolQu-L Core
 
 ## Purpose
 

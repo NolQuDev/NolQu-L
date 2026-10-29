@@ -1,5 +1,8 @@
 # NolQu-L 1.0.0-alpha.1
 
+**NolQu-L** is the short form of **NolQu-Lang**. The **L** already means
+**Language**; neither name takes an additional Language suffix.
+
 NolQu-L is an experimental systems programming language whose canonical
 bootstrap starts from auditable x86_64 machine bytes. The compiler currently
 implemented in `src/*.asm` is Reference Compiler R0: it remains the tested

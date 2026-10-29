@@ -2,10 +2,18 @@
 
 ## Core Terms
 
-### NolQu-L
+### NolQu-Lang / NolQu-L
 
-The formal language, project, and architecture name. `Nolqu` remains only in
-older compatibility names where changing it would break users.
+**NolQu-Lang** is the full name; **NolQu-L** is its established short form.
+The L means Language, so do not append another Language word to either name.
+Both forms refer to the same systems programming language and architecture.
+
+### NolQu
+
+The ecosystem or umbrella project. Use NolQu-Lang or NolQu-L when referring
+specifically to its source specifications and compiler semantics. Historical filenames, bootstrap artifact
+identifiers, hashes and evidence keep their recorded spelling.
+
 
 ### Machine-Level Foundation
 
@@ -23,10 +31,18 @@ next compiler generation. Reference Compiler R0 is not Stage 0.
 The existing `src/*.asm` compiler used as the current semantic and
 compatibility oracle while the canonical compiler is built.
 
-### nq
+### nql / nolqul
 
-The main repo-local CLI wrapper used to build, run, check, and inspect NolQu-L
-programs.
+The canonical project manager and run command. `nql` is the executable and
+`nolqul` is its long-name alias. New project sources use `.nql`.
+
+### nqlc / nolqulc
+
+The canonical compiler entry point and its long-name alias. The default
+`--backend nasm` uses Reference Compiler R0; `--backend canonical` selects the
+experimental Core pipeline. Obsolete public commands `nq`, `nqc`, `nolqu` and
+`nolquc` are not installed compatibility aliases. Historical source/artifact
+paths that contain older names are separate from the current command interface.
 
 ## Compiler Terms
 
