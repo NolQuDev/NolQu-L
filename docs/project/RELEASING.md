@@ -20,6 +20,42 @@ receipts are historical and stay unchanged. Consumers comparing raw version
 strings must accept the new value; `1.0.0-alpha.1` does not sort as an upgrade
 from `1.0.2a1`. Source/ABI contracts and canonical seed bytes are unaffected.
 
+## Alpha publication gate
+
+The Alpha publisher is `.github/scripts/alpha_release.py`, launched by the
+pinned `.github/workflows/alpha-release.yml` only on `release/**` (or a manual
+run on that same release branch). Create `release/v<version>` only after review
+and full qualification of the identical Main/Dev revision. The script checks
+repository, event, ref, Alpha version and clean checkout before remote writes.
+
+Both branches need the latest successful exact-source Linux qualification,
+including release controls. The publisher verifies each downloaded artifact's
+SHA-256 and complete gate/source-identity receipt. It builds the public source
+and offline bundle archives twice, compares bytes and writes SHA256SUMS,
+BUILD-METADATA.json and QUALIFICATION.json before creating a draft release.
+Source packaging uses committed Git bytes and rejects private paths and links
+escaping the archive. No local agent state enters these archives.
+
+The job has only repository contents-write/actions-read permissions; checkout
+credentials are not persisted. Its token is supplied only to the publishing
+step, never stored in source or logs. Python, Git and GitHub Actions are host
+release dependencies, not compiler bootstrap stages. No external compiler or
+new runtime dependency enters the canonical chain.
+
+A matching partial draft may resume only with identical notes, commit and
+asset sizes/hashes. Existing published releases, mismatched tags or assets
+cannot be replaced. After all assets verify, the draft becomes a GitHub
+prerelease with latest promotion disabled, and the tag must resolve to the
+qualified revision. Stable is read for consistency and never updated. Failures
+retain available build output as workflow artifacts and must be investigated;
+a failed or incomplete job is not a published-release receipt.
+
+Release notes must describe the actual target/feature maturity, open incidents
+and unrun checks. Alpha evaluation does not imply stable compatibility or full
+NolQu-L Safety. Formal provenance, signing and SBOM remain NOT IMPLEMENTED;
+build metadata is not an attestation. See [PACKAGING.md](PACKAGING.md) and the
+[Alpha 1 notes](../releases/1.0.0-alpha.1.md).
+
 ## Typical Flow
 
 1. Update [VERSION](../../VERSION).

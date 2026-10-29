@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+No additional changes recorded.
+
+## 1.0.0-alpha.1 — 2026-10-29
+
+First public Alpha source snapshot and optional offline qualification bundle.
+Release notes: [1.0.0-alpha.1](../releases/1.0.0-alpha.1.md).
 Development continues on the `dev` channel.
 
 ### Fixed

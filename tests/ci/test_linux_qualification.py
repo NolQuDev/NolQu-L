@@ -61,6 +61,8 @@ class LinuxCiTests(unittest.TestCase):
             self.assertIn(name, selectors)
         self.assertIn("assurance", gates)
         self.assertIn("release", gates)
+        self.assertEqual(gates["release-controls"],
+                         [*module.PYTHON, "tests/meta/test_alpha_release.py", "-v"])
         self.assertEqual(gates["publication"], [*module.PYTHON, "tools/check_publication.py"])
 
     def test_runner_paths_are_defined_in_step_context(self):
