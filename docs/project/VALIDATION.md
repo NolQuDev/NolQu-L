@@ -1,7 +1,40 @@
 # Development validation status
 
-Current metadata: `1.0.0-alpha.1`, channel `dev`. No tag, official release,
-stable promotion, or whole-language security qualification is implied.
+Current metadata: `1.0.0-alpha.1`, channel `dev`.
+[The first Alpha prerelease](https://github.com/NolQuDev/NolQu-L/releases/tag/v1.0.0-alpha.1)
+was published on 2026-10-29 from
+`26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
+Full Compiler, formal self-hosting or whole-language security qualification.
+
+## Alpha 2 readiness investigation — 2026-10-29
+
+Fresh baseline run
+[40849891154](https://github.com/NolQuDev/NolQu-L/actions/runs/40849891154)
+tested that exact Alpha 1 revision before the supervisor metadata repair.
+All eleven gates passed: 1,084 main PASS markers, 129 MCP methods, twenty
+Android host controls on Linux, seventeen release controls, real hard-link
+tests, finite assurance and release checks. The offline profile retained
+326 invocations, 96 differential matches and two sensitivity detections.
+Canonical input identities were unchanged. Counts overlap and are not a
+unique-test sum. The retained artifact ZIP SHA-256 is
+`d301da0aceb5ef4eebd2e4a9f279f656de979ee499132bb548c9ab7b966108f6`.
+
+The new host repair addresses a separate reproducible defect: malformed
+supervisor metadata escaped before the invocation manifest was written.
+Nonregular metadata could also block outside the execution deadline. Three
+regression methods fail on the old reader (thirteen rejecting subcases), then
+pass after bounded, regular-file ingestion and controlled failure retention.
+All fifteen runner control methods pass locally. This is host evidence handling,
+not a compiler semantic or canonical-artifact change. Any repair commit still
+requires its own exact-source full qualification before integration.
+
+Actual untraced native Termux execution of the new smoke+differential profile
+is still **NOT RUN** in this investigation. Earlier thirteen-check native
+smoke receipts do not qualify that newer profile or the full native suite.
+Native Alpha 2 qualification is **NOT READY**; no Alpha 2 version, tag or release
+is created by these checks. Historical C032-SIGNAL-01 remains OPEN and still
+blocks stronger stable/security claims. The published Alpha 1 tag/assets stay
+unchanged; a later release needs new versioned artifacts and its own gates.
 
 ## Compiler and bootstrap
 

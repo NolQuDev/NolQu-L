@@ -40,6 +40,37 @@ PRoot, missing context, or a failed run. Two snapshots do not continuously detec
 every possible tracer attachment between them. Linux host-control results do
 not establish that this profile has passed on native Termux.
 
+## Supervisor metadata and failure retention
+
+The host runner reads its private supervisor control as a regular, non-symlink
+UTF-8 JSON file, with a 4,096-byte bound. It checks the opened descriptor before
+reading, uses nonblocking open for special files, and closes that descriptor on
+all read/decode paths. Current eleven-gate receipts contain 86–87-byte controls;
+the larger explicit bound is a host protocol budget, not a compiler capacity.
+The exact bound is accepted and byte 4,097 is rejected. Metadata must be an
+object with boolean `complete` and integer-or-null `target_exit_code` fields.
+The existing completion, interruption and target-status checks still decide
+whether supervision succeeded.
+
+Malformed/non-object/deep JSON, invalid UTF-8, oversized, missing, directory,
+FIFO and symlink controls cannot produce a passing invocation. A read/protocol
+failure adds `control_error` to the retained invocation before raising
+`AssuranceFailure`; input/stdout/stderr identities remain available. When control
+is invalid, `supervisor_ok` is false: a fallback supervisor exit code is not an
+observed successful target exit. Evidence-storage failure can still prevent a
+manifest write; this is not a power-loss durability guarantee or an OS sandbox.
+Same-UID regular-file forgery is not authenticated by these checks.
+
+The three permanent control methods are
+`test_malformed_control_retains_failed_invocation`,
+`test_control_size_bound_preserves_exact_limit_and_rejects_overflow` and
+`test_nonregular_control_never_blocks_or_reports_success` in
+`test_bounded_runner.py`. They exercise real files/processes with synthetic
+protocol mutations; an independent watchdog bounds the FIFO counterexample.
+The malformed cases also check descriptor counts. All twelve earlier runner
+methods remain, for fifteen total. This repairs a host failure-retention and
+bounded-read defect; it does not attribute historical `C032-SIGNAL-01`.
+
 ## Defined-program differential gate
 
 `make test` and `make bootstrap-test` also run
@@ -125,7 +156,7 @@ The summary binds source, installed seed/pin identity, harness and corpus bytes.
 | Invalid framing, reserved fields, spans and node IDs never produce an artifact | `NativeBoundaryAssurance.test_wire_framing_reserved_fields_and_spans` | 360 truncation/field/trailing-byte rejections in both profiles; diagnostic, status 1 and empty stdout required |
 | Unsafe permission ends at the real source scope | `NativeBoundaryAssurance.test_safety_headers_and_scope_restoration_metamorphic` | comment/newline/brace variants; outside raw call must report exact C0S-001 location |
 | Defined transformations preserve observable machine behavior | `NativeBoundaryAssurance.test_defined_pure_program_metamorphic_behavior` | 12 fixed executions: rename, grouping, untaken branch, loop, unused unsafe scope and function call; expected exit 42/stdout `NQL`/empty stderr |
-| Test infrastructure cannot turn process/cleanup/setup failure into rejection PASS | eleven `BoundedRunnerTests` methods | real host children; binary status/streams, signal, timeout, output cap, acquisition cancellation, detached/reaped descendants, unrelated-child survival, setup failure/corpus preservation and interrupted-supervisor protocol controls |
+| Test infrastructure cannot turn process/cleanup/setup failure into rejection PASS | fifteen `BoundedRunnerTests` methods | real host children; binary status/streams, signal, timeout, output cap, acquisition cancellation, detached/reaped descendants, unrelated-child survival, setup failure/corpus preservation, interrupted-supervisor controls and bounded malformed/nonregular metadata retention |
 
 Only the fixed pure oracle programs are executed. Arbitrary mutated ELF output
 is never run. This is deterministic mutation testing, **LIMITED fuzzing**; no
@@ -183,9 +214,10 @@ LLVM, C, Rust or other semantic build dependency is introduced.
 
 ## Profiles and release decision
 
-- **PR/manual:** the two commands above plus impacted existing suites. This
-  profile has been run locally; it is not wired into the compiler main gate or
-  scheduled CI. The existing native regression remains in `make test`.
+- **PR/manual:** the two commands above plus impacted existing suites. The
+  sequential Linux qualification runs runner controls and this assurance
+  profile as separate required gates. They are separate from the compiler
+  main gate; the existing native regression remains in `make test`.
 - **Extended/scheduled:** coverage-guided fuzzing, persistent-corpus expansion,
   allocation/resource-pressure testing and dependency advisory scans are
   **NOT RUN / NOT IMPLEMENTED** for this addition. No schedule is claimed.

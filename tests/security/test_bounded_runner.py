@@ -1,4 +1,5 @@
 """Check that the host-only assurance runner detects failures, not retries them."""
+import json
 import os
 from pathlib import Path
 import signal
@@ -228,6 +229,108 @@ print('orphan reaped before target exit')
                 with mock.patch("bounded_runner._SUPERVISOR", fake):
                     with self.assertRaisesRegex(AssuranceFailure, "supervisor"):
                         runner.run("interrupted-control", [str(status)], b"")
+
+    def test_malformed_control_retains_failed_invocation(self):
+        # Synthetic protocol mutations; process/file/retention behavior is real.
+        # Removing controlled ingestion must lose these records and fail here.
+        before = len(os.listdir("/proc/self/fd"))
+        payloads = (b"{", b"", b"[]", b"null", b"false", b"7", b"\xff",
+                    b'{"complete":' + b"[" * 1100 + b"0" + b"]" * 1100 + b"}")
+        for index, payload in enumerate(payloads):
+            with self.subTest(payload=index):
+                runner = BoundedRunner(Path(self.tmp.name) / f"malformed-{index}")
+                fixture = ("import pathlib,sys;pathlib.Path(sys.argv[1]).write_bytes("
+                           + repr(payload) + ");sys.stdout.buffer.write(b'fixture bytes\\n')")
+                failure = None
+                try:
+                    with mock.patch("bounded_runner._SUPERVISOR", fixture):
+                        runner.run("malformed-control", ["unused"], b"input bytes")
+                except Exception as error:
+                    failure = error
+                self.assertIsInstance(failure, AssuranceFailure)
+                self.assertEqual(len(runner.records), 1)
+                record = runner.records[0]
+                self.assertFalse(record["supervisor_ok"])
+                self.assertIn("control_error", record)
+                self.assertIn("type", record["control_error"])
+                self.assertEqual((runner.directory / record["input"]["path"]).read_bytes(),
+                                 b"input bytes")
+                self.assertEqual((runner.directory / record["stdout"]["path"]).read_bytes(),
+                                 b"fixture bytes\n")
+                self.assertEqual(json.loads((runner.directory / "invocations.json").read_text())
+                                 ["records"], runner.records)
+        self.assertEqual(len(os.listdir("/proc/self/fd")), before,
+                         "control read/decode failure leaked a descriptor")
+
+    def test_control_size_bound_preserves_exact_limit_and_rejects_overflow(self):
+        # The literal 4 KiB wire budget is checked through actual file ingestion.
+        control = b'{"complete":true,"target_exit_code":0,"reaped_descendants":0,"target_pid":123}'
+        for size in (4096, 4097):
+            with self.subTest(bytes=size):
+                payload = control + b" " * (size - len(control))
+                runner = BoundedRunner(Path(self.tmp.name) / f"control-size-{size}")
+                fixture = ("import pathlib,sys;pathlib.Path(sys.argv[1]).write_bytes("
+                           + repr(payload) + ")")
+                failure = result = None
+                try:
+                    with mock.patch("bounded_runner._SUPERVISOR", fixture):
+                        result = runner.run("control-size", ["unused"], b"")
+                except Exception as error:
+                    failure = error
+                self.assertEqual(len(runner.records), 1)
+                if size == 4096:
+                    self.assertIsNone(failure)
+                    self.assertEqual(result.returncode, 0)
+                    self.assertTrue(runner.records[0]["supervisor_ok"])
+                else:
+                    self.assertIsInstance(failure, AssuranceFailure)
+                    self.assertFalse(runner.records[0]["supervisor_ok"])
+                    self.assertIn("type", runner.records[0]["control_error"])
+                self.assertEqual((runner.directory / "0001.control.json").stat().st_size, size)
+
+    def test_nonregular_control_never_blocks_or_reports_success(self):
+        # An outer watchdog bounds the old FIFO read. The synthetic producer
+        # exits before metadata ingestion, leaving no live target to clean up.
+        probe = r'''
+import json,pathlib,sys
+from unittest import mock
+from bounded_runner import BoundedRunner
+kind=sys.argv[2]
+valid='{"complete":true,"target_exit_code":0,"reaped_descendants":0,"target_pid":123}'
+actions={
+ 'fifo':"os.mkfifo(p)",
+ 'directory':"p.mkdir()",
+ 'symlink':"q=p.with_suffix('.foreign');q.write_text("+repr(valid)+");p.symlink_to(q.name)",
+ 'missing':"pass",
+}
+fixture="import os,pathlib,sys;p=pathlib.Path(sys.argv[1]);"+actions[kind]
+runner=BoundedRunner(pathlib.Path(sys.argv[1])/'calls',timeout=2,budget=4)
+error=None
+try:
+ with mock.patch('bounded_runner._SUPERVISOR',fixture):
+  runner.run('nonregular-control',['unused'],b'preserved input')
+except Exception as failure:
+ error=type(failure).__name__
+print(json.dumps({'error':error,'records':len(runner.records),
+ 'manifest':(runner.directory/'invocations.json').is_file(),
+ 'supervisor_ok':runner.records[-1]['supervisor_ok'] if runner.records else None,
+ 'control_error':bool(runner.records and runner.records[-1].get('control_error')),
+ 'input':(runner.directory/'0001.input').read_text()}))
+'''
+        for kind in ("fifo", "directory", "symlink", "missing"):
+            with self.subTest(kind=kind):
+                try:
+                    result = subprocess.run([sys.executable, "-B", "-c", probe,
+                                             str(Path(self.tmp.name) / kind), kind],
+                                            cwd=Path(__file__).parent, capture_output=True,
+                                            timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.fail(f"{kind}: supervisor metadata blocked beyond the host watchdog")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report, dict(error="AssuranceFailure", records=1,
+                    manifest=True, supervisor_ok=False, control_error=True,
+                    input="preserved input"))
 
 
 if __name__ == "__main__":

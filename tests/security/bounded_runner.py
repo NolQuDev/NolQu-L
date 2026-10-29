@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import resource
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -89,6 +90,34 @@ finally:
 
 class AssuranceFailure(RuntimeError):
     pass
+
+
+def _read_supervisor_control(path):
+    """Read the small private protocol without blocking on special files."""
+    limit = 4096
+    descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW)
+    try:
+        info = os.fstat(descriptor)
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError("supervisor control must be a regular file")
+        if info.st_size > limit:
+            raise ValueError("supervisor control exceeds 4096 bytes")
+        payload = bytearray()
+        while len(payload) <= limit:
+            chunk = os.read(descriptor, limit + 1 - len(payload))
+            if not chunk:
+                break
+            payload.extend(chunk)
+        if len(payload) > limit:
+            raise ValueError("supervisor control exceeds 4096 bytes")
+    finally:
+        os.close(descriptor)
+    control = json.loads(payload.decode("utf-8"))
+    if not isinstance(control, dict) or type(control.get("complete")) is not bool \
+            or "target_exit_code" not in control \
+            or type(control["target_exit_code"]) not in (int, type(None)):
+        raise ValueError("invalid supervisor control object or status fields")
+    return control
 
 
 class _CancellationGuard:
@@ -225,7 +254,15 @@ class BoundedRunner:
                             child.wait()
                     else:
                         child.wait()
-        control = json.loads(control_path.read_text()) if control_path.exists() else {}
+        try:
+            control = _read_supervisor_control(control_path)
+        except (OSError, ValueError, RecursionError) as error:
+            # A protocol/read failure is not a guest result. Commit this
+            # invocation and its streams before surfacing the controlled error.
+            control = {}
+            record["control_error"] = dict(type=type(error).__name__,
+                                          errno=getattr(error, "errno", None),
+                                          message=str(error))
         supervisor_ok = (child is not None and child.returncode == 0 and
                          control.get("complete") is True and
                          type(control.get("target_exit_code")) is int and

@@ -1,8 +1,11 @@
 # NolQu-L Roadmap Short
 
-Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
-request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
-below describe those historical runs; no release or bootstrap promotion occurs.
+Current metadata (2026-10-29): `1.0.0-alpha.1`, channel `dev`.
+[Alpha 1 is published](https://github.com/NolQuDev/NolQu-L/releases/tag/v1.0.0-alpha.1).
+Older version strings/counts below describe historical checkpoints. Alpha 2
+native qualification is not ready; its new offline differential profile has
+not yet been run in an untraced native Termux session. No bootstrap/Stable
+promotion follows from the published experimental Alpha.
 
 ## Completed Foundation
 
@@ -39,14 +42,19 @@ the capability and limits; [STATE_OF_PROJECT.md](STATE_OF_PROJECT.md) separates
 measured results from open assurance limits.
 The 1079 full-main checkpoint predates the diagnostic formatter repair. Current
 post-repair component/proof/MCP/public/assurance evidence is recorded separately
-in the [session report](VALIDATION.md); full main was not rerun.
+in [VALIDATION.md](VALIDATION.md). Full main was not rerun at that historical
+checkpoint. The 2026-10-29 Alpha 2 investigation subsequently reran the exact
+published Alpha 1 source and passed eleven gates with 1,084 main markers and
+129 MCP methods; it does not relabel the older checkpoint.
 
 ## Following Engineering Objectives
 
 1. Resolve the unexplained comparison-backend SIGKILL with process/resource
    attribution before stable/security promotion; preserve failed-run evidence.
-   Expand the finite native assurance profile and qualify execution on actual
-   target hardware before claiming broader security or target assurance.
+   Keep malformed supervisor metadata bounded and retain its failed invocation;
+   that repair is not attribution of the historical signal. Qualify the new
+   offline smoke+differential profile on actual native Termux, keeping native
+   filesystem limits explicit, before claiming broader target assurance.
    Then select a complete type/module/toolchain prerequisite from measured gaps.
 2. Grow the canonical Full Compiler while preserving R0 compatibility or
    documenting intentional experimental-subset differences.
@@ -57,8 +65,9 @@ in the [session report](VALIDATION.md); full main was not rerun.
 
 Native pointer/syscall access does not establish full Safety or wrapper
 preconditions. Full Compiler, full-language self-hosting and later Verified
-status remain unimplemented. Public VERSION1.0.2a1/CHANNELdev are unchanged;
-experimental progress does not automatically justify a release.
+status remain unimplemented. The historical native checkpoint used
+VERSION1.0.2a1/CHANNELdev; current metadata is listed above. Experimental
+progress does not automatically justify another release.
 
 ## Deferred
 

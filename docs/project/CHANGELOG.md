@@ -2,7 +2,16 @@
 
 ## Unreleased
 
-No additional changes recorded.
+### Fixed
+
+- Keep supervisor metadata ingestion bounded to a 4 KiB regular-file JSON
+  control. Malformed, missing, oversized, symlink, directory and FIFO controls
+  retain a failed invocation and its stream identities before a controlled
+  host error. This repairs evidence loss and an out-of-deadline FIFO read;
+  it does not explain the historical comparison-backend SIGKILL.
+- Align current validation/roadmap with the published Alpha 1 and fresh
+  eleven-gate baseline. Native execution of the newer differential profile
+  remains NOT RUN; Alpha 2, Stable and security qualification are not implied.
 
 ## 1.0.0-alpha.1 — 2026-10-29
 

@@ -24,7 +24,7 @@ rule. Stable remains an empty branch until a release candidate exists.
 The runner first verifies the actual Linux architecture, required executables,
 and a real shared inode with mutation through its second name. Failure produces
 a BLOCKED report and nonzero status before compiler gates. Required gates run
-sequentially: CI/publication controls, tracked-publication path validation,
+sequentially: CI/publication/release controls, tracked-publication path validation,
 five existing hard-link methods, full make test,
 complete MCP discovery, runner/Android controls, finite native-boundary assurance
 and release metadata checks. Each command runs once. A later successful command
@@ -33,7 +33,12 @@ cannot mask an earlier failure. Missing tools and unsupported checks are not PAS
 The existing bounded runner owns child cleanup and retains exact streams,
 commands, identities, status and supervisor records. It reaps adopted exited
 children while a test command is still alive; it cannot reap the caller's
-unrelated processes. Limits selected for this
+unrelated processes. Private supervisor metadata has a separate 4 KiB regular-
+file bound. Missing, malformed, oversized or nonregular controls retain a
+failed invocation with `control_error` and cannot satisfy `supervisor_ok`;
+the FIFO/error path is bounded too. See the
+[control contract](../../tests/security/README.md#supervisor-metadata-and-failure-retention).
+Limits selected for this
 workflow are45 minutes per command,50 minutes aggregate and32MiB per captured
 stream, within a60-minute job. These are execution budgets, not measured compiler
 performance thresholds. RSS is not capped. Job termination or service/storage
