@@ -43,12 +43,27 @@ release dependencies, not compiler bootstrap stages. No external compiler or
 new runtime dependency enters the canonical chain.
 
 A matching partial draft may resume only with identical notes, commit and
-asset sizes/hashes. Existing published releases, mismatched tags or assets
-cannot be replaced. After all assets verify, the draft becomes a GitHub
+asset sizes/hashes. Verified original build metadata keeps its producer's
+environment/run on a later publishing attempt. The source, bundle and CI
+receipt bytes must still match; drift stops resumption. A newer failed or
+unfinished qualification, including a manual run, blocks an older push receipt.
+Existing published releases, mismatched tags or assets cannot be replaced.
+The publisher creates an absent tag at the qualified revision without moving
+an existing tag, checks that binding before promotion, and reloads draft state
+at asset-write and promotion boundaries. After all assets verify, the draft becomes a GitHub
 prerelease with latest promotion disabled, and the tag must resolve to the
 qualified revision. Stable is read for consistency and never updated. Failures
 retain available build output as workflow artifacts and must be investigated;
 a failed or incomplete job is not a published-release receipt.
+
+Use this serialized workflow as the sole publisher for an active version.
+Other writers with repository access must not alter its tag, draft or assets
+while the job runs. GitHub's separate tag/release/asset requests are not an
+atomic transaction; boundary checks do not prevent every race with an external
+privileged writer. The workflow concurrency group serializes its own jobs.
+Source archives accept direct same-directory aliases to regular files and
+reject chained, directory or parent-traversing links, including lexical paths
+whose actual symlink resolution would escape the archive.
 
 Release notes must describe the actual target/feature maturity, open incidents
 and unrun checks. Alpha evaluation does not imply stable compatibility or full

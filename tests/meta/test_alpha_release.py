@@ -215,10 +215,12 @@ class AlphaReleaseTests(unittest.TestCase):
         runner.mkdir()
         environment = dict(GITHUB_REPOSITORY='NolQuDev/NolQu-L', GITHUB_SHA=revision,
             GITHUB_REF='refs/heads/release/v1.0.0-alpha.1', GITHUB_EVENT_NAME='push',
-            GITHUB_TOKEN='explicit-test-fixture', RUNNER_TEMP=str(runner))
+            GITHUB_TOKEN='explicit-test-fixture', RUNNER_TEMP=str(runner),
+            GITHUB_RUN_ID='11', GITHUB_RUN_ATTEMPT='1')
         return root, revision, environment
 
-    def simulate_publication(self, directory, *, bad_asset=False, wrong_head=False):
+    def simulate_publication(self, directory, *, bad_asset=False, wrong_head=False,
+                             late_wrong_tag=False, publish_during_assets=False, retry_draft=False):
         m = self.module()
         root, revision, environment = self.publication_fixture(directory)
         receipts = {branch: dict(run_id=index, run_attempt=1,
@@ -231,6 +233,9 @@ class AlphaReleaseTests(unittest.TestCase):
                 self.assets = []
                 self.published = False
                 self.mutations = []
+                self.tag = None
+                self.asset_payloads = {}
+                self.fail_promotion = retry_draft
 
             def request(self, method, route, payload=None, **options):
                 suffix = route.split('/NolQu-L/', 1)[1]
@@ -241,27 +246,46 @@ class AlphaReleaseTests(unittest.TestCase):
                     sha = 'c' * 40 if branch == 'Stable' or wrong_head else revision
                     return dict(object=dict(type='commit', sha=sha))
                 if suffix.startswith('git/ref/tags/'):
-                    return dict(object=dict(type='commit', sha=revision)) if self.published else None
+                    return dict(object=dict(type='commit', sha=self.tag)) if self.tag else None
                 if suffix.startswith('releases/tags/'):
-                    return self.release
+                    return dict(self.release) if self.release else None
+                if suffix == 'releases/123' and method == 'GET':
+                    return dict(self.release)
+                if suffix.startswith('releases/assets/') and method == 'GET':
+                    return self.asset_payloads[int(suffix.rsplit('/', 1)[1])]
                 if suffix == 'releases?per_page=100':
-                    return [] if self.release is None else [self.release]
+                    if late_wrong_tag:
+                        self.tag = 'c' * 40
+                    return [] if self.release is None else [dict(self.release)]
                 if method == 'POST' and suffix == 'releases':
                     self.release = dict(payload, id=123, html_url='https://example.invalid/fixture-release')
-                    return self.release
+                    self.tag = self.tag or revision
+                    return dict(self.release)
                 if method == 'GET' and suffix.endswith('/assets?per_page=100'):
-                    return self.assets
+                    if publish_during_assets and not self.assets:
+                        self.release['draft'] = False
+                        self.published = True
+                    return [dict(asset) for asset in self.assets]
+                if suffix == 'git/refs' and method == 'POST':
+                    if self.tag is not None:
+                        raise ValueError('tag already exists')
+                    self.tag = payload['sha']
+                    return dict(object=dict(type='commit', sha=self.tag))
                 if method == 'POST' and '/assets?name=' in suffix:
                     name = suffix.split('name=', 1)[1]
-                    asset = dict(name=name, state='uploaded', size=len(payload),
+                    asset = dict(id=len(self.assets) + 1, name=name, state='uploaded', size=len(payload),
                                  digest='sha256:' + ('0' * 64 if bad_asset else m.sha256(payload)))
                     self.assets.append(asset)
-                    return asset
+                    self.asset_payloads[asset['id']] = payload
+                    return dict(asset)
                 if suffix.startswith('actions/workflows/'):
                     return dict(workflow_runs=[dict(id=index, run_attempt=1, head_sha=revision,
                         head_branch=branch, event='push', status='completed', conclusion='success')
                         for index, branch in enumerate(('Main', 'Dev'), 1)])
                 if method == 'PATCH':
+                    if self.fail_promotion:
+                        self.fail_promotion = False
+                        raise RuntimeError('injected HTTP 503 before publication')
                     self.release.update(payload)
                     self.published = not self.release['draft']
                     return self.release
@@ -274,8 +298,20 @@ class AlphaReleaseTests(unittest.TestCase):
             try:
                 result = m.main()
                 error = None
-            except ValueError as failure:
+            except (ValueError, RuntimeError) as failure:
                 result, error = None, failure
+            if retry_draft:
+                self.assertIn('injected HTTP 503', str(error))
+                api.original_metadata = (Path(environment['RUNNER_TEMP']) / 'nolqu-l-alpha-assets/BUILD-METADATA.json').read_bytes()
+                environment['RUNNER_TEMP'] = str(Path(directory) / 'retry-runner')
+                Path(environment['RUNNER_TEMP']).mkdir()
+                environment['GITHUB_RUN_ATTEMPT'] = '2'
+                with mock.patch.dict(m.os.environ, environment):
+                    try:
+                        result = m.main()
+                        error = None
+                    except (ValueError, RuntimeError) as failure:
+                        result, error = None, failure
         return api, result, error, Path(environment['RUNNER_TEMP'])
 
     def test_publication_packages_uploads_verifies_then_exposes_prerelease(self):
@@ -288,8 +324,10 @@ class AlphaReleaseTests(unittest.TestCase):
             self.assertEqual(api.release['make_latest'], 'false')
             receipt = json.loads((output / 'nolqu-l-alpha-assets/PUBLICATION.json').read_text())
             self.assertEqual(len(receipt['assets']), 5)
-            self.assertEqual(api.mutations[0][0:2], ('POST', 'releases'))
-            self.assertTrue(api.mutations[0][2]['draft'])
+            self.assertEqual(api.mutations[0][0:2], ('POST', 'git/refs'))
+            self.assertEqual(api.mutations[0][2]['sha'], receipt['revision'])
+            self.assertEqual(api.mutations[1][0:2], ('POST', 'releases'))
+            self.assertTrue(api.mutations[1][2]['draft'])
             self.assertEqual(api.mutations[-1][0], 'PATCH')
             self.assertFalse(api.mutations[-1][2]['draft'])
 
@@ -310,6 +348,57 @@ class AlphaReleaseTests(unittest.TestCase):
             self.assertTrue(api.release['draft'])
             self.assertFalse(any(method == 'PATCH' for method, _, _ in api.mutations))
             self.assertTrue((output / 'nolqu-l-alpha-assets/SHA256SUMS').is_file())
+
+    def test_newer_failed_manual_run_blocks_older_push_success(self):
+        m = self.module()
+        good = dict(id=1, head_sha='b' * 40, head_branch='Main', event='push',
+                    status='completed', conclusion='success')
+        for status, conclusion in [('completed', 'failure'), ('in_progress', None)]:
+            newer = dict(good, id=3, event='workflow_dispatch', status=status, conclusion=conclusion)
+            with self.subTest(status=status), self.assertRaises(ValueError):
+                m.qualified_run([good, newer], 'Main', 'b' * 40)
+
+    def test_tag_race_is_rejected_before_public_promotion(self):
+        with tempfile.TemporaryDirectory(prefix='nql-release-tag-race-') as directory:
+            api, result, error, _ = self.simulate_publication(directory, late_wrong_tag=True)
+            self.assertIsNone(result)
+            self.assertIsNotNone(error)
+            self.assertFalse(api.published, 'wrong tag was discovered only after publication')
+            self.assertFalse(any(method == 'PATCH' for method, _, _ in api.mutations))
+
+    def test_matching_draft_resumes_original_metadata_on_new_attempt(self):
+        with tempfile.TemporaryDirectory(prefix='nql-release-resume-') as directory:
+            api, result, error, output = self.simulate_publication(directory, retry_draft=True)
+            self.assertIsNone(error, str(error))
+            self.assertEqual(result, 0)
+            self.assertTrue(api.published)
+            metadata = (output / 'nolqu-l-alpha-assets/BUILD-METADATA.json').read_bytes()
+            self.assertEqual(metadata, api.original_metadata)
+            self.assertEqual(len(api.assets), 5)
+
+    def test_published_during_listing_receives_no_asset_mutation(self):
+        with tempfile.TemporaryDirectory(prefix='nql-release-state-race-') as directory:
+            api, result, error, _ = self.simulate_publication(directory, publish_during_assets=True)
+            self.assertIsNone(result)
+            self.assertIn('immutable', str(error))
+            self.assertFalse(any('/assets?name=' in route for _, route, _ in api.mutations))
+
+    def test_archive_rejects_chained_symlink_escape(self):
+        m = self.module()
+        with tempfile.TemporaryDirectory(prefix='nql-release-link-chain-') as directory:
+            root = Path(directory)
+            (root / 'a/b/c').mkdir(parents=True)
+            (root / 'd').mkdir()
+            (root / 'd/keep').write_text('directory remains in committed tree')
+            (root / 'a/b/c/link').symlink_to('../../../d')
+            (root / 'escape').symlink_to('a/b/c/link/../../private')
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
+            subprocess.run(['git', '-C', str(root), '-c', 'user.name=Release Control',
+                            '-c', 'user.email=release-control@example.invalid',
+                            'commit', '-qm', 'chain fixture'], check=True)
+            with self.assertRaisesRegex(ValueError, 'link|escape'):
+                m.source_archive(root, 'HEAD', 'nolqu-l-test')
 
     def test_workflow_has_scoped_publication_permissions_and_no_pr_trigger(self):
         path = ROOT / '.github/workflows/alpha-release.yml'

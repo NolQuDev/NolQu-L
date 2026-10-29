@@ -45,8 +45,8 @@ An Alpha release includes a committed source archive, an optional offline host
 bundle, SHA256SUMS, BUILD-METADATA.json and QUALIFICATION.json. Both archives
 are generated twice and compared before publication. Tar/gzip metadata is
 controlled by the packager; the source archive is made from the exact Git
-revision, preserving public file modes and internal symlinks. Private paths and
-links outside its root are rejected. The offline archive contains independent
+revision, preserving public execute bits and the current direct file aliases.
+Private paths and ambiguous/chained or escaping links are rejected. The offline archive contains independent
 regular copies of the pinned B0/frontend/backend, host supervisor/oracle and
 utility source, plus its manifest and license.
 

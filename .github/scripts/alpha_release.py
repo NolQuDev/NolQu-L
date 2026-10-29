@@ -57,14 +57,20 @@ def validate_context(environment, tag, revision):
 
 
 def qualified_run(runs, branch, revision):
-    selected = [run for run in runs if run.get('head_sha') == revision
-                and run.get('head_branch') == branch and run.get('event') == 'push']
-    if not selected:
+    observed = [run for run in runs if run.get('head_sha') == revision
+                and run.get('head_branch') == branch]
+    if not observed:
         raise ValueError('no exact-source qualification for ' + branch)
-    latest = max(selected, key=lambda run: run['id'])
+    latest = max(observed, key=lambda run: run['id'])
     if latest.get('status') != 'completed' or latest.get('conclusion') != 'success':
         raise ValueError('latest qualification is not successful: ' + branch)
-    return latest
+    selected = [run for run in observed if run.get('event') == 'push']
+    if not selected:
+        raise ValueError('no exact-source push qualification for ' + branch)
+    push = max(selected, key=lambda run: run['id'])
+    if push.get('status') != 'completed' or push.get('conclusion') != 'success':
+        raise ValueError('push qualification is not successful: ' + branch)
+    return push
 
 
 def validate_qualification(report, revision, gates, identities):
@@ -88,6 +94,10 @@ def validate_draft(release, tag, revision, body):
         raise ValueError('published release or mismatched draft is immutable')
 
 
+def check_draft(api, release_id, tag, revision, body):
+    validate_draft(api.request('GET', api_path('releases/' + release_id)), tag, revision, body)
+
+
 def checked_assets(assets, expected):
     checked = set()
     for asset in assets:
@@ -106,7 +116,9 @@ def source_archive(root, revision, prefix):
     policy = load('release_publication_policy', ROOT / 'tools/check_publication.py')
     payload = command(root, 'git', 'archive', '--format=tar', '--prefix=' + prefix + '/', revision)
     with tarfile.open(fileobj=io.BytesIO(payload), mode='r:') as stream:
-        for member in stream:
+        members = stream.getmembers()
+        by_name = {member.name.rstrip('/'): member for member in members}
+        for member in members:
             if not member.name.startswith(prefix + '/') or member.name == prefix + '/':
                 if member.name.rstrip('/') == prefix:
                     continue
@@ -115,9 +127,16 @@ def source_archive(root, revision, prefix):
             if policy.blocked_reason(relative):
                 raise ValueError('private source archive path: ' + relative)
             if member.issym() or member.islnk():
+                # Current public aliases point directly to regular files in
+                # their own directory. Reject chains and parent traversal;
+                # lexical normalization alone cannot model symlink resolution.
                 target = posixpath.normpath(posixpath.join(posixpath.dirname(member.name), member.linkname))
-                if not target.startswith(prefix + '/'):
-                    raise ValueError('source archive link escape: ' + relative)
+                target_member = by_name.get(target)
+                if (not member.issym() or '/' in member.linkname
+                        or member.linkname in ('.', '..')
+                        or not target.startswith(prefix + '/')
+                        or target_member is None or not target_member.isfile()):
+                    raise ValueError('source archive link escape or ambiguous chain: ' + relative)
             elif not (member.isdir() or member.isfile()):
                 raise ValueError('unsupported source archive entry')
     return gzip.compress(payload, mtime=0)
@@ -154,13 +173,14 @@ class GitHub:
         self.token = token
         self.opener = urllib.request.build_opener(NoRedirect)
 
-    def request(self, method, route, payload=None, *, missing=False, upload=False):
+    def request(self, method, route, payload=None, *, missing=False, upload=False, binary=False):
         if not route.startswith('/repos/' + REPOSITORY + '/'):
             raise ValueError('unexpected repository API route')
         host = 'https://uploads.github.com' if upload else 'https://api.github.com'
         data = payload if upload else (json.dumps(payload).encode() if payload is not None else None)
         request = urllib.request.Request(host + route, method=method, data=data, headers={
-            'Authorization': 'Bearer ' + self.token, 'Accept': 'application/vnd.github+json',
+            'Authorization': 'Bearer ' + self.token,
+            'Accept': 'application/octet-stream' if binary else 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'NolQu-L-Alpha-Publisher',
             'Content-Type': 'application/octet-stream' if upload else 'application/json'})
         try:
@@ -170,7 +190,7 @@ class GitHub:
             if missing and error.code == 404:
                 error.close()
                 return None
-            if method == 'GET' and route.endswith('/zip') and error.code == 302:
+            if method == 'GET' and (binary or route.endswith('/zip')) and error.code == 302:
                 location = error.headers['Location']
                 error.close()
                 url = urllib.parse.urlsplit(location)
@@ -185,7 +205,7 @@ class GitHub:
                 raise RuntimeError('GitHub release request failed with HTTP ' + str(code)) from None
         if len(body) > MAX_DOWNLOAD:
             raise ValueError('release API/download size limit exceeded')
-        return body if route.endswith('/zip') else json.loads(body)
+        return body if binary or route.endswith('/zip') else json.loads(body)
 
 
 def api_path(suffix):
@@ -211,6 +231,40 @@ def tag_revision(api, tag):
             break
         obj = api.request('GET', api_path('git/tags/' + obj['sha']))['object']
     raise ValueError('unsupported or cyclic release tag')
+
+
+def bind_tag(api, tag, revision):
+    existing = tag_revision(api, tag)
+    if existing is None:
+        api.request('POST', api_path('git/refs'), dict(ref='refs/tags/' + tag, sha=revision))
+    if tag_revision(api, tag) != revision:
+        raise ValueError('release tag does not bind the qualified revision')
+
+
+def checksum_bytes(assets):
+    return ''.join(sha256(data) + '  ' + name + '\n' for name, data in sorted(assets.items())
+                   if name != 'SHA256SUMS').encode()
+
+
+def reuse_original_metadata(api, uploaded, assets, metadata):
+    candidates = [asset for asset in uploaded if asset.get('name') == 'BUILD-METADATA.json']
+    if not candidates:
+        return
+    if len(candidates) != 1 or type(candidates[0].get('id')) is not int:
+        raise ValueError('ambiguous original draft metadata')
+    asset = candidates[0]
+    original = api.request('GET', api_path('releases/assets/' + str(asset['id'])), binary=True)
+    checked_assets([asset], {'BUILD-METADATA.json': original})
+    recorded = json.loads(original)
+    fixed = {key: value for key, value in metadata.items() if key not in ('environment', 'builder')}
+    original_fixed = {key: value for key, value in recorded.items() if key not in ('environment', 'builder')}
+    if (fixed != original_fixed or recorded.get('builder', {}).get('repository') != REPOSITORY
+            or recorded.get('builder', {}).get('workflow') != '.github/workflows/alpha-release.yml'):
+        raise ValueError('original draft metadata does not describe these qualified assets')
+    # The original producer's environment/run remains true on a later attempt.
+    # Other assets must still equal the current qualified/rebuilt bytes.
+    assets['BUILD-METADATA.json'] = original
+    assets['SHA256SUMS'] = checksum_bytes(assets)
 
 
 def qualification_receipts(api, revision):
@@ -280,11 +334,7 @@ def main():
         native_termux_new_profile='NOT RUN; experimental bundle, Linux controls only',
         full_compiler='NOT IMPLEMENTED', self_hosting='NOT IMPLEMENTED', verified_nqlc='NOT IMPLEMENTED')
     assets['BUILD-METADATA.json'] = (json.dumps(metadata, sort_keys=True, indent=2) + '\n').encode()
-    assets['SHA256SUMS'] = ''.join(sha256(data) + '  ' + key + '\n' for key,data in sorted(assets.items())).encode()
-    output = Path(os.environ['RUNNER_TEMP']) / 'nolqu-l-alpha-assets'
-    output.mkdir(mode=0o700, exist_ok=False)
-    for key, data in assets.items():
-        (output / key).write_bytes(data)
+    assets['SHA256SUMS'] = checksum_bytes(assets)
     notes = (ROOT / 'docs/releases' / (version + '.md')).read_text()
     body = notes + '\n\nSource revision: `' + revision + '`\n\n'
     body += '\n'.join('- ' + branch + ' qualification: ' + receipt['url'] for branch,receipt in receipts.items())
@@ -300,20 +350,36 @@ def main():
         release = drafts[0] if drafts else None
     if release is not None:
         validate_draft(release, tag, revision, body)
-    else:
+        release_id = str(int(release['id']))
+        uploaded = api.request('GET', api_path('releases/' + release_id + '/assets?per_page=100'))
+        check_draft(api, release_id, tag, revision, body)
+        reuse_original_metadata(api, uploaded, assets, metadata)
+        checked_assets(uploaded, assets)
+    output = Path(os.environ['RUNNER_TEMP']) / 'nolqu-l-alpha-assets'
+    output.mkdir(mode=0o700, exist_ok=False)
+    for key, data in assets.items():
+        (output / key).write_bytes(data)
+    # Create-if-absent is atomic at GitHub; an existing mismatched tag is never
+    # moved. Recheck its binding immediately before public promotion as well.
+    bind_tag(api, tag, revision)
+    if release is None:
         release = api.request('POST', api_path('releases'), dict(tag_name=tag,
             target_commitish=revision, name='NolQu-L ' + version, body=body,
             draft=True, prerelease=True, make_latest='false'))
     release_id = str(int(release['id']))
+    check_draft(api, release_id, tag, revision, body)
     uploaded = api.request('GET', api_path('releases/' + release_id + '/assets?per_page=100'))
+    check_draft(api, release_id, tag, revision, body)
     present = checked_assets(uploaded, assets)
     for key, data in assets.items():
         if key not in present:
+            check_draft(api, release_id, tag, revision, body)
             asset = api.request('POST', api_path('releases/' + release_id + '/assets?name=' + urllib.parse.quote(key, safe='')), data, upload=True)
             checked_assets([asset], {key: data})
     uploaded = api.request('GET', api_path('releases/' + release_id + '/assets?per_page=100'))
     if checked_assets(uploaded, assets) != set(assets):
         raise ValueError('release assets are incomplete')
+    check_draft(api, release_id, tag, revision, body)
     heads(api, revision)
     # Recheck the latest branch runs before the irreversible public promotion.
     current_runs = api.request('GET', api_path('actions/workflows/linux-qualification.yml/runs?head_sha=' + revision + '&per_page=100'))['workflow_runs']
@@ -321,6 +387,9 @@ def main():
         latest = qualified_run(current_runs, branch, revision)
         if (latest['id'], latest['run_attempt']) != (receipt['run_id'], receipt['run_attempt']):
             raise ValueError('qualification run changed before publication')
+    if tag_revision(api, tag) != revision:
+        raise ValueError('release tag changed before public promotion')
+    check_draft(api, release_id, tag, revision, body)
     published = api.request('PATCH', api_path('releases/' + release_id), dict(draft=False, prerelease=True, make_latest='false'))
     if published['draft'] or not published['prerelease'] or published['tag_name'] != tag or tag_revision(api, tag) != revision:
         raise ValueError('published release/tag verification failed')
