@@ -1,8 +1,11 @@
 # State Of Project
 
-Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
-request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
-below describe those historical runs; no release or bootstrap promotion occurs.
+Current metadata (2026-10-30): `1.0.0-alpha.1`, channel `dev`, by maintainer
+request for `NolQuDev/NolQu-L`.
+[Alpha 1 was published](https://github.com/NolQuDev/NolQu-L/releases/tag/v1.0.0-alpha.1)
+on 2026-10-29. Older version strings and test counts below describe their
+historical checkpoints. This status correction performs no new release or
+bootstrap promotion.
 
 ## NolQu-L Today
 
@@ -12,7 +15,9 @@ NolQu-L now has two deliberately separate implementation tracks:
 - Reference Compiler R0, the existing NASM implementation used for current
   programs and semantic regression coverage
 
-LLVM and Python tooling is retained only as frozen legacy/reference tooling.
+LLVM/Python language-backend compatibility paths remain frozen reference
+tooling. Active Python test/MCP orchestration is an explicit host dependency,
+outside the canonical compiler stages.
 
 ## Canonical Bootstrap Status
 
@@ -23,11 +28,18 @@ LLVM and Python tooling is retained only as frozen legacy/reference tooling.
 - C0.31 capacity/access foundation: completed and verified within its original scope
 - C0.32 source frontend (B0-built, NQAF/1..6): scoped/generation tests pass, experimental
 - C0.32 AST backend (checked ELF/native argv/syscalls): scoped/generation tests pass, experimental
-- C0.32 post-formatter baseline: `PASS`, 1079 markers; observed host-helper revision: `PASS`, 1080 markers, every baseline label retained
-- Current C0.32 canonical/MCP/public/assurance execution: `PASS` within the
-  [current reliability scope](VALIDATION.md); MCP 124, fresh proof 722/275,
+- Historical C0.32 post-formatter baseline: `PASS`, 1079 markers; observed host-helper revision: `PASS`, 1080 markers, every baseline label retained
+- Earlier C0.32 canonical/MCP/public/assurance checkpoint: `PASS` within its
+  [recorded reliability scope](VALIDATION.md); MCP 124, fresh proof 722/275,
   17 host evidence controls, 16 actual adapter comparisons, unchanged runner 11 baseline,
   and 594 assurance invocations; host retention is experimental
+- Latest exact-source Linux qualification: eleven gates `PASS`, 1,084 main
+  markers, 129 MCP methods, nineteen runner controls, twenty Android host
+  controls on Linux and seventeen release controls. Counts overlap. See the
+  [current validation checkpoint](VALIDATION.md#current-verification-checkpoint--2026-10-30).
+- Local PRoot and Termux Python/QEMU runs: each passes fifteen finite
+  smoke/differential checks and 96 oracle comparisons. Both callers remain
+  traced; untraced native Termux qualification is `NOT RUN`.
 - Stable/security readiness: `PARTIAL / NOT READY`; earlier comparison-backend
   SIGKILL remains `OPEN`, not explained by later passing runs
 - Full canonical compiler: `NOT_IMPLEMENTED`

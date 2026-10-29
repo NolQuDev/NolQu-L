@@ -23,12 +23,14 @@ parser recognition and concept-document targets do not imply support in both.
 - direct standalone ELF, NQAF/1..5 compatibility and additive /6 dialect5
 - actual native file-reader source and verified scoped/generation execution
 
-Final main/MCP/installed combined-proof execution gates pass. Stable/security
-readiness remains PARTIAL because an earlier comparison-backend SIGKILL is
-unexplained; see [assurance](../../tests/security/README.md).
-Full main is the pre-formatter checkpoint. Current post-repair component,
-MCP/public and bounded assurance evidence is distinguished in the
-[session report](../project/VALIDATION.md); full main was not rerun.
+Current exact-source Linux qualification passes eleven gates, including the
+full main suite with 1,084 PASS markers, 129 MCP methods and component-generation
+checks. Earlier counts describe historical checkpoints. Separate PRoot and
+Termux-runtime smoke/differential results are recorded in the
+[validation status](../project/VALIDATION.md); both local callers were traced,
+so they do not qualify untraced native Termux. Stable/security readiness remains
+PARTIAL because the earlier comparison-backend SIGKILL is unexplained; see
+[assurance](../../tests/security/README.md).
 This subset provides no general types/modules/FFI/inline assembly, ownership or
 lifetime checker, full Safety modes, Full Compiler or full self-hosting. Unsafe
 source containment is checked independently by the backend; it is not proof of

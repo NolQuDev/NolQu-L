@@ -11,6 +11,10 @@
 
 ### Fixed
 
+- Correct active feature/project status pages that still described the full
+  Linux suite as unrun or used earlier checkpoint counts as current. Record
+  matching finite compiler results through PRoot and Termux Python/QEMU while
+  retaining their traced context and the unrun native qualification gate.
 - Keep supervisor metadata ingestion bounded to a 4 KiB regular-file JSON
   control. Malformed, missing, oversized, symlink, directory and FIFO controls
   retain a failed invocation and its stream identities before a controlled

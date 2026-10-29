@@ -6,6 +6,49 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
+## Current verification checkpoint — 2026-10-30
+
+Source revision `78aa35b693e97aa4d3524d8900473eb93d2edc26` completed exact-source
+Linux qualification on both
+[Main](https://github.com/NolQuDev/NolQu-L/actions/runs/40891390906) and
+[Dev](https://github.com/NolQuDev/NolQu-L/actions/runs/40891457841) after the
+supervisor metadata repair and resource-accounting addition. Each run passed
+all eleven gates: 1,084 main PASS markers, 129 MCP methods, nineteen runner
+controls, twenty Android host controls on Linux and seventeen release controls.
+Actual component generations retained 722 stages, 275 checks, 475 artifact
+records and six equality comparisons. Counts overlap and are not a unique-test
+sum. The retained Main artifact ZIP SHA-256 is
+`930ea850ec5fd3ce8cb5ef50e6d89b824b08e70290448b8ccba9ebb14222fec6`.
+Earlier incomplete-integration statements below describe those earlier steps;
+they do not mean that the current full Linux suite was left unrun.
+
+Before this documentation repair, all 404 selected public paths, executable
+modes and symlink target bytes matched that revision. The same independently
+copied offline bundle then ran once through each local runtime:
+
+| Execution environment | Actual finite-profile result | Native Termux status |
+| --- | --- | --- |
+| Fedora Python/QEMU in PRoot, Android aarch64 | 15 checks, 326 invocations, 96 oracle matches, both sensitivity detections; exit 0 | Traced; not native-qualified |
+| Termux Python/QEMU binaries, Android aarch64 | 15 checks, 326 invocations, 96 oracle matches, both sensitivity detections; exit 0 | Traced; not native-qualified |
+| Untraced native Termux | NOT RUN for this profile | Qualification remains open |
+
+Both runtime contexts were traced at their initial and final snapshots. Their
+326 corresponding exit codes, 978 exact input/stdout/stderr streams and 107
+generated ELF files matched byte-for-byte. All captured streams and supervisor
+controls were checked against their retained identities. Waited-child CPU/RSS
+observations were available for every invocation on each runtime; these are
+host observations, not guest memory bounds, leak proof, signal attribution or
+a controlled performance comparison.
+
+The bundle manifest SHA-256 is
+`8c472809444d2acc06d9cedf11c749bd4784460b122c5fbad2bf6ed4d11c4eec`;
+the shared 48-case corpus SHA-256 remains
+`8fd66ecef1738a31044b39ed03926271a68cabfd49e9008294c81906608def9d`.
+These finite runs do not replace the full native suite or its filesystem
+qualification. C032-SIGNAL-01 remains OPEN; no sender or cause was identified.
+No compiler source/seed/pin, VERSION, CHANNEL or published Alpha 1 artifact
+changes in this documentation repair. Alpha 2 and Stable are not promoted.
+
 ## Alpha 2 readiness investigation — 2026-10-29
 
 Fresh baseline run
