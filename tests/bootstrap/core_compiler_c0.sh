@@ -729,7 +729,7 @@ read_elf_reports "$SUCCESSOR_SEED"
 if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "c0-successor-no-interpreter"
 fi
-awk '$1 == "GNU_STACK" { found=1; if ($7 ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
+awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
     fail_test "c0-successor-non-executable-stack"
 assert_load_segments_disjoint "$SUCCESSOR_SEED" "c0-successor"
 printf 'PASS c0-successor-load-segments-disjoint\n'
@@ -864,7 +864,7 @@ read_elf_reports "$SEED"
 if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "c0-no-interpreter"
 fi
-awk '$1 == "GNU_STACK" { found=1; if ($7 ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
+awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
     fail_test "c0-non-executable-stack"
 printf 'PASS c0-static-machine-artifact\n'
 
@@ -885,7 +885,7 @@ read_elf_reports "$TMP_DIR/c0.return7.one"
 if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "c0-successor-no-interpreter"
 fi
-awk '$1 == "GNU_STACK" { found=1; if ($7 ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
+awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
     fail_test "c0-successor-non-executable-stack"
 printf 'PASS c0-compile-return7\n'
 
@@ -2303,7 +2303,7 @@ if awk '$1 == "LOAD" && (($7 ~ /W/ && $7 ~ /E/) || \
     "$TMP_DIR/c0.runtime-input.readelf"; then
     fail_test "c0-runtime-no-rwx-load"
 fi
-awk '$1 == "GNU_STACK" { found=1; if ($7 ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' \
+awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' \
     "$TMP_DIR/c0.runtime-input.readelf" || \
     fail_test "c0-runtime-non-executable-stack"
 printf 'PASS c0-runtime-byte-memory-and-input\n'

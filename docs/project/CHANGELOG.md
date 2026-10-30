@@ -22,9 +22,12 @@
   publication and preserve pinned rebuild bytes and failed-output cleanup.
 - Consume complete ELF inspection reports before searching them. LLVM readelf
   broken pipes can no longer invert positive or negative bootstrap checks;
-  inspector errors remain controlled failures. Core stack checks also retain
-  detected execute permission through their final awk decision. Add portable alias/publication
+  inspector errors remain controlled failures. Add portable alias/publication
   regressions and a required real-hardlink Linux check.
+- Reject executable GNU_STACK permissions in combined or separate flag fields
+  across all four Core gates, including the `R E` form. ELF inspection test
+  launchers preserve Python paths containing spaces and clean up their private
+  process group and suite files on timeout or cancellation.
 
 - Correct active feature/project status pages that still described the full
   Linux suite as unrun or used earlier checkpoint counts as current. Record

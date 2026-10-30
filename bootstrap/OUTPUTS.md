@@ -49,6 +49,10 @@ interpreter detection and controlled inspector failure through the real
 foundation test gate. Inspector shims are test dependencies, not compilers or
 canonical build inputs.
 
-EI04 exercises the four actual Core GNU_STACK predicates with RW, RWE and
-missing-stack reports. The final awk decision preserves a detected execute
-permission; an END block must not overwrite the earlier failure with success.
+EI04 exercises the four actual Core GNU_STACK predicates with combined and
+separate permission fields, including `R E`, and missing-stack reports. The
+final awk decision preserves a detected execute permission in any flag column;
+an END block must not overwrite the earlier failure with success. EI05 runs the
+inspector through a selected Python path containing spaces. EI06 checks that a
+suite timeout stops its process-group descendants; the harness reaps the leader
+and removes its owned suite files even when shell cleanup traps cannot run.
