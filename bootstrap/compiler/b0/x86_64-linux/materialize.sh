@@ -13,11 +13,24 @@ fail() {
     exit 1
 }
 
+[[ $# -le 1 ]] || fail 'usage: materialize.sh [output]'
+
+validate_output() {
+    local protected
+    [[ ! -d "$OUTPUT_PATH" ]] || fail "output path '$OUTPUT_PATH' is a directory"
+    for protected in "$SOURCE_PATH" "$HASH_PATH" "$STAGE0_PATH" "${BASH_SOURCE[0]}"; do
+        [[ ! "$OUTPUT_PATH" -ef "$protected" ]] || \
+            fail "output would replace required input '$protected'"
+    done
+}
+
+validate_output
+
 [[ -x "$STAGE0_PATH" ]] || fail "missing executable Stage 0 seed '$STAGE0_PATH'"
 [[ -f "$SOURCE_PATH" ]] || fail "missing B0 source '$SOURCE_PATH'"
 [[ -f "$HASH_PATH" ]] || fail "missing hash manifest '$HASH_PATH'"
 
-output_dir="$(dirname "$OUTPUT_PATH")"
+output_dir="$(dirname -- "$OUTPUT_PATH")"
 [[ -d "$output_dir" ]] || fail "output directory '$output_dir' does not exist"
 
 read -r expected_hash expected_name < "$HASH_PATH" || fail "cannot read '$HASH_PATH'"
@@ -32,7 +45,7 @@ else
     fail "x86_64 execution unavailable; install qemu-x86_64 on this host"
 fi
 
-temp_path="$(mktemp "$output_dir/.b0.seed.tmp.XXXXXX")" || \
+temp_path="$(mktemp -- "$output_dir/.b0.seed.tmp.XXXXXX")" || \
     fail "cannot create temporary output in '$output_dir'"
 
 cleanup() {
@@ -53,7 +66,8 @@ actual_hash="${actual_hash%% *}"
     fail "B0 hash mismatch: expected $expected_hash, got $actual_hash"
 
 chmod 0755 "$temp_path" || fail "cannot mark reconstructed B0 executable"
-mv -f -- "$temp_path" "$OUTPUT_PATH" || fail "cannot install '$OUTPUT_PATH'"
+validate_output
+mv -fT -- "$temp_path" "$OUTPUT_PATH" || fail "cannot install '$OUTPUT_PATH'"
 trap - EXIT HUP INT TERM
 
 printf 'materialize-b0: verified %s  %s\n' "$actual_hash" "$OUTPUT_PATH"

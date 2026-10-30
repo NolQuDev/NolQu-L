@@ -725,11 +725,11 @@ cmp -s "$TMP_DIR/c0.successor-output-error.expected" \
     fail_test "c0-successor-input-output-closed-diagnostic"
 file "$SUCCESSOR_SEED" | grep -Fq 'ELF 64-bit LSB executable, x86-64' || \
     fail_test "c0-successor-elf64-x86-64"
-if readelf -l "$SUCCESSOR_SEED" | grep -q 'INTERP'; then
+read_elf_reports "$SUCCESSOR_SEED"
+if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "c0-successor-no-interpreter"
 fi
-readelf -lW "$SUCCESSOR_SEED" | \
-    awk '$1 == "GNU_STACK" { found=1; if ($7 ~ /E/) exit 1 } END { exit !found }' || \
+awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
     fail_test "c0-successor-non-executable-stack"
 assert_load_segments_disjoint "$SUCCESSOR_SEED" "c0-successor"
 printf 'PASS c0-successor-load-segments-disjoint\n'
@@ -860,10 +860,11 @@ printf 'PASS c0-successor-bounded-generation-parity\n'
 
 file "$SEED" | grep -Fq 'ELF 64-bit LSB executable, x86-64' || \
     fail_test "c0-elf64-x86-64"
-if readelf -l "$SEED" | grep -q 'INTERP'; then
+read_elf_reports "$SEED"
+if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "c0-no-interpreter"
 fi
-readelf -lW "$SEED" | awk '$1 == "GNU_STACK" { found=1; if ($7 ~ /E/) exit 1 } END { exit !found }' || \
+awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
     fail_test "c0-non-executable-stack"
 printf 'PASS c0-static-machine-artifact\n'
 
@@ -880,11 +881,11 @@ set -e
 [[ ! -s "$TMP_DIR/c0.return7.run.stderr" ]] || fail_test "c0-return7-run-stderr"
 file "$TMP_DIR/c0.return7.one" | grep -Fq 'ELF 64-bit LSB executable, x86-64' || \
     fail_test "c0-successor-elf64-x86-64"
-if readelf -l "$TMP_DIR/c0.return7.one" | grep -q 'INTERP'; then
+read_elf_reports "$TMP_DIR/c0.return7.one"
+if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "c0-successor-no-interpreter"
 fi
-readelf -lW "$TMP_DIR/c0.return7.one" | \
-    awk '$1 == "GNU_STACK" { found=1; if ($7 ~ /E/) exit 1 } END { exit !found }' || \
+awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
     fail_test "c0-successor-non-executable-stack"
 printf 'PASS c0-compile-return7\n'
 
@@ -2302,7 +2303,7 @@ if awk '$1 == "LOAD" && (($7 ~ /W/ && $7 ~ /E/) || \
     "$TMP_DIR/c0.runtime-input.readelf"; then
     fail_test "c0-runtime-no-rwx-load"
 fi
-awk '$1 == "GNU_STACK" { found=1; if ($7 ~ /E/) exit 1 } END { exit !found }' \
+awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' \
     "$TMP_DIR/c0.runtime-input.readelf" || \
     fail_test "c0-runtime-non-executable-stack"
 printf 'PASS c0-runtime-byte-memory-and-input\n'

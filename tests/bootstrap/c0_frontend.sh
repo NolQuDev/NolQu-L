@@ -28,17 +28,18 @@ C0_FRONTEND="$frontend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_functions.py"
     FunctionTests.test_frontend_syntax_errors
 C0_FRONTEND="$frontend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_runtime_io.py" FrontendRuntimeTests
 
-readelf -h "$frontend" | grep -q 'Machine:.*Advanced Micro Devices X86-64'
-if readelf -lW "$frontend" | grep -q ' INTERP '; then
+read_elf_reports "$frontend"
+grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header"
+if grep -q ' INTERP ' <<< "$elf_program_headers"; then
     printf 'FAIL c0-frontend-interpreter\n' >&2
     exit 1
 fi
-if readelf -lW "$frontend" | grep -q ' DYNAMIC '; then
+if grep -q ' DYNAMIC ' <<< "$elf_program_headers"; then
     printf 'FAIL c0-frontend-dynamic-linkage\n' >&2
     exit 1
 fi
-readelf -lW "$frontend" | awk '
+awk '
     $1 == "GNU_STACK" { found = 1; if ($7 ~ /E/) exit 1 }
     END { if (!found) exit 1 }
-'
+' <<< "$elf_program_headers"
 printf 'PASS c0-frontend\n'

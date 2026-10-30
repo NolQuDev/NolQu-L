@@ -17,6 +17,19 @@ cleanup_tmp_dir() {
 
 trap cleanup_tmp_dir EXIT
 
+# Consume each inspector report before searching it. Under pipefail, grep -q
+# can close a live LLVM readelf pipe early and invert positive/negative gates.
+read_elf_reports() {
+    elf_header="$(LC_ALL=C readelf -h "$1")" || {
+        printf 'FAIL elf-header-inspection (%s)\n' "$1" >&2
+        return 1
+    }
+    elf_program_headers="$(LC_ALL=C readelf -lW "$1")" || {
+        printf 'FAIL elf-program-inspection (%s)\n' "$1" >&2
+        return 1
+    }
+}
+
 run_output() {
     local exe="$1"
     shift

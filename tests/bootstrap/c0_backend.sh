@@ -32,13 +32,14 @@ C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_capacity_backen
 printf 'PASS c0-capacity-backend\n'
 C0_BACKEND="$backend" bash "$ROOT_DIR/tests/bootstrap/c0_native_os.sh"
 
-readelf -h "$backend" | grep -q 'Machine:.*Advanced Micro Devices X86-64'
-if readelf -lW "$backend" | grep -Eq ' (INTERP|DYNAMIC) '; then
+read_elf_reports "$backend"
+grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header"
+if grep -Eq ' (INTERP|DYNAMIC) ' <<< "$elf_program_headers"; then
     printf 'FAIL c0-backend-host-linkage\n' >&2
     exit 1
 fi
-readelf -lW "$backend" | awk '
+awk '
     $1 == "GNU_STACK" { found = 1; if ($7 ~ /E/) exit 1 }
     END { if (!found) exit 1 }
-'
+' <<< "$elf_program_headers"
 printf 'PASS c0-backend\n'
