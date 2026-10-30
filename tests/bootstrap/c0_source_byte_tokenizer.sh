@@ -49,15 +49,16 @@ cmp -s "$tokenizer_a" "$tokenizer_b" || \
     fail_test "c0-source-byte-tokenizer-artifact-hash"
 chmod 0755 "$tokenizer_a" "$tokenizer_b"
 
-readelf -h "$tokenizer_a" | grep -q 'Machine:.*Advanced Micro Devices X86-64' || \
+read_elf_reports "$tokenizer_a"
+grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header" || \
     fail_test "c0-source-byte-tokenizer-machine"
-if readelf -lW "$tokenizer_a" | grep -q ' INTERP '; then
+if grep -q ' INTERP ' <<< "$elf_program_headers"; then
     fail_test "c0-source-byte-tokenizer-interpreter"
 fi
-readelf -lW "$tokenizer_a" | awk '
+awk '
     $1 == "GNU_STACK" { found = 1; if ($7 ~ /E/) exit 1 }
     END { if (!found) exit 1 }
-' || fail_test "c0-source-byte-tokenizer-stack"
+' <<< "$elf_program_headers" || fail_test "c0-source-byte-tokenizer-stack"
 
 sample_input="$TMP_DIR/source-byte-tokenizer.in"
 sample_output="$TMP_DIR/source-byte-tokenizer.out"

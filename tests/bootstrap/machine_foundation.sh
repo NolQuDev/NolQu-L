@@ -174,15 +174,16 @@ printf 'hex0: error: cannot write standard output\n' > "$TMP_DIR/write-failure.e
 assert_files_equal "write-failure-diagnostic" \
     "$TMP_DIR/write-failure.expected" "$TMP_DIR/write-failure.stderr"
 
-readelf -h "$SEED" | grep -q 'Machine:.*Advanced Micro Devices X86-64' || \
+read_elf_reports "$SEED"
+grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header" || \
     fail_test "elf64-x86-64"
 printf 'PASS elf64-x86-64\n'
 
-stack_flags="$(readelf -W -l "$SEED" | awk '$1 == "GNU_STACK" { print $7 }')"
+stack_flags="$(awk '$1 == "GNU_STACK" { print $7 }' <<< "$elf_program_headers")"
 [[ "$stack_flags" != *E* ]] || fail_test "non-executable-stack"
 printf 'PASS non-executable-stack\n'
 
-if readelf -W -l "$SEED" | grep -q 'INTERP'; then
+if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "no-dynamic-interpreter"
 fi
 printf 'PASS no-dynamic-interpreter\n'

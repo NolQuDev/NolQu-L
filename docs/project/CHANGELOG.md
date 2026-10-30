@@ -11,6 +11,15 @@
 
 ### Fixed
 
+- Reject bootstrap materializer/stream-adapter outputs that alias required
+  source, pin, wrapper or predecessor inputs. Recheck before exact-destination
+  publication and preserve pinned rebuild bytes and failed-output cleanup.
+- Consume complete ELF inspection reports before searching them. LLVM readelf
+  broken pipes can no longer invert positive or negative bootstrap checks;
+  inspector errors remain controlled failures. Core stack checks also retain
+  detected execute permission through their final awk decision. Add portable alias/publication
+  regressions and a required real-hardlink Linux check.
+
 - Correct active feature/project status pages that still described the full
   Linux suite as unrun or used earlier checkpoint counts as current. Record
   matching finite compiler results through PRoot and Termux Python/QEMU while

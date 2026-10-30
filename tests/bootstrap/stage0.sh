@@ -146,29 +146,27 @@ printf 'S0\n' > "$TMP_DIR/minimal.expected"
 assert_files_equal "stage0-generated-elf-runs" \
     "$TMP_DIR/minimal.expected" "$TMP_DIR/minimal.stdout"
 
-readelf -h "$TMP_DIR/minimal-a" | \
-    grep -qi 'Entry point address:.*0x4000b0' || \
+read_elf_reports "$TMP_DIR/minimal-a"
+grep -qi 'Entry point address:.*0x4000b0' <<< "$elf_header" || \
     fail_test "stage0-generated-elf-entry"
 printf 'PASS stage0-generated-elf-entry\n'
-readelf -h "$TMP_DIR/minimal-a" | \
-    grep -q 'Machine:.*Advanced Micro Devices X86-64' || \
+grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header" || \
     fail_test "stage0-generated-elf-machine"
 printf 'PASS stage0-generated-elf-machine\n'
-if readelf -W -l "$TMP_DIR/minimal-a" | grep -q 'INTERP'; then
+if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "stage0-generated-elf-static"
 fi
 printf 'PASS stage0-generated-elf-static\n'
-generated_stack_flags="$(readelf -W -l "$TMP_DIR/minimal-a" | \
-    awk '$1 == "GNU_STACK" { print $7 }')"
+generated_stack_flags="$(awk '$1 == "GNU_STACK" { print $7 }' <<< "$elf_program_headers")"
 [[ "$generated_stack_flags" != *E* ]] || \
     fail_test "stage0-generated-elf-non-executable-stack"
 printf 'PASS stage0-generated-elf-non-executable-stack\n'
 
-seed_stack_flags="$(readelf -W -l "$SEED" | \
-    awk '$1 == "GNU_STACK" { print $7 }')"
+read_elf_reports "$SEED"
+seed_stack_flags="$(awk '$1 == "GNU_STACK" { print $7 }' <<< "$elf_program_headers")"
 [[ "$seed_stack_flags" != *E* ]] || fail_test "stage0-seed-non-executable-stack"
 printf 'PASS stage0-seed-non-executable-stack\n'
-if readelf -W -l "$SEED" | grep -q 'INTERP'; then
+if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "stage0-seed-no-interpreter"
 fi
 printf 'PASS stage0-seed-no-interpreter\n'

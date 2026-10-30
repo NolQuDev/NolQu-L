@@ -12,12 +12,24 @@ fail() {
     exit 1
 }
 
+[[ $# -le 1 ]] || fail 'usage: materialize-successor.sh [output]'
+
+validate_output() {
+    local protected
+    [[ ! -d "$OUTPUT_PATH" ]] || fail "output path '$OUTPUT_PATH' is a directory"
+    for protected in "$SOURCE_PATH" "$HASH_PATH" "$COMPILER_PATH" "$SCRIPT_DIR/c0.seed" "$SCRIPT_DIR/c0.sha256" "${BASH_SOURCE[0]}"; do
+        [[ ! "$OUTPUT_PATH" -ef "$protected" ]] || \
+            fail "output would replace required input '$protected'"
+    done
+}
+
+validate_output
+
 [[ -f "$SOURCE_PATH" ]] || fail "missing successor source '$SOURCE_PATH'"
 [[ -x "$COMPILER_PATH" ]] || fail "missing C0 compiler adapter '$COMPILER_PATH'"
 [[ -f "$HASH_PATH" ]] || fail "missing hash manifest '$HASH_PATH'"
-[[ ! -d "$OUTPUT_PATH" ]] || fail "output path '$OUTPUT_PATH' is a directory"
 
-output_dir="$(dirname "$OUTPUT_PATH")"
+output_dir="$(dirname -- "$OUTPUT_PATH")"
 [[ -d "$output_dir" ]] || fail "output directory '$output_dir' does not exist"
 
 read -r expected_hash expected_name < "$HASH_PATH" || fail "cannot read '$HASH_PATH'"
@@ -25,7 +37,7 @@ read -r expected_hash expected_name < "$HASH_PATH" || fail "cannot read '$HASH_P
 [[ "$expected_name" == "c0-successor.seed" ]] || \
     fail 'hash manifest must name c0-successor.seed'
 
-temp_path="$(mktemp "$output_dir/.c0-successor.tmp.XXXXXX")" || \
+temp_path="$(mktemp -- "$output_dir/.c0-successor.tmp.XXXXXX")" || \
     fail "cannot create temporary output in '$output_dir'"
 
 cleanup() {
@@ -45,6 +57,7 @@ actual_hash="${actual_hash%% *}"
     fail "successor hash mismatch: expected $expected_hash, got $actual_hash"
 
 chmod 0755 "$temp_path" || fail 'cannot mark successor executable'
+validate_output
 mv -fT -- "$temp_path" "$OUTPUT_PATH" || fail "cannot install '$OUTPUT_PATH'"
 trap - EXIT HUP INT TERM
 

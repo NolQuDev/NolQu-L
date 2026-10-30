@@ -69,15 +69,16 @@ cmp -s "$parser_a" "$parser_b" || fail_test "c0-source-token-parser-deterministi
     "f03e85e4966b2439f3fbeccd22bc1b57c0dd7feaa1638bb76ce7ebc6bc4fc357" ]] || \
     fail_test "c0-source-token-parser-artifact-hash"
 
-readelf -h "$parser_a" | grep -q 'Machine:.*Advanced Micro Devices X86-64' || \
+read_elf_reports "$parser_a"
+grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header" || \
     fail_test "c0-source-token-parser-machine"
-if readelf -lW "$parser_a" | grep -q ' INTERP '; then
+if grep -q ' INTERP ' <<< "$elf_program_headers"; then
     fail_test "c0-source-token-parser-interpreter"
 fi
-readelf -lW "$parser_a" | awk '
+awk '
     $1 == "GNU_STACK" { found = 1; if ($7 ~ /E/) exit 1 }
     END { if (!found) exit 1 }
-' || fail_test "c0-source-token-parser-stack"
+' <<< "$elf_program_headers" || fail_test "c0-source-token-parser-stack"
 
 invalid_expected="$TMP_DIR/source-token-parser-invalid.expected"
 printf 'runtime: invalid source\n' > "$invalid_expected"
