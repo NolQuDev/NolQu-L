@@ -289,6 +289,143 @@ print('orphan reaped before target exit')
                     self.assertIn("type", runner.records[0]["control_error"])
                 self.assertEqual((runner.directory / "0001.control.json").stat().st_size, size)
 
+    def assert_lifecycle(self, record):
+        self.assertIn("lifecycle", record["control"], "supervisor phase/cleanup evidence is missing")
+        lifecycle = record["control"]["lifecycle"]
+        self.assertEqual(lifecycle["phase"], "complete")
+        self.assertEqual(lifecycle["target_signal_sender"], "NOT_OBSERVED")
+        self.assertIs(type(lifecycle["cleanup"]["target_sigkill_requested"]), bool)
+        self.assertIs(type(lifecycle["cleanup"]["descendant_sigkills_sent"]), int)
+        for value in lifecycle["events"].values():
+            self.assertIs(type(value), float)
+            self.assertTrue(math.isfinite(value))
+            self.assertGreaterEqual(value, 0)
+        self.assertLessEqual((self.directory / "0001.control.json").stat().st_size, 4096)
+        return lifecycle
+
+    def test_lifecycle_normal_exit_is_bounded_and_ordered(self):
+        runner = self.runner()
+        result = runner.run("lifecycle-exit", [sys.executable, "-c",
+                            "import os;os.write(1,b'\\x00NQL');raise SystemExit(7)"], b"")
+        self.assertEqual((result.returncode, result.stdout, result.stderr), (7, b"\0NQL", b""))
+        lifecycle = self.assert_lifecycle(runner.records[-1])
+        events = lifecycle["events"]
+        values = [events[key] for key in ("supervisor_started_seconds", "target_spawned_seconds",
+                  "target_reaped_seconds", "cleanup_started_seconds", "complete_seconds")]
+        self.assertEqual(values, sorted(values))
+        self.assertNotIn("interruption", lifecycle)
+        self.assertEqual(lifecycle["cleanup"], {"target_sigkill_requested": False,
+                                             "descendant_sigkills_sent": 0})
+        self.assertNotIn("deadline_observation", runner.records[-1])
+
+    def test_timeout_observes_phase_before_supervisor_cleanup(self):
+        runner = self.runner(timeout=1)
+        with self.assertRaisesRegex(AssuranceFailure, "timeout"):
+            runner.run("lifecycle-timeout", [sys.executable, "-c", "import time;time.sleep(60)"], b"")
+        record = runner.records[-1]
+        self.assertIn("deadline_observation", record, "deadline lost the last live supervisor state")
+        observation = record["deadline_observation"]
+        self.assertIs(observation["available"], True)
+        live = observation["control"]
+        self.assertIs(live["complete"], False)
+        self.assertEqual(live["lifecycle"]["phase"], "waiting-target")
+        self.assertFalse(live["lifecycle"]["cleanup"]["target_sigkill_requested"])
+        lifecycle = self.assert_lifecycle(record)
+        self.assertTrue(lifecycle["cleanup"]["target_sigkill_requested"])
+        self.assertEqual(lifecycle["interruption"]["signal"], signal.SIGTERM)
+        self.assertEqual(lifecycle["interruption"]["phase"], "waiting-target")
+        self.assertIs(record["supervisor_ok"], False)
+        self.assertTrue(record["timed_out"])
+        with self.assertRaises(ProcessLookupError):
+            os.kill(record["control"]["target_pid"], 0)
+
+    def test_signal_during_deadline_observation_keeps_failure_evidence(self):
+        from bounded_runner import _read_supervisor_control
+        runner = self.runner(timeout=1)
+        reads = []
+
+        def observe(path):
+            value = _read_supervisor_control(path)
+            reads.append(value)
+            if len(reads) == 1:
+                # Real abort at the new observation/cleanup boundary.
+                os.kill(os.getpid(), signal.SIGINT)
+            return value
+
+        with mock.patch("bounded_runner._read_supervisor_control", side_effect=observe):
+            with self.assertRaises(KeyboardInterrupt):
+                runner.run("lifecycle-observation-cancel", [sys.executable, "-c",
+                           "import time;time.sleep(60)"], b"preserved")
+        self.assertEqual(len(runner.records), 1, "observation cancellation erased the invocation")
+        record = runner.records[0]
+        self.assertTrue(record["timed_out"])
+        self.assertTrue(record["cancelled"])
+        self.assertIn(signal.SIGINT, record["cancellation_signals"])
+        self.assertIs(record["deadline_observation"]["available"], True)
+        self.assert_lifecycle(record)
+        self.assertEqual(json.loads((runner.directory / "invocations.json").read_text())
+                         ["records"], runner.records)
+        with self.assertRaises(ProcessLookupError):
+            os.kill(record["control"]["target_pid"], 0)
+
+    def test_signal_exit_does_not_invent_a_sender(self):
+        runner = self.runner()
+        with self.assertRaisesRegex(AssuranceFailure, "signal 9"):
+            runner.run("lifecycle-target-signal", [sys.executable, "-c",
+                       "import os,signal;os.kill(os.getpid(),signal.SIGKILL)"], b"")
+        record = runner.records[-1]
+        lifecycle = self.assert_lifecycle(record)
+        self.assertEqual(record["exit_code"], -signal.SIGKILL)
+        self.assertIs(record["supervisor_ok"], True)
+        self.assertNotIn("interruption", lifecycle)
+        self.assertFalse(lifecycle["cleanup"]["target_sigkill_requested"])
+
+    def test_supervisor_interruption_records_known_cleanup_actions(self):
+        runner = self.runner(timeout=3)
+        target = ("import os,pathlib,signal,sys,time;control=pathlib.Path(sys.argv[1]);"
+                  "\nwhile not control.exists():time.sleep(.01)\n"
+                  "os.kill(os.getppid(),signal.SIGINT);time.sleep(60)")
+        with self.assertRaisesRegex(AssuranceFailure, "supervisor/cleanup"):
+            runner.run("lifecycle-supervisor-signal", [sys.executable, "-c", target,
+                       str(runner.directory / "0001.control.json")], b"")
+        record = runner.records[-1]
+        lifecycle = self.assert_lifecycle(record)
+        self.assertFalse(record["timed_out"])
+        self.assertFalse(record["cancelled"])
+        self.assertEqual(lifecycle["interruption"]["signal"], signal.SIGINT)
+        self.assertEqual(lifecycle["interruption"]["phase"], "waiting-target")
+        self.assertTrue(lifecycle["cleanup"]["target_sigkill_requested"])
+        self.assertEqual(record["control"]["target_exit_code"], -signal.SIGKILL)
+
+    def test_spawn_failure_retains_phase_and_exception(self):
+        runner = self.runner()
+        with self.assertRaisesRegex(AssuranceFailure, "supervisor/cleanup"):
+            runner.run("lifecycle-spawn-error", [str(Path(self.tmp.name) / "missing-program")], b"")
+        lifecycle = self.assert_lifecycle(runner.records[-1])
+        self.assertEqual(lifecycle["exception"]["phase"], "spawning-target")
+        self.assertEqual(lifecycle["exception"]["type"], "FileNotFoundError")
+        self.assertEqual(lifecycle["exception"]["errno"], 2)
+        self.assertLessEqual(len(lifecycle["exception"]["message"]), 160)
+        self.assertFalse(lifecycle["cleanup"]["target_sigkill_requested"])
+        self.assertNotIn("target_spawned_seconds", lifecycle["events"])
+
+    def test_missing_deadline_control_is_explicit_and_preserves_failure(self):
+        runner = self.runner(timeout=1)
+        target = ("import os,pathlib,sys,time;control=pathlib.Path(sys.argv[1]);"
+                  "\nwhile not control.exists():time.sleep(.01)\n"
+                  "control.unlink();os.write(1,b'waiting');time.sleep(60)")
+        with self.assertRaisesRegex(AssuranceFailure, "timeout"):
+            runner.run("lifecycle-no-live-control", [sys.executable, "-c", target,
+                       str(runner.directory / "0001.control.json")], b"")
+        record = runner.records[-1]
+        self.assertIn("deadline_observation", record)
+        observation = record["deadline_observation"]
+        self.assertIs(observation["available"], False)
+        self.assertEqual(observation["error"]["type"], "FileNotFoundError")
+        self.assertEqual((runner.directory / record["stdout"]["path"]).read_bytes(), b"waiting")
+        self.assert_lifecycle(record)
+        self.assertIs(record["supervisor_ok"], False)
+
     def assert_waited_child_usage(self, record):
         self.assertIn("waited_child_usage", record["control"],
                       "final control lost the waited-child resource observation")

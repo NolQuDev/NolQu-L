@@ -4,6 +4,12 @@
 
 ### Added
 
+- Retain bounded supervisor lifecycle and last-live deadline observations in host
+  test receipts. Known cleanup requests remain distinct from an unobserved target
+  signal sender; aborts during observation preserve failure evidence. Existing
+  limits, target results, historical receipts and canonical compiler bytes stay
+  unchanged. The original native timeout and historical SIGKILL remain open.
+
 - Retain optional CPU time and largest-waited-child RSS from each private test
   supervisor after cleanup. New controls cover actual allocations, descendants,
   isolation, ordinary/signal exits and unavailable accounting. These host

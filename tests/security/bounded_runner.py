@@ -23,24 +23,32 @@ import time
 # supervisor exits and captured streams are hashed. This is lifecycle control,
 # not an OS sandbox. The target stays in the supervisor's disposable session.
 _SUPERVISOR = r'''
-import ctypes,json,os,pathlib,resource,signal,subprocess,sys
+import ctypes,json,os,pathlib,resource,signal,subprocess,sys,time
 libc=ctypes.CDLL(None,use_errno=True)
 if libc.prctl(36,1,0,0,0) != 0:
     raise OSError(ctypes.get_errno(), 'cannot enable child subreaper')
 status_path=pathlib.Path(sys.argv[1])
 target=None
-record={'complete':False,'target_exit_code':None,'reaped_descendants':0}
+started=time.monotonic()
+lifecycle={'phase':'spawning-target','events':{'supervisor_started_seconds':0.0},
+           'target_signal_sender':'NOT_OBSERVED',
+           'cleanup':{'target_sigkill_requested':False,'descendant_sigkills_sent':0}}
+record={'complete':False,'target_exit_code':None,'reaped_descendants':0,'lifecycle':lifecycle}
 def save():
     staging=status_path.with_suffix('.pending')
     staging.write_text(json.dumps(record))
     staging.replace(status_path)
 def cancel(signum,frame):
+    lifecycle['interruption']={'signal':signum,'phase':lifecycle['phase'],
+                               'seconds':time.monotonic()-started}
     raise InterruptedError('supervisor cancelled')
 signal.signal(signal.SIGTERM,cancel)
 signal.signal(signal.SIGINT,cancel)
 try:
     target=subprocess.Popen(sys.argv[2:])
     record['target_pid']=target.pid
+    lifecycle['events']['target_spawned_seconds']=time.monotonic()-started
+    lifecycle['phase']='waiting-target'
     save()
     # Reap adopted exited children while the target is alive too. Blocking
     # only on target.wait() retains their zombies for the target's lifetime.
@@ -49,17 +57,24 @@ try:
         if pid == target.pid:
             target.returncode=os.waitstatus_to_exitcode(status)
             record['target_exit_code']=target.returncode
+            lifecycle['events']['target_reaped_seconds']=time.monotonic()-started
             break
         record['reaped_descendants']+=1
 except BaseException as exc:
     record['interrupted']=type(exc).__name__
+    lifecycle['exception']={'type':type(exc).__name__,'errno':getattr(exc,'errno',None),
+                            'message':str(exc)[:160],'phase':lifecycle['phase']}
 finally:
     signal.signal(signal.SIGTERM,signal.SIG_IGN)
     signal.signal(signal.SIGINT,signal.SIG_IGN)
+    lifecycle['events']['cleanup_started_seconds']=time.monotonic()-started
+    lifecycle['phase']='cleaning-up'
     if target is not None:
         if target.poll() is None:
+            lifecycle['cleanup']['target_sigkill_requested']=True
             target.kill()
         record['target_exit_code']=target.wait()
+        lifecycle['events'].setdefault('target_reaped_seconds',time.monotonic()-started)
     while True:
         try:
             pid,_=os.waitpid(-1,os.WNOHANG)
@@ -76,6 +91,7 @@ finally:
                 fields=path.read_text().rsplit(')',1)[1].split()
                 if int(fields[1]) == os.getpid():
                     os.kill(int(path.parent.name),signal.SIGKILL)
+                    lifecycle['cleanup']['descendant_sigkills_sent']+=1
             except (OSError,ValueError,IndexError):
                 pass
         try:
@@ -95,6 +111,8 @@ finally:
         usage['error']={'type':type(error).__name__,'errno':getattr(error,'errno',None),
                         'message':str(error)}
     record['waited_child_usage']=usage
+    lifecycle['events']['complete_seconds']=time.monotonic()-started
+    lifecycle['phase']='complete'
     record['complete']=True
     save()
 '''
@@ -250,6 +268,18 @@ class BoundedRunner:
                 child.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
                 record["timed_out"] = True
+                cancellation.defer()
+                # Observe the last bounded control before teardown overwrites it.
+                # Missing/invalid metadata is unavailable evidence, not success.
+                observation = dict(available=False, elapsed_seconds=time.monotonic() - started)
+                try:
+                    observation["control"] = _read_supervisor_control(control_path)
+                    observation["available"] = True
+                except (OSError, ValueError, RecursionError) as error:
+                    observation["error"] = dict(type=type(error).__name__,
+                                                errno=getattr(error, "errno", None),
+                                                message=str(error)[:160])
+                record["deadline_observation"] = observation
             except BaseException as exc:
                 record["cancelled"] = True
                 interruption = exc
