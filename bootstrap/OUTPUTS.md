@@ -49,10 +49,37 @@ interpreter detection and controlled inspector failure through the real
 foundation test gate. Inspector shims are test dependencies, not compilers or
 canonical build inputs.
 
-EI04 exercises the four actual Core GNU_STACK predicates with combined and
-separate permission fields, including `R E`, and missing-stack reports. The
-final awk decision preserves a detected execute permission in any flag column;
-an END block must not overwrite the earlier failure with success. EI05 runs the
-inspector through a selected Python path containing spaces. EI06 checks that a
-suite timeout stops its process-group descendants; the harness reaps the leader
-and removes its owned suite files even when shell cleanup traps cannot run.
+All eight bootstrap shell gates that inspect stack permissions use the shared
+wide-report permission parser in `tests/shared/lib.sh`. It requires the relevant program header, validates
+its numeric fields and alignment, and checks every combined or split flag
+field. Every GNU_STACK row must lack execute permission; a safe later row
+cannot erase an unsafe earlier row. Zero permission bits are valid. The Core
+no-RWX LOAD check uses the same parser and rejects write plus execute across
+separate fields, while its existing exact RX/RW layout checks remain in place.
+
+EI04 checks that every stack gate uses this contract. EI07/EI09 cover missing,
+malformed, combined/split, duplicate and zero-permission rows and hexadecimal
+addresses containing E. EI08 feeds unsafe/missing/malformed stack reports
+through the real foundation gate. EI05 preserves Python paths containing
+spaces; EI06 checks owned process-group cleanup on suite timeout.
+
+MCP `verify_elf_properties` reads ELF identification/class/endianness/machine
+bytes instead of using the pathname-bearing `file` text as target evidence.
+Both `file` and `readelf` must finish successfully with complete stdout and
+stderr. Failed, timed-out, cancelled or truncated inspections cannot qualify.
+`verify_no_host_dependency` also requires a complete dynamic-section report.
+The additive `inspection_complete` result field distinguishes a completed
+inspection from an inconclusive one; `ok` and positive absence claims fail
+closed when it is false. Existing valid canonical artifacts remain accepted.
+Previously misqualified artifacts must be rebuilt or corrected before retrying.
+
+The MCP ELF01--ELF06 regressions inspect non-executed copies of a canonical
+ELF, including all eight permission-bit combinations and an AArch64 header
+with a misleading x86-64 filename. Controlled reports cover malformed and
+incomplete inspections. The real MCP checksum workflow separately verifies
+its generated artifact through the same public inspection tool.
+
+These host checks establish the stated target/linkage/stack properties of the
+inspected artifact, not semantic compiler provenance, safe behavior of arbitrary
+machine code, or isolation against an artifact changed concurrently by the
+same user. Canonical seed bytes, pins and bootstrap topology are unchanged.

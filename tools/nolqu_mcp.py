@@ -3676,6 +3676,33 @@ def bootstrap_hash(stage: str) -> dict[str, Any]:
     return {"ok": state["status"] == "PASS", "stage": stage, **state}
 
 
+def _elf_inspection_complete(result: dict[str, Any]) -> bool:
+    """Positive absence claims require a successful, untruncated report."""
+    return (result.get("ok") is True and result.get("exit_code") == 0
+            and result.get("timed_out") is False
+            and not result.get("cancelled", False)
+            and result.get("stdout_truncated") is False
+            and result.get("stderr_truncated") is False)
+
+
+def _elf_non_executable_stack(report: str) -> bool:
+    found = False
+    number = r"(?:0[xX][0-9a-fA-F]+|[0-9]+)"
+    for line in report.splitlines():
+        fields = line.split()
+        if not fields or fields[0] != "GNU_STACK":
+            continue
+        found = True
+        if len(fields) < 7 or any(
+                re.fullmatch(number, field) is None
+                for field in [*fields[1:6], fields[-1]]):
+            return False
+        # No flags is a valid PF=0 row; an execute bit is never acceptable.
+        if any(re.fullmatch(r"[RW]+", field) is None for field in fields[6:-1]):
+            return False
+    return found
+
+
 @mcp.tool()
 def verify_elf_properties(artifact_path: str) -> dict[str, Any]:
     """Verify ELF64 x86_64, static linking, no interpreter, and non-exec stack."""
@@ -3685,21 +3712,30 @@ def verify_elf_properties(artifact_path: str) -> dict[str, Any]:
         return {"ok": False, "error": str(e)}
     if not artifact.is_file():
         return {"ok": False, "error": f"artifact not found: {artifact_path}"}
+    try:
+        with artifact.open("rb") as stream:
+            identification = stream.read(20)
+    except OSError as exc:
+        return {"ok": False, "error": f"cannot read ELF identification: {exc}"}
+    # `file` reports the pathname too; it cannot establish class or machine.
+    is_elf64 = (identification[:7] == b"\x7fELF\x02\x01\x01"
+                and identification[18:20] == b"\x3e\x00")
     file_result = _run_result(["file", str(artifact)], timeout=10, capability=CAP_READ_ONLY)
     elf_result = _run_result(["readelf", "-W", "-l", str(artifact)], timeout=10, capability=CAP_READ_ONLY)
-    file_text = file_result["stdout"]
+    inspection_complete = all(_elf_inspection_complete(result)
+                              for result in (file_result, elf_result))
     elf_text = elf_result["stdout"]
-    is_elf64 = "ELF 64-bit" in file_text and "x86-64" in file_text
-    no_interpreter = "INTERP" not in elf_text
-    no_dynamic = "DYNAMIC" not in elf_text
-    stack_lines = [line for line in elf_text.splitlines() if "GNU_STACK" in line]
-    non_executable_stack = bool(stack_lines) and all("RWE" not in line for line in stack_lines)
+    record_types = {fields[0] for line in elf_text.splitlines() if (fields := line.split())}
+    no_interpreter = "INTERP" not in record_types
+    no_dynamic = "DYNAMIC" not in record_types
+    non_executable_stack = inspection_complete and _elf_non_executable_stack(elf_text)
     return {
-        "ok": file_result["ok"] and elf_result["ok"] and is_elf64
+        "ok": inspection_complete and is_elf64
         and no_interpreter and no_dynamic and non_executable_stack,
         "artifact": str(artifact.relative_to(ROOT)),
         "elf64_x86_64": is_elf64,
-        "static": no_dynamic,
+        "inspection_complete": inspection_complete,
+        "static": inspection_complete and no_dynamic,
         "interpreter": not no_interpreter,
         "non_executable_stack": non_executable_stack,
         "sha256": _sha256(artifact),
@@ -3743,7 +3779,7 @@ def verify_no_host_dependency(artifact_or_stage: str) -> dict[str, Any]:
     interpreter = bool(elf.get("interpreter"))
     runtime_independent = (
         bool(elf.get("ok"))
-        and dynamic.get("ok", False)
+        and _elf_inspection_complete(dynamic)
         and not interpreter
         and not needed_libraries
     )
@@ -3755,6 +3791,7 @@ def verify_no_host_dependency(artifact_or_stage: str) -> dict[str, Any]:
         "scope": "ELF runtime interpreter and shared-library dependencies",
         "interpreter": interpreter,
         "needed_libraries": needed_libraries,
+        "inspection_complete": bool(elf.get("inspection_complete")) and _elf_inspection_complete(dynamic),
         "runtime_host_independent": runtime_independent,
         "canonical_hash_verified": canonical_hash_verified,
         "sha256": _sha256(artifact),

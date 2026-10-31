@@ -55,10 +55,7 @@ grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header" || \
 if grep -q ' INTERP ' <<< "$elf_program_headers"; then
     fail_test "c0-source-byte-tokenizer-interpreter"
 fi
-awk '
-    $1 == "GNU_STACK" { found = 1; if ($7 ~ /E/) exit 1 }
-    END { if (!found) exit 1 }
-' <<< "$elf_program_headers" || fail_test "c0-source-byte-tokenizer-stack"
+elf_has_non_executable_stack <<< "$elf_program_headers" || fail_test "c0-source-byte-tokenizer-stack"
 
 sample_input="$TMP_DIR/source-byte-tokenizer.in"
 sample_output="$TMP_DIR/source-byte-tokenizer.out"

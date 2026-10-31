@@ -17,6 +17,13 @@
 
 ### Fixed
 
+- Apply one strict GNU_STACK permission contract across all bootstrap gates,
+  including split flags, missing/malformed rows and unsafe duplicates. Fix the
+  Core no-RWX LOAD predicate for split write/execute flags. MCP ELF inspectors
+  now identify the actual target from ELF bytes and reject incomplete reports;
+  filenames cannot qualify a wrong-target artifact. Expose `inspection_complete`
+  and require a complete dynamic-section report for runtime-independence checks.
+  Canonical compiler artifacts and language behavior are unchanged.
 - Reject bootstrap materializer/stream-adapter outputs that alias required
   source, pin, wrapper or predecessor inputs. Recheck before exact-destination
   publication and preserve pinned rebuild bytes and failed-output cleanup.

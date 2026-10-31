@@ -729,7 +729,7 @@ read_elf_reports "$SUCCESSOR_SEED"
 if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "c0-successor-no-interpreter"
 fi
-awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
+elf_has_non_executable_stack <<< "$elf_program_headers" || \
     fail_test "c0-successor-non-executable-stack"
 assert_load_segments_disjoint "$SUCCESSOR_SEED" "c0-successor"
 printf 'PASS c0-successor-load-segments-disjoint\n'
@@ -864,7 +864,7 @@ read_elf_reports "$SEED"
 if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "c0-no-interpreter"
 fi
-awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
+elf_has_non_executable_stack <<< "$elf_program_headers" || \
     fail_test "c0-non-executable-stack"
 printf 'PASS c0-static-machine-artifact\n'
 
@@ -885,7 +885,7 @@ read_elf_reports "$TMP_DIR/c0.return7.one"
 if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "c0-successor-no-interpreter"
 fi
-awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' <<< "$elf_program_headers" || \
+elf_has_non_executable_stack <<< "$elf_program_headers" || \
     fail_test "c0-successor-non-executable-stack"
 printf 'PASS c0-compile-return7\n'
 
@@ -2298,13 +2298,11 @@ runtime_rw_count="$(awk '$1 == "LOAD" && $2 == "0x001000" && \
 [[ "$runtime_rw_count" -eq 1 ]] || \
     fail_test "c0-runtime-exact-rw-bss-load"
 
-if awk '$1 == "LOAD" && (($7 ~ /W/ && $7 ~ /E/) || \
-    ($7 == "R" && $8 ~ /W/ && $8 ~ /E/)) { found=1 } END { exit !found }' \
-    "$TMP_DIR/c0.runtime-input.readelf"; then
+elf_has_no_writable_executable_load \
+    < "$TMP_DIR/c0.runtime-input.readelf" || \
     fail_test "c0-runtime-no-rwx-load"
-fi
-awk '$1 == "GNU_STACK" { found=1; for (i=7; i<NF; i++) if ($i ~ /E/) unsafe=1 } END { exit (!found || unsafe) }' \
-    "$TMP_DIR/c0.runtime-input.readelf" || \
+elf_has_non_executable_stack \
+    < "$TMP_DIR/c0.runtime-input.readelf" || \
     fail_test "c0-runtime-non-executable-stack"
 printf 'PASS c0-runtime-byte-memory-and-input\n'
 

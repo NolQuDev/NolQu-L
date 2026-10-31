@@ -432,10 +432,10 @@ printf 'PASS b0-deterministic-return7\n'
 printf 'PASS b0-deterministic-two-builds\n'
 
 if command -v readelf >/dev/null 2>&1; then
-    readelf -l "$TMP_DIR/return7.one" > "$TMP_DIR/return7.readelf"
-    grep -q 'GNU_STACK' "$TMP_DIR/return7.readelf" || \
+    read_elf_reports "$TMP_DIR/return7.one"
+    elf_has_non_executable_stack <<< "$elf_program_headers" || \
         fail_test "b0-return7-gnu-stack"
-    ! grep -q 'Requesting program interpreter' "$TMP_DIR/return7.readelf" || \
+    ! grep -q 'INTERP' <<< "$elf_program_headers" || \
         fail_test "b0-return7-no-interpreter"
     printf 'PASS b0-return7-elf-static\n'
     printf 'PASS b0-codegen-elf-static\n'

@@ -157,14 +157,12 @@ if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "stage0-generated-elf-static"
 fi
 printf 'PASS stage0-generated-elf-static\n'
-generated_stack_flags="$(awk '$1 == "GNU_STACK" { print $7 }' <<< "$elf_program_headers")"
-[[ "$generated_stack_flags" != *E* ]] || \
+elf_has_non_executable_stack <<< "$elf_program_headers" || \
     fail_test "stage0-generated-elf-non-executable-stack"
 printf 'PASS stage0-generated-elf-non-executable-stack\n'
 
 read_elf_reports "$SEED"
-seed_stack_flags="$(awk '$1 == "GNU_STACK" { print $7 }' <<< "$elf_program_headers")"
-[[ "$seed_stack_flags" != *E* ]] || fail_test "stage0-seed-non-executable-stack"
+elf_has_non_executable_stack <<< "$elf_program_headers" || fail_test "stage0-seed-non-executable-stack"
 printf 'PASS stage0-seed-non-executable-stack\n'
 if grep -q 'INTERP' <<< "$elf_program_headers"; then
     fail_test "stage0-seed-no-interpreter"

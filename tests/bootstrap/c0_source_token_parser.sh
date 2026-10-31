@@ -75,10 +75,7 @@ grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header" || \
 if grep -q ' INTERP ' <<< "$elf_program_headers"; then
     fail_test "c0-source-token-parser-interpreter"
 fi
-awk '
-    $1 == "GNU_STACK" { found = 1; if ($7 ~ /E/) exit 1 }
-    END { if (!found) exit 1 }
-' <<< "$elf_program_headers" || fail_test "c0-source-token-parser-stack"
+elf_has_non_executable_stack <<< "$elf_program_headers" || fail_test "c0-source-token-parser-stack"
 
 invalid_expected="$TMP_DIR/source-token-parser-invalid.expected"
 printf 'runtime: invalid source\n' > "$invalid_expected"

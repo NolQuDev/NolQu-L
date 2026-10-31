@@ -179,8 +179,7 @@ grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header" || \
     fail_test "elf64-x86-64"
 printf 'PASS elf64-x86-64\n'
 
-stack_flags="$(awk '$1 == "GNU_STACK" { print $7 }' <<< "$elf_program_headers")"
-[[ "$stack_flags" != *E* ]] || fail_test "non-executable-stack"
+elf_has_non_executable_stack <<< "$elf_program_headers" || fail_test "non-executable-stack"
 printf 'PASS non-executable-stack\n'
 
 if grep -q 'INTERP' <<< "$elf_program_headers"; then

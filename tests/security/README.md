@@ -1,5 +1,24 @@
 # Canonical native boundary assurance
 
+## ELF qualification boundary
+
+The host entry points are bootstrap `readelf` gates and MCP artifact inspection.
+Artifact paths/bytes and inspector output cross the qualification boundary;
+positive target, linkage and stack claims must follow actual ELF identification
+and complete successful reports. Filename text, omitted stack headers, malformed
+fields, split executable permissions and unsafe duplicate rows cannot establish
+those claims. Tests EI01--EI09 and MCP ELF01--ELF06 cover this boundary; the
+checksum SDK workflow checks a real compiler-generated artifact. Mutated ELF
+copies used as negative inspection fixtures are never executed.
+
+This is a host validation correctness fix. It adds no canonical build/runtime
+dependency, language safety guarantee or ISA backend. External inspectors remain
+trusted host tools; report parsing and hashing do not prevent same-user
+concurrent artifact replacement. Static Python parsing and shell syntax checks
+apply to these host changes; no NolQu-L ASan/UBSan instrumentation or exhaustive
+ELF validation is claimed. The original native timeout/signal investigation
+remains open and is independent of this repair.
+
 ## Offline Termux differential profile
 
 Prepare a new private bundle, then run its copied host tool from native Termux:

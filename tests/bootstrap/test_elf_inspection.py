@@ -1,6 +1,5 @@
 """Exercise the real foundation gate with controlled host inspector streams."""
 import os
-import re
 from pathlib import Path
 import shlex
 import shutil
@@ -36,6 +35,12 @@ class ElfInspectionTests(unittest.TestCase):
                 "if r.returncode:sys.exit(r.returncode)\n"
                 "payload=r.stdout\n"
                 "if mode=='interpreter' and not header:payload=b' INTERP \\n'+payload\n"
+                "if not header and mode.startswith('stack-'):\n"
+                " lines=[line for line in payload.splitlines(keepends=True) if not line.split() or line.split()[0]!=b'GNU_STACK']\n"
+                " flags={'stack-executable':'R E','stack-missing':None,'stack-duplicate':'R E','stack-malformed':'RW garbage'}[mode]\n"
+                " if flags is not None:lines.append((' GNU_STACK 0 0 0 0 0 '+flags+' 0x10\\n').encode())\n"
+                " if mode=='stack-duplicate':lines.append(b' GNU_STACK 0 0 0 0 0 RW 0x10\\n')\n"
+                " payload=b''.join(lines)\n"
                 "os.write(1,payload)\n"
                 "if (mode=='long-header' and header) or (mode=='interpreter' and not header):\n"
                 " for _ in range(256):os.write(1,b' '+b'padding '*1024+b'\\n')\n")
@@ -80,18 +85,64 @@ class ElfInspectionTests(unittest.TestCase):
 
 
     def test_EI04_core_stack_gates_reject_executable_and_missing_stack(self):
-        script = (ROOT / "tests/bootstrap/core_compiler_c0.sh").read_text()
-        programs = [program for program in re.findall(r"awk '([^']*GNU_STACK[^']*)'", script)
-                    if "found=1;" in program]
-        self.assertEqual(len(programs), 4)
-        for program in programs:
-            for flags, expected in (("RW", 0), ("R W", 0), ("RWE", 1),
-                                    ("R E", 1), ("RW E", 1), ("R W E", 1),
-                                    (None, 1)):
-                with self.subTest(checker=program, flags=flags):
-                    report = "" if flags is None else f"GNU_STACK 0 0 0 0 0 {flags} 0x10\n"
-                    result = subprocess.run(["awk", program], input=report.encode(),
-                                            capture_output=True, timeout=5)
+        calls = {"machine_foundation.sh": 1, "stage0.sh": 2,
+                 "bootstrap_compiler_b0.sh": 1, "core_compiler_c0.sh": 4,
+                 "c0_frontend.sh": 1, "c0_backend.sh": 1,
+                 "c0_source_byte_tokenizer.sh": 1, "c0_source_token_parser.sh": 1}
+        for name, count in calls.items():
+            with self.subTest(gate=name):
+                script = (ROOT / "tests/bootstrap" / name).read_text()
+                self.assertEqual(script.count("elf_has_non_executable_stack"), count)
+                self.assertNotIn("GNU_STACK", script, "stack rules must share the tested predicate")
+
+    def test_EI07_all_bootstrap_gates_use_strict_stack_contract(self):
+        cases = (
+            ("GNU_STACK 0 0x0 0X0 0 0 RW 0x10\n", 0),
+            ("GNU_STACK 0 0 0 0 0 R W 0x10\n", 0),
+            ("GNU_STACK 0 0 0 0 0 0x10\n", 0),
+            ("GNU_STACK 0 0xEE 0 0 0 RW 0x1E\n", 0),
+            ("GNU_STACK 0 0 0 0 0 RWE 0x10\n", 1),
+            ("GNU_STACK 0 0 0 0 0 R E 0x10\n", 1),
+            ("GNU_STACK 0 0 0 0 0 RW E 0x10\n", 1),
+            ("GNU_STACK 0 0 0 0 0 E 0x10\n", 1),
+            ("GNU_STACK 0 0 0 0 0 RW garbage 0x10\n", 1),
+            ("GNU_STACK 0 0 0 0 0 RW\n", 1),
+            ("GNU_STACK invalid 0 0 0 0 RW 0x10\n", 1),
+            ("GNU_STACK 0 0 0 0 0 RW bad-alignment\n", 1),
+            ("GNU_STACK 0 0 0 0 0 R E 0x10\nGNU_STACK 0 0 0 0 0 RW 0x10\n", 1),
+            ("GNU_STACK 0 0 0 0 0 RW 0x10\nGNU_STACK 0 0 0 0 0 RW 0x10\n", 0),
+            ("filename-GNU_STACK RW\n", 1), ("", 1),
+        )
+        with tempfile.TemporaryDirectory(prefix="elf-stack-contract-") as directory:
+            for report, expected in cases:
+                with self.subTest(report=report):
+                    result = subprocess.run(
+                        ["bash", "-c", 'source "$1"; elf_has_non_executable_stack',
+                         "stack-contract", str(ROOT / "tests/shared/lib.sh")],
+                        input=report.encode(), capture_output=True, timeout=5,
+                        env={**os.environ, "ROOT_DIR": str(ROOT), "TMP_DIR": directory})
+                    self.assertEqual(result.returncode, expected, result.stderr)
+
+    def test_EI08_foundation_rejects_unsafe_missing_and_malformed_stack(self):
+        for mode in ("stack-executable", "stack-missing", "stack-duplicate", "stack-malformed"):
+            with self.subTest(mode=mode):
+                result = self.gate(mode)
+                self.assertNotEqual(result.returncode, 0, result.stdout)
+                self.assertIn(b"FAIL non-executable-stack", result.stderr)
+                self.assertNotIn(b"PASS non-executable-stack", result.stdout)
+
+    def test_EI09_load_permissions_reject_split_write_execute(self):
+        with tempfile.TemporaryDirectory(prefix="elf-load-contract-") as directory:
+            for flags, expected in (("RE", 0), ("R E", 0), ("RW", 0), ("R W", 0),
+                                    ("E", 0), ("", 0), ("RWE", 1), ("RW E", 1),
+                                    ("R W E", 1), ("R WE", 1), ("WE", 1), ("bad", 1)):
+                with self.subTest(flags=flags):
+                    result = subprocess.run(
+                        ["bash", "-c", 'source "$1"; elf_has_no_writable_executable_load',
+                         "load-contract", str(ROOT / "tests/shared/lib.sh")],
+                        input=f"LOAD 0 0xEE 0 0 0 {flags} 0x1E\n".encode(),
+                        capture_output=True, timeout=5,
+                        env={**os.environ, "ROOT_DIR": str(ROOT), "TMP_DIR": directory})
                     self.assertEqual(result.returncode, expected, result.stderr)
 
     def test_EI05_interpreter_path_with_spaces_is_one_argument(self):

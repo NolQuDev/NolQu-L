@@ -1832,6 +1832,104 @@ class McpProtocolTests(unittest.TestCase):
             asyncio.run(inspect_server(directory, missing))
 
 
+class ElfQualificationTests(unittest.TestCase):
+    """Inspect non-executed ELF copies and controlled complete/incomplete reports."""
+
+    setUp = NolQuMcpCoreTests.setUp
+    tearDown = NolQuMcpCoreTests.tearDown
+
+    def artifact(self, name="artifact.elf", flags=6, machine=62):
+        data = bytearray((REPO_ROOT / "bootstrap/machine/x86_64-linux/hex0.seed").read_bytes())
+        self.assertEqual(data[:7], b"\x7fELF\x02\x01\x01")
+        phoff = struct.unpack_from("<Q", data, 32)[0]
+        phsize, phcount = struct.unpack_from("<HH", data, 54)
+        stacks = [phoff + i * phsize for i in range(phcount)
+                  if struct.unpack_from("<I", data, phoff + i * phsize)[0] == 0x6474e551]
+        self.assertEqual(len(stacks), 1)
+        struct.pack_into("<I", data, stacks[0] + 4, flags)
+        struct.pack_into("<H", data, 18, machine)
+        path = self.root / name
+        path.write_bytes(data)
+        return path
+
+    @staticmethod
+    def report(stdout, **changes):
+        return {"ok": True, "exit_code": 0, "timed_out": False,
+                "stdout_truncated": False, "stderr_truncated": False,
+                "stdout": stdout, "stderr": "", **changes}
+
+    def test_ELF01_real_permission_flags_are_checked(self):
+        for flags in range(8):
+            with self.subTest(flags=flags):
+                path = self.artifact(flags=flags)
+                result = self.mcp.verify_elf_properties(path.name)
+                self.assertEqual(result["non_executable_stack"], not bool(flags & 1), result)
+                self.assertEqual(result["ok"], not bool(flags & 1), result)
+
+    def test_ELF02_filename_cannot_spoof_machine(self):
+        path = self.artifact(name="ELF 64-bit x86-64.aarch64", machine=183)
+        result = self.mcp.verify_elf_properties(path.name)
+        self.assertFalse(result["elf64_x86_64"], result)
+        self.assertFalse(result["ok"], result)
+
+    def test_ELF03_incomplete_reports_do_not_qualify(self):
+        path = self.artifact()
+        for command_index in (0, 1):
+            for changes in ({"stdout_truncated": True}, {"stderr_truncated": True},
+                            {"timed_out": True}, {"cancelled": True},
+                            {"exit_code": 2}, {"ok": False}):
+                reports = [self.report("ELF 64-bit x86-64"),
+                           self.report("GNU_STACK 0 0 0 0 0 RW 0x10\n")]
+                reports[command_index].update(changes)
+                with self.subTest(command=command_index, changes=changes), \
+                        mock.patch.object(self.mcp, "_run_result", side_effect=reports):
+                    result = self.mcp.verify_elf_properties(path.name)
+                    self.assertFalse(result["ok"], result)
+
+    def test_ELF04_stack_report_fields_and_duplicate_rows(self):
+        path = self.artifact()
+        cases = (("RW", True), ("R W", True), ("", True), ("RWE", False),
+                 ("R E", False), ("RW E", False), ("E", False),
+                 ("RW garbage", False))
+        reports = [(f"GNU_STACK 0 0xEE 0 0 0 {flags} 0x1E\n", valid)
+                   for flags, valid in cases]
+        reports += [("", False), ("filename-GNU_STACK RW\n", False),
+                    ("GNU_STACK 0 0 0 0 0 RW\n", False),
+                    ("GNU_STACK bad 0 0 0 0 RW 0x10\n", False),
+                    ("GNU_STACK 0 0 0 0 0 RW bad-alignment\n", False),
+                    ("GNU_STACK 0 0 0 0 0 R E 0x10\nGNU_STACK 0 0 0 0 0 RW 0x10\n", False),
+                    ("GNU_STACK 0 0 0 0 0 RW 0x10\nGNU_STACK 0 0 0 0 0 RW 0x10\n", True)]
+        for report, expected in reports:
+            with self.subTest(report=report), mock.patch.object(
+                    self.mcp, "_run_result", side_effect=[
+                        self.report("ELF 64-bit x86-64"), self.report(report)]):
+                result = self.mcp.verify_elf_properties(path.name)
+                self.assertEqual(result["non_executable_stack"], expected, result)
+                self.assertEqual(result["ok"], expected, result)
+
+    def test_ELF05_linkage_report_must_be_complete(self):
+        path = self.artifact()
+        for changes in ({"stdout_truncated": True}, {"stderr_truncated": True},
+                        {"timed_out": True}, {"cancelled": True}, {"exit_code": 2}):
+            with self.subTest(changes=changes), mock.patch.object(
+                    self.mcp, "_run_result", side_effect=[
+                        self.report("ELF 64-bit x86-64"),
+                        self.report("GNU_STACK 0 0 0 0 0 RW 0x10\n"),
+                        self.report("There is no dynamic section in this file.", **changes)]):
+                result = self.mcp.verify_no_host_dependency(path.name)
+                self.assertFalse(result["ok"], result)
+                self.assertFalse(result["runtime_host_independent"], result)
+
+    def test_ELF06_interpreter_and_dynamic_headers_cannot_qualify(self):
+        path = self.artifact()
+        for header in ("INTERP", "DYNAMIC"):
+            with self.subTest(header=header), mock.patch.object(
+                    self.mcp, "_run_result", side_effect=[self.report("ELF 64-bit x86-64"),
+                        self.report(f"{header} 0 0 0 0 0 R 0x10\nGNU_STACK 0 0 0 0 0 RW 0x10\n")]):
+                result = self.mcp.verify_elf_properties(path.name)
+                self.assertFalse(result["ok"], result)
+
+
 class CanonicalCliMigrationTests(unittest.TestCase):
     def run_cli(self, *args: str, cwd: pathlib.Path | None = None):
         return subprocess.run(

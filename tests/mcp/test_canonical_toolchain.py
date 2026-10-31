@@ -667,7 +667,10 @@ class CanonicalSdkTests(unittest.TestCase):
             self.assertIn(b"GNU_STACK", inspected.stdout)
             self.assertNotIn(b"INTERP", inspected.stdout)
             self.assertNotIn(b"NEEDED", inspected.stdout)
-            self.assertNotIn(b"RWE", inspected.stdout)
+            qualified = await self.call(client, "verify_elf_properties", artifact_path=output.name)
+            self.assertTrue(qualified["ok"], qualified)
+            self.assertTrue(qualified["inspection_complete"], qualified)
+            self.assertTrue(qualified["non_executable_stack"], qualified)
             payload = bytes(range(256)) * 3 + b"canonical\n"
             executed = self.execute(output, payload)
             self.assertEqual(executed.returncode, 0, executed.stderr)

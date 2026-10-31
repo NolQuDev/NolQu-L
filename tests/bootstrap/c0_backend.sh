@@ -38,8 +38,5 @@ if grep -Eq ' (INTERP|DYNAMIC) ' <<< "$elf_program_headers"; then
     printf 'FAIL c0-backend-host-linkage\n' >&2
     exit 1
 fi
-awk '
-    $1 == "GNU_STACK" { found = 1; if ($7 ~ /E/) exit 1 }
-    END { if (!found) exit 1 }
-' <<< "$elf_program_headers"
+elf_has_non_executable_stack <<< "$elf_program_headers"
 printf 'PASS c0-backend\n'
