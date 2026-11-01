@@ -86,6 +86,12 @@ NolQu-L Safety, full AST/source authentication, or total program termination.
 
 ## Invariants And Validation
 
+Host proof export normalizes machine-trace JSON to mode 0644 even under umask
+077. The actual two-profile mmap oracle exercises this permission contract;
+the independent MCP consumer continues to reject mismatched original or
+retained artifact modes. This is a host evidence repair, not a change to
+generated programs or the canonical bootstrap dependency chain.
+
 `tests/bootstrap/test_c0_return_flow.py` supplies these permanent checks:
 
 | Invariant | Test methods |

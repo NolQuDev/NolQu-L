@@ -45,6 +45,11 @@
 
 ### Fixed
 
+- Set the machine-trace JSON evidence mode explicitly to 0644. A private host
+  umask previously produced 0600 originals that the unchanged strict MCP proof
+  consumer correctly rejected. Exercise the export under umask 077 and retain
+  exact artifact identity and permission checks.
+
 - Match the MCP proof consumer to the actual 29-method capacity backend suite.
   The stale 28-method assertion rejected complete evidence; a negative control
   now rejects the old count while retaining the complete fail-closed inventory.

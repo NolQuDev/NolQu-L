@@ -167,7 +167,15 @@ class NativeRuntimeTests(unittest.TestCase):
                             file_after_hex=after[65536:65536+len(expected)].hex(),expected_hex=expected.hex(),
                             file_before_sha256=hashlib.sha256(before).hexdigest(),file_after_sha256=hashlib.sha256(after).hexdigest(),
                             outcome=dict(status=outcome[0],stdout_hex=outcome[1].hex(),stderr_hex=outcome[2].hex()),artifacts=identities)
-                with (destination/(stem+'.json')).open('x') as stream:json.dump(record,stream,indent=2);stream.write('\n')
+                trace_path=destination/(stem+'.json')
+                # The proof consumer requires 0644 even on a private-umask host.
+                previous_umask=os.umask(0o077)
+                try:
+                    with trace_path.open('x') as stream:json.dump(record,stream,indent=2);stream.write('\n')
+                    trace_path.chmod(0o644)
+                finally:
+                    os.umask(previous_umask)
+                self.assertEqual(trace_path.stat().st_mode&0o777,0o644)
 
     def test_callee_saved_and_alignment(self):
         # Six user arguments stay live across nested native/stream helpers.

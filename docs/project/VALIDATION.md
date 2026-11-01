@@ -23,6 +23,15 @@ requires the actual 29-method suite, with a negative control for the stale
 28-method count. Failed first-candidate logs remain evidence. These repairs do
 not close the historical signal incident or reconstruct missing old artifacts.
 
+The complete Native component run subsequently passed its executable tests but
+failed proof consumption because four original machine-trace JSON files had
+mode 0600 under the host's private umask. The exporter now sets 0644 explicitly;
+an actual two-profile mmap test fails before this repair and passes afterward
+in Native Termux and PRoot. The regression creates traces under umask 077 and
+restores the enclosing mask. The consumer's mode/identity contract is unchanged;
+the failed proof remains evidence. PR #8 tracks qualification of the repaired
+exporter alongside the component pair.
+
 ## Retained C0.32 Baseline — 2026-11-01
 
 Source revision `75b2309f570530adfd9e62ddb6b33431581a4a3c` on `Testing`
