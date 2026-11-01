@@ -105,6 +105,11 @@ requires this gate marker and the complete selector set, and leaves
 `return_flow_verified` false until the full proof passes. Metadata alone is
 not execution evidence.
 
+The earlier Native frontend fixture requiring an outer return after a direct
+returning unsafe body is now a positive check in both profiles. An unsafe body
+with only one returning conditional arm remains a negative case. This is an
+intentional acceptance extension under the contract above.
+
 Tests include independent valid-wire rewrites, incomplete/stale-function
 rejection, recursion, runtime side effects, unsafe joins, depth 64/65, wide
 spans and both arena profiles. Deterministic seed builds use B0; Python and

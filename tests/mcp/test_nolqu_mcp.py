@@ -302,7 +302,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
         name = pathlib.Path(command[-1]).stem
         directory.mkdir()
         stdout = markers[name]
-        stderr = ("".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (18, 28, 20, 6))
+        stderr = ("".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (18, 29, 20, 6))
                   if name == "c0_capacity" else "\nRan 23 tests in 1.0s\n\nOK\n" if name == "c0_backend" else "")
         (directory / "stdout").write_text(stdout)
         (directory / "stderr").write_text(stderr)
@@ -2331,7 +2331,7 @@ class NativeProofTests(unittest.TestCase):
     def test_native_gate_requires_marker_and_complete_skip_free_suite(self):
         self.c031_probe_fixture()
         gate = NolQuMcpCoreTests.c031_gate_result.__get__(self)
-        for failure in ("marker", "return-marker", "suite", "skip", "timeout", "validation"):
+        for failure in ("marker", "return-marker", "suite", "capacity-suite", "skip", "timeout", "validation"):
             def command(argv, directory, timeout, env=None):
                 result = gate(argv, directory, timeout, env)
                 if pathlib.Path(argv[-1]).stem == "c0_backend":
@@ -2345,6 +2345,9 @@ class NativeProofTests(unittest.TestCase):
                         (directory / "stderr").write_bytes(b"\nRan 23 tests in 1.0s\n\nOK (skipped=1)\n")
                     elif failure == "timeout":
                         result.update(ok=False, timed_out=True, exit_code=None)
+                if failure == "capacity-suite" and pathlib.Path(argv[-1]).stem == "c0_capacity":
+                    # The real suite has 29 methods. Reject the old truncated count.
+                    (directory / "stderr").write_text(result["stderr"].replace("Ran 29 tests", "Ran 28 tests"))
                 return result
             with self.subTest(failure=failure), mock.patch.object(self.mcp, "_c031_command", side_effect=command), mock.patch.object(
                     self.mcp, "_c031_validate", side_effect=ValueError("synthetic invalid receipt") if failure == "validation" else lambda *a: {}):

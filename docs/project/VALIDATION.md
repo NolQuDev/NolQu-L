@@ -6,7 +6,24 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
-## Current verification checkpoint — 2026-11-01
+## C0.33 Validation Scope
+
+The current experimental component pair adds structural return analysis; its
+contract, required gates, compatibility boundary and test mapping are in
+[RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md). Nine scoped
+return-flow methods have passed in PRoot and untraced Native Termux, with
+legacy AST/ELF corpus parity. Exact-revision qualification is tracked in
+[PR #8](https://github.com/NolQuDev/NolQu-L/pull/8); the retained C0.32 baseline
+below does not qualify changed C0.33 component bytes.
+
+The original Native negative fixture requiring a redundant outer return after
+an unsafe body's direct return is migrated to positive tests in both profiles;
+an incomplete unsafe-body path remains rejected. The MCP capacity consumer also
+requires the actual 29-method suite, with a negative control for the stale
+28-method count. Failed first-candidate logs remain evidence. These repairs do
+not close the historical signal incident or reconstruct missing old artifacts.
+
+## Retained C0.32 Baseline — 2026-11-01
 
 Source revision `75b2309f570530adfd9e62ddb6b33431581a4a3c` on `Testing`
 completed exact-source Linux qualification on both

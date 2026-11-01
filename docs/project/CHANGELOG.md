@@ -45,6 +45,10 @@
 
 ### Fixed
 
+- Match the MCP proof consumer to the actual 29-method capacity backend suite.
+  The stale 28-method assertion rejected complete evidence; a negative control
+  now rejects the old count while retaining the complete fail-closed inventory.
+
 - Apply one strict GNU_STACK permission contract across all bootstrap gates,
   including split flags, missing/malformed rows and unsafe duplicates. Fix the
   Core no-RWX LOAD predicate for split write/execute flags. MCP ELF inspectors

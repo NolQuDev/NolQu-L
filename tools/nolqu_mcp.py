@@ -4532,7 +4532,7 @@ def _c031_proof() -> dict[str, Any]:
                             raise ValueError(f"{name} skipped required tests")
                         if name == "c0_capacity":
                             summaries = re.findall(rb"\nRan ([0-9]+) tests? in [0-9.]+s\n\nOK\n", error_output)
-                            if summaries != [b"18", b"28", b"20", b"6"]:
+                            if summaries != [b"18", b"29", b"20", b"6"]:
                                 raise ValueError("capacity gate is missing complete required unittest suites")
                         if name == "c0_backend":
                             summaries = re.findall(rb"\nRan ([0-9]+) tests? in [0-9.]+s\n\nOK\n", error_output)
