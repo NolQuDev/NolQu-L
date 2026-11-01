@@ -5,11 +5,17 @@ compiler. Its canonical source is NolQu-L Core-0 and its canonical executable
 is built by B0, not by a host compiler or assembler.
 
 The emitter described by `compiler.nq`/`c0.seed` remains C0.25. The separate
-frontend/backend source contract is experimental C0.33; see
+frontend/backend source contract is experimental C0.34; see
+[UNARY_NEGATION.md](UNARY_NEGATION.md). The C0.33 return contract remains in
 [RETURN_FLOW.md](RETURN_FLOW.md). C0.32 native behavior remains defined in
 [NATIVE_OS.md](NATIVE_OS.md). Scoped syntax/ABI/utility tests and complete-source
 component generations have passed. These are bounded component proofs, not
 Full Compiler, formal self-hosting or complete NolQu-L Safety.
+
+C0.34 adds checked unary negation with independent topology/literal validation,
+NQAF/7 dialect6 and the existing overflow diagnostic. Existing source retains
+its AST/ELF bytes; new source requires a matching component pair. The eleven
+unary methods and the additional named B/C oracle are required proof inputs.
 
 C0.33 removes redundant outer returns after exhaustive branches through
 independent frontend/backend proofs. Existing syntax, NQAF layouts, ABI and
@@ -97,10 +103,10 @@ versioned AST, grammar, memory layout and provenance defined in
 builds `c0-frontend.seed` using B0. The compiler emitter remains the exact
 C0.25 `c0.seed`; component success is not Full Compiler/self-hosting success.
 
-[`backend.nql`](backend.nql) consumes NQAF/1..6, validates graph
+[`backend.nql`](backend.nql) consumes NQAF/1..7, validates graph
 ownership, function/block nesting and lexical anchors, resolves mutable i64 locals
 and parameters, and
-emits standalone ELF for `+ - * /`, signed comparisons and nested `if/else`
+emits standalone ELF for `+ - * /`, checked prefix `-`, signed comparisons and nested `if/else`
 and `while`, plus forward/nested/recursive native function calls and call statements. There are up to
 six parameters per function and 64 active call frames; arithmetic and depth faults
 have source-located diagnostics. Its scalar

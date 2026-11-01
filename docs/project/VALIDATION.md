@@ -6,9 +6,31 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
-## C0.33 Validation Scope
+## C0.34 Validation Scope
 
-The current experimental component pair adds structural return analysis; its
+The experimental component pair adds checked prefix negation and NQAF/7. Its
+semantics, independent literal ownership, threat boundaries, test mapping and
+paired upgrade are in [UNARY_NEGATION.md](../../bootstrap/compiler/c0/UNARY_NEGATION.md).
+All eleven scoped unary methods passed in PRoot and actual Native Termux; the
+Native receipt reports TracerPid 0 at both ends. Independent review added 72
+finite checks, including malformed wire, a 65536-node packet and slot limits,
+without a concrete correctness finding. Separate B0 rebuilds in both execution
+modes produced identical component bytes. These scoped results do not replace
+the required complete generation, regression and exact-revision CI gates.
+
+The complete proof requires all eight backend suites, including eleven unary
+methods, and 43 named oracles for each actual B/C component pair. Missing unary
+markers, stale counts or omitted oracles fail closed. The old invalid `return -1`
+fixture is now a positive unary case in both profiles; malformed `return -` stays
+negative. Candidate wrong-code caused by confusing call arity with literal tags
+was reproduced, repaired and covered before publication. Failed candidates and
+streams remain private evidence. C0.33 is the retained baseline, not evidence
+for the new source/pins. No release/version change or Stable promotion occurs;
+C032-SIGNAL-01 remains OPEN and historical retention remains PARTIAL.
+
+## Retained C0.33 Validation Scope
+
+The preceding experimental component pair adds structural return analysis; its
 contract, required gates, compatibility boundary and test mapping are in
 [RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md). Nine scoped
 return-flow methods have passed in PRoot and untraced Native Termux, with

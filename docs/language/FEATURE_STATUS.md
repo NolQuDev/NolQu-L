@@ -12,16 +12,17 @@ The Core/Experimental lists below describe the Reference Compiler R0
 compatibility language. Canonical C0 has its own bounded experimental subset;
 parser recognition and concept-document targets do not imply support in both.
 
-### Canonical C0.33 Experimental Subset
+### Canonical C0.34 Experimental Subset
 
 - checked signed i64, lexical bindings, comparisons, if/else and while
+- checked prefix `-`, including the INT64_MIN literal; runtime overflow is diagnosed
 - named functions, positional arguments up to six, bounded native recursion
 - independent structural return proof; exhaustive if/else needs no redundant return
 - checked byte memory, fixed stdin/stdout/stderr intrinsics, explicit arena profile
 - native `arg_count` and byte-preserving `arg_copy`
 - contextual lexical `unsafe` blocks with a required nonempty invariant comment
 - unsafe checked `byte_address` and raw Linux x86_64 `syscall6`
-- direct standalone ELF, NQAF/1..5 compatibility and additive /6 dialect5
+- direct standalone ELF, NQAF/1..6 compatibility and additive /7 dialect6
 - actual native file-reader source and verified scoped/generation execution
 
 The C0.32 baseline exact-source Linux qualification of `Testing` at `75b2309f` passes eleven gates,
@@ -39,6 +40,8 @@ lifetime checker, full Safety modes, Full Compiler or full self-hosting. Unsafe
 source containment is checked independently by the backend; it is not proof of
 every later kernel effect. C0.33 return-flow evidence and minimum component
 compatibility are defined in [RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md).
+C0.34 unary semantics, minimum-literal ownership, machine cost and paired upgrade
+are defined in [UNARY_NEGATION.md](../../bootstrap/compiler/c0/UNARY_NEGATION.md).
 See [NATIVE_OS.md](../../bootstrap/compiler/c0/NATIVE_OS.md)
 and the [toolchain guide](../compiler/CANONICAL_TOOLCHAIN.md).
 

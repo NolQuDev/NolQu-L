@@ -4,7 +4,7 @@ Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
 below describe those historical runs; no release or bootstrap promotion occurs.
 
-The experimental C0.33 frontend/backend can be selected through the existing
+The experimental C0.34 frontend/backend can be selected through the existing
 `nqlc`, `nql`, installed commands and MCP tools. Default source behavior remains
 `nasm`/Reference Compiler R0. This connects implemented components to public
 commands; Full Compiler, self-hosting and Verified status remain false.
@@ -18,6 +18,13 @@ every normal path. Both conditional arms must return; loops alone do not supply
 a proof. [RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md) defines
 semantics, diagnostics and the paired component upgrade boundary. CLI flags,
 NQAF layouts, runtime profiles and native ABI remain unchanged.
+
+C0.34 adds checked unary `-`, such as `return -value` and
+`return -9223372036854775808`. Prefix minus binds above `*`/`/` and evaluates
+its operand once; negating INT64_MIN at runtime faults at that operator. It
+selects NQAF/7 dialect6 and requires the matching component pair; existing
+source bytes and ABI remain compatible. Unary plus is unsupported. See
+[UNARY_NEGATION.md](../../bootstrap/compiler/c0/UNARY_NEGATION.md).
 
 ## Compile, Check And Run
 
@@ -97,10 +104,10 @@ nested control bodies, 64 active function frames and 4096 bytes/512 i64 slots pe
 frame. The ELF cap is 8388608 bytes. Default byte storage is 65536 bytes.
 `--compiler-profile` explicitly selects the existing 16777216-byte RW/NX arena;
 it is never inferred from source length. This mapped bound is not measured RSS.
-The 80300/199908-byte current compiler sources fit the unchanged capacity;
+Both complete compiler sources fit the unchanged 262144-byte capacity;
 historical 8 KiB/u16 limits no longer describe it. New native sources select
-NQAF/6 dialect5; legacy sources retain /1..5, and the complete compiler sources
-themselves still use /5 dialect4/profile1. See
+NQAF/6 dialect5 and unary source selects /7 dialect6; legacy sources retain
+/1..5. The compiler sources themselves still use /5 dialect4/profile1. See
 [CAPACITY.md](../../bootstrap/compiler/c0/CAPACITY.md) for measured identities
 and separate C0.31/C0.32 component-generation provenance. Arg-count alone
 allocates no byte arena; copy/address/frame operations use the selected profile.

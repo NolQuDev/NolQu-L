@@ -243,7 +243,7 @@ fn main() {
                        b"fn main(){let =1 return 1}", b"fn main(){x 1 return 1}",
                        b"fn main(){return }", b"fn main(){return ()}", b"fn main(){return 1+}",
                        b"fn main(){return 1 2}", b"fn main(){return 1(2)}", b"fn main(){return 1)}",
-                       b"fn main(){return (1}", b"fn main(){return -1}",
+                       b"fn main(){return (1}", b"fn main(){return -}",
                        b"fn main(){return 1;let x=2}", b"fn main(){return 1;;}",
                        b"fn main(){return 1} garbage",
                        b"fn main(){return 12abc}", b"fn main(){return 1.2}",
