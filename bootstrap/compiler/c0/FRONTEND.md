@@ -1,8 +1,9 @@
 # C0 Source Frontend
 
 The sections below record the original scalar/NQAF/1 contract. The current
-candidate component contract is **C0.33**. [RETURN_FLOW.md](RETURN_FLOW.md)
-defines its independent structural return proof; the C0.32 native contract is
+component contract is **C0.34**. [UNARY_NEGATION.md](UNARY_NEGATION.md) defines
+checked prefix negation and NQAF/7. [RETURN_FLOW.md](RETURN_FLOW.md) defines the
+C0.33 independent structural return proof; the C0.32 native contract is
 preserved below.
 The completed C0.31 capacity evidence remains historical and unchanged.
 [RUNTIME_IO.md](RUNTIME_IO.md) retains C0.30 call statements
@@ -15,6 +16,19 @@ stack at 35000 and call frames at 36000 in the legacy layout. The historical
 source/token/node limits in that layout are unchanged; NQAF/5 uses the wide
 layout below.
 The historical grammar below describes C0.26, not the current language subset.
+
+## C0.34: Checked Prefix Negation
+
+Prefix `-` binds above multiplication/division and associates right; calls and
+grouping remain tighter. It evaluates one operand once. The bounded operator
+stack reduces one operand into kind47 NEGATE with its source minus anchor.
+Such source selects NQAF/7, wide32/dialect6, profile0/1. Sources without unary
+minus retain their previous AST bytes. Unary plus remains unsupported.
+
+The backend derives the exceptional INT64_MIN literal permission independently
+from immediate unary ownership; parser recognition does not grant it. Dynamic
+negation overflow retains C0R-001 at the minus. See
+[UNARY_NEGATION.md](UNARY_NEGATION.md) for the full grammar and rejection rules.
 
 ## C0.32: Native Calls And Lexical Unsafe Blocks
 

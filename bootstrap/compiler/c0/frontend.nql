@@ -1,4 +1,4 @@
-# C0.33 source-to-AST frontend with structural definite return, built by B0 --compiler-profile.
+# C0.34 source-to-AST frontend with structural definite return, built by B0 --compiler-profile.
 # Legacy NQAF/1..5 is unchanged; native scopes/operations use NQAF/6 dialect5.
 # Flat state transitions are intentional: B0 has no nested statement blocks.
 fn main() {
@@ -180,6 +180,13 @@ fn main() {
         temp = temp * (byte_load(start) == 117) * (byte_load(start + 1) == 110) * (byte_load(start + 2) == 115)
         temp = temp * (byte_load(start + 3) == 97) * (byte_load(start + 4) == 102) * (byte_load(start + 5) == 101)
         active = active + temp
+        # Prefix minus needs function envelopes before any node allocation.
+        # On valid source it follows an operand-introducing token, never an
+        # identifier, decimal or completed parenthesized expression.
+        index = byte_load(327680 + (pos - (pos != 0)) * 12)
+        temp = (kind == 17) * (index != 4) * (index != 5) * (index != 11)
+        byte_store(1180261, (byte_load(1180261) + temp) != 0)
+        active = active + temp
         byte_store(1180161, (byte_load(1180161) + active) != 0)
         pos = pos + 1
     }
@@ -299,6 +306,12 @@ fn main() {
         temp = temp + 14 * byte_load(1180203) * index
         byte_store(1180200, byte_load(1180200) + temp)
 
+        # A prefix remains on the existing operator stack while its operand
+        # (including a complete call/group) is parsed. Equal prefix precedence
+        # is never reduced on a push: repeated minus is right-associative.
+        temp = byte_load(1180203) * (kind == 17)
+        byte_store(1180200, byte_load(1180200) + 19 * temp)
+
         # Reduce left-associatively while the top precedence is at least incoming.
         temp = byte_load(1180204) * byte_load(1180205)
         index = (operators != 0) * (byte_load(1180206) != 10) * (byte_load(1180206) != 42)
@@ -316,6 +329,10 @@ fn main() {
         temp = byte_load(1180204) * byte_load(1180208)
         index = (operators != 0) * (byte_load(1180206) != 10) * (byte_load(1180206) != 42)
         byte_store(1180200, byte_load(1180200) + temp * (5 * index + 6 * (operators == 0)))
+
+        # Reuse reduction dispatch, but unary consumes one operand, not two.
+        temp = (byte_load(1180200) == 5) * (byte_load(1180206) == 47)
+        byte_store(1180200, byte_load(1180200) + 15 * temp)
 
         # Delimiters are structured statement records, not arbitrary jump targets.
         # Closing an if then-arm looks ahead once for its optional else block.
@@ -359,6 +376,7 @@ fn main() {
         ok = ok * ((byte_load(1180201) + byte_load(1180200)) != 0)
         ok = ok * ((byte_load(1180200) != 5) + (byte_load(1180200) == 5) * (2 <= values))
         ok = ok * ((byte_load(1180200) != 6) + (byte_load(1180200) == 6) * (values == 1))
+        ok = ok * ((byte_load(1180200) != 20) + (byte_load(1180200) == 20) * (1 <= values))
         # Discard only calls, never silently accept a discarded arithmetic tree.
         temp = (byte_load(1180200) == 6) * (byte_load(1179656) == 44)
         index = byte_load(5046272 + values * 4) + 256 * byte_load(5046273 + values * 4) + 65536 * byte_load(5046272 + values * 4 + 2) + 16777216 * byte_load(5046272 + values * 4 + 3)
@@ -379,13 +397,13 @@ fn main() {
         # Allocate leaves, binary expressions, statements or the final function.
         active = byte_load(1180200)
         temp = (active == 1) + (active == 5) + (active == 6) + (active == 7) + (active == 8) + (active == 9)
-        temp = temp + (active == 10) + (active == 11) + (active == 12) + (active == 15) + (active == 16) + (active == 18)
+        temp = temp + (active == 10) + (active == 11) + (active == 12) + (active == 15) + (active == 16) + (active == 18) + (active == 20)
         byte_store(1180163, 5 * (ok * temp) + byte_load(1180163) * ((ok * temp) == 0))
         ok = ok * ((temp == 0) + temp * (nodes < 65536))
         byte_store(1180209, temp * ok)
         index = byte_load(4194304 + operators * 12) + 256 * byte_load(4194305 + operators * 12) + 65536 * byte_load(4194304 + operators * 12 + 2) + 16777216 * byte_load(4194304 + operators * 12 + 3)
         temp = byte_load(327684 + index * 12) + 256 * byte_load(327685 + index * 12) + 65536 * byte_load(327684 + index * 12 + 2) + 16777216 * byte_load(327684 + index * 12 + 3)
-        start = start * ((active == 1) + (active == 8) + (active == 9) + (active == 10) + (active == 11) + (active == 12) + (active == 15) + (active == 18)) + temp * ((active == 5) + (active == 16))
+        start = start * ((active == 1) + (active == 8) + (active == 9) + (active == 10) + (active == 11) + (active == 12) + (active == 15) + (active == 18)) + temp * ((active == 5) + (active == 16) + (active == 20))
         temp = byte_load(327688 + index * 12) + 256 * byte_load(327689 + index * 12) + 65536 * byte_load(327688 + index * 12 + 2) + 16777216 * byte_load(327688 + index * 12 + 3)
         # Saved operator/callee spans retain all four bytes.
         byte_store(1180224, temp)
@@ -400,7 +418,7 @@ fn main() {
         start = start + temp * (active == 6)
         temp = byte_load(1179676) + 256 * byte_load(1179677) + 65536 * byte_load(1179676 + 2) + 16777216 * byte_load(1179676 + 3)
         start = start + temp * (active == 7)
-        kind = kind * ((active == 1) + (active == 8)) + byte_load(1180206) * (active == 5)
+        kind = kind * ((active == 1) + (active == 8)) + byte_load(1180206) * ((active == 5) + (active == 20))
         kind = kind + byte_load(1179656) * (active == 6) + 33 * (active == 7) + byte_load(1180216) * (active == 9)
         kind = kind + 39 * (active == 10) + 40 * (active == 11) + 41 * (active == 12) + 43 * (active == 15) + 42 * (active == 16)
         kind = kind + 45 * (active == 18)
@@ -411,7 +429,7 @@ fn main() {
         temp = byte_load(5046272 + temp * 4) + 256 * byte_load(5046273 + temp * 4) + 65536 * byte_load(5046272 + temp * 4 + 2) + 16777216 * byte_load(5046272 + temp * 4 + 3)
         ch = (byte_load(1179656) == 30) + (byte_load(1179656) == 31)
         byte_store(1180220, ch)
-        temp = temp * (active == 5) + index * (active == 6) * (ch == 0)
+        temp = temp * (active == 5) + index * ((active == 20) + (active == 6) * (ch == 0))
         temp = temp + (byte_load(1179660) + 256 * byte_load(1179661) + 65536 * byte_load(1179660 + 2) + 16777216 * byte_load(1179660 + 3)) * (active == 6) * ch
         temp = temp + (byte_load(1179648) + 256 * byte_load(1179649) + 65536 * byte_load(1179648 + 2) + 16777216 * byte_load(1179648 + 3)) * (active == 7)
         temp = temp + (byte_load(5373956 + operators * 16) + 256 * byte_load(5373957 + operators * 16) + 65536 * byte_load(5373956 + operators * 16 + 2) + 16777216 * byte_load(5373956 + operators * 16 + 3)) * ((active == 15) + (active == 16))
@@ -433,7 +451,7 @@ fn main() {
         byte_store(index + 6, start / 65536)
         byte_store(index + 7, start / 16777216)
         temp = byte_load(327688 + pos * 12) + 256 * byte_load(327689 + pos * 12) + 65536 * byte_load(327688 + pos * 12 + 2) + 16777216 * byte_load(327688 + pos * 12 + 3)
-        ch = temp * ((active == 1) + (active == 8) + (active == 10) + (active == 11)) + (byte_load(1180224) + 256 * byte_load(1180225) + 65536 * byte_load(1180224 + 2) + 16777216 * byte_load(1180224 + 3)) * ((active == 5) + (active == 16))
+        ch = temp * ((active == 1) + (active == 8) + (active == 10) + (active == 11)) + (byte_load(1180224) + 256 * byte_load(1180225) + 65536 * byte_load(1180224 + 2) + 16777216 * byte_load(1180224 + 3)) * ((active == 5) + (active == 16) + (active == 20))
         temp = byte_load(1179672) + 256 * byte_load(1179673) + 65536 * byte_load(1179672 + 2) + 16777216 * byte_load(1179672 + 3)
         ch = ch + temp * (active == 6) + 2 * (active == 7) + (1 + 3 * (byte_load(1180216) == 37)) * (active == 9)
         ch = ch + (active == 12) + (active == 15)
@@ -469,7 +487,7 @@ fn main() {
         byte_store(index + 2, nodes / 65536)
         byte_store(index + 3, nodes / 16777216)
         values = values + ((active == 1) + (active == 16) - (active == 5) - (active == 15)) * ok
-        temp = ((active == 1) + (active == 5) + (active == 16)) * ok
+        temp = ((active == 1) + (active == 5) + (active == 16) + (active == 20)) * ok
         index = (5046272 + values * 4) * temp + 8384512 * (temp == 0)
         byte_store(index, nodes)
         byte_store(index + 1, nodes / 256)
@@ -486,15 +504,15 @@ fn main() {
         byte_store(1179681, byte_load(1179681) + (active == 11) * ok)
 
         # Push/pop operators without consuming the incoming token on reduction.
-        temp = ((active == 2) + (active == 3) + (active == 14)) * ok
+        temp = ((active == 2) + (active == 3) + (active == 14) + (active == 19)) * ok
         operators = operators + temp
         index = (4194304 + operators * 12) * temp + 8384512 * (temp == 0)
         byte_store(index, pos)
         byte_store(index + 1, pos / 256)
         byte_store(index + 2, pos / 65536)
         byte_store(index + 3, pos / 16777216)
-        byte_store(index + 8, byte_load(327680 + pos * 12) * (active != 14) + 42 * (active == 14))
-        byte_store(index + 9, byte_load(1180207))
+        byte_store(index + 8, byte_load(327680 + pos * 12) * (active != 14) * (active != 19) + 42 * (active == 14) + 47 * (active == 19))
+        byte_store(index + 9, byte_load(1180207) * (active != 19) + 5 * (active == 19))
         temp = (active == 14) * ok
         index = (5373952 + operators * 16) * temp + 8384512 * (temp == 0)
         byte_store(index, values)
@@ -506,7 +524,7 @@ fn main() {
         byte_store(index + 6, 0)
         byte_store(index + 7, 0)
         byte_store(index + 8, 0)
-        operators = operators - ((active == 4) + (active == 5) + (active == 16)) * ok
+        operators = operators - ((active == 4) + (active == 5) + (active == 16) + (active == 20)) * ok
         temp = ((active == 1) + (active == 3) + (active == 15) + (active == 16)) * ok
         byte_store(1179668, ((active == 3) + (active == 15)) * temp + byte_load(1179668) * (temp == 0))
         temp = (active == 15) * (byte_load(327680 + pos * 12) == 11) * ok
@@ -569,7 +587,7 @@ fn main() {
         byte_store(index, 37)
         byte_store(1179680, byte_load(1179680) - temp * (byte_load(1180216) != 37))
         state = state * (active != 7) + 13 * (active == 7)
-        temp = byte_load(1180201) + (active == 1) + (active == 2) + (active == 3) + (active == 4) + (active == 8)
+        temp = byte_load(1180201) + (active == 1) + (active == 2) + (active == 3) + (active == 4) + (active == 8) + (active == 19)
         temp = temp + (active == 6) * (byte_load(1180220) + (byte_load(1179656) == 44)) * (byte_load(327680 + pos * 12) == 14)
         temp = temp + (active == 6) * ((byte_load(1179656) == 34) + (byte_load(1179656) == 36)) + (active == 9)
         temp = temp + (active == 11) + (active == 16) + (active == 15) * (byte_load(327680 + pos * 12) == 26)
@@ -702,15 +720,16 @@ fn main() {
 
     # Header/body are emitted only after the complete parse. Wide nodes stay
     # in place. All legacy spans/IDs fit u16 because these three bounds hold.
-    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260)) != 0
+    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261)) != 0
     byte_store(1180165, active)
     kind = (1 + byte_load(1180162)) * (byte_load(1180161) == 0) + 3 * byte_load(1180161) + byte_load(1180160)
     kind = kind * (byte_load(1180260) == 0) + 5 * byte_load(1180260)
+    kind = kind * (byte_load(1180261) == 0) + 6 * byte_load(1180261)
     byte_store(6553600, 78)
     byte_store(6553601, 81)
     byte_store(6553602, 65)
     byte_store(6553603, 70)
-    byte_store(6553604, (kind * (active == 0) + 5 * active) * (byte_load(1180260) == 0) + 6 * byte_load(1180260))
+    byte_store(6553604, ((kind * (active == 0) + 5 * active) * (byte_load(1180260) == 0) + 6 * byte_load(1180260)) * (byte_load(1180261) == 0) + 7 * byte_load(1180261))
     byte_store(6553605, 16 + 16 * active)
     byte_store(6553608, count)
     byte_store(6553609, count / 256)

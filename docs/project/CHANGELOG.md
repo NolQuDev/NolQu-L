@@ -25,6 +25,13 @@
 
 ### Added
 
+- Add experimental C0.34 checked i64 prefix negation, including INT64_MIN
+  literals, locals, calls and grouping. NQAF/7 has independently checked unary
+  ownership and native unsafe containment; overflow retains located C0R-001.
+  Preserve existing AST/ELF bytes, require paired component upgrades for new
+  source, and require all eleven unary methods plus the actual B/C named oracle
+  before the MCP unary flag can become true. Public version and ABI are unchanged.
+
 - Add experimental C0.33 structural return analysis. Exhaustive if/else and
   returning unsafe blocks no longer need a redundant outer return. Frontend and
   backend independently verify every function; loops remain conservative. Keep

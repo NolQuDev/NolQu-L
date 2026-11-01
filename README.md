@@ -36,17 +36,23 @@ implemented capabilities include:
 
 The Machine-Level Foundation, Stage 0, Bootstrap Compiler B0, and Core
 Compiler emitter through C0.25 are implemented and hash-verified for x86_64 Linux.
-The B0-built C0.33 frontend/backend additionally compile structured i64 programs
+The B0-built C0.34 frontend/backend additionally compile structured i64 programs
 with lexical scopes, loops, named functions, mutable parameters and bounded
 native recursion directly to ELF, with checked byte memory and Linux stream I/O.
 Their installed capacity is 262144 source bytes and 65536 tokens/nodes, with
-versioned NQAF/5 storage and additive NQAF/6 dialect5 for native operations.
+versioned NQAF/5 storage, NQAF/6 dialect5 for native operations, and additive
+NQAF/7 dialect6 for checked prefix negation.
 Both complete compiler sources build through
 B0 -> A -> B -> C, with byte-identical B/C component pairs. Default program
 byte storage remains 65536 bytes; the explicit compiler profile maps 16 MiB RW/NX.
 See [CAPACITY.md](bootstrap/compiler/c0/CAPACITY.md) for source/artifact identities,
 evidence and the completed pre/postinstallation checks, and
 [RUNTIME_IO.md](bootstrap/compiler/c0/RUNTIME_IO.md) for the runtime contract.
+C0.34 adds checked prefix `-` for i64 operands, including INT64_MIN literals.
+The backend independently validates unary ownership; ordinary negation emits
+`NEG/JO` with the existing located overflow handler. See
+[UNARY_NEGATION.md](bootstrap/compiler/c0/UNARY_NEGATION.md) for semantics,
+NQAF/7 compatibility, test invariants and machine cost.
 C0.33 adds independent structural return analysis: exhaustive branches no
 longer need a redundant outer return. Existing NQAF layouts and native ABI are
 preserved; see [RETURN_FLOW.md](bootstrap/compiler/c0/RETURN_FLOW.md).
@@ -71,7 +77,7 @@ and the historical signal, whose cause remains OPEN. Detailed session records
 remain internal.
 The Full Compiler and self-hosting generations are not implemented. Reference
 Compiler R0 remains the default `nasm` compatibility backend. Public `nqlc`
-and `nql` also expose the experimental C0.33 subset through explicit
+and `nql` also expose the experimental C0.34 subset through explicit
 `--backend canonical`; this access does not promote Full Compiler, self-hosting
 or Verified status. See the [canonical toolchain guide](docs/compiler/CANONICAL_TOOLCHAIN.md)
 for supported syntax, project/install/MCP workflows and remaining integration gates.

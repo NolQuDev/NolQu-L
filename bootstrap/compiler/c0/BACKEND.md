@@ -1,5 +1,21 @@
 # C0 AST Backend
 
+## C0.34: Checked Unary Ownership And Codegen
+
+NQAF/7 dialect6 adds kind47 NEGATE with one contiguous, immediately preceding
+operand and an exact one-byte minus anchor. Older wire versions reject it.
+Unique ownership and statement order remain independently verified, as does
+unsafe source containment for native calls beneath unary nodes.
+
+Only an integer leaf directly owned by NEGATE can carry magnitude 2^63; the
+compiler forms its minimum immediate without overflowing its own i64 arithmetic.
+The exception checks both integer kind and derived metadata, so call arity can
+never authorize the literal path. Ordinary unary code is a 35-byte checked
+load/prefix/NEG/JO/store sequence; a minimum-literal parent uses a 14-byte copy.
+Loop code-start inherits the operand, preserving reevaluation and effects.
+[UNARY_NEGATION.md](UNARY_NEGATION.md) defines diagnostics, invariants, paired
+upgrade/rollback and finite testing limits. No arena or frame bound increases.
+
 ## C0.33: Independent Return-Path Validation
 
 The backend independently proves a return from every function using the existing
