@@ -1,6 +1,6 @@
 # State Of Project
 
-Current metadata (2026-10-30): `1.0.0-alpha.1`, channel `dev`, by maintainer
+Current metadata (2026-11-01): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`.
 [Alpha 1 was published](https://github.com/NolQuDev/NolQu-L/releases/tag/v1.0.0-alpha.1)
 on 2026-10-29. Older version strings and test counts below describe their
@@ -33,13 +33,16 @@ outside the canonical compiler stages.
   [recorded reliability scope](VALIDATION.md); MCP 124, fresh proof 722/275,
   17 host evidence controls, 16 actual adapter comparisons, unchanged runner 11 baseline,
   and 594 assurance invocations; host retention is experimental
-- Latest exact-source Linux qualification: eleven gates `PASS`, 1,084 main
-  markers, 129 MCP methods, nineteen runner controls, twenty Android host
-  controls on Linux and seventeen release controls. Counts overlap. See the
-  [current validation checkpoint](VALIDATION.md#current-verification-checkpoint--2026-10-30).
-- Local PRoot and Termux Python/QEMU runs: each passes fifteen finite
-  smoke/differential checks and 96 oracle comparisons. Both callers remain
-  traced; untraced native Termux qualification is `NOT RUN`.
+- Latest exact-source Linux qualification on `Testing` at `75b2309f`: eleven
+  gates `PASS`, 1,086 main markers, 135 MCP methods, twenty-six runner controls,
+  twenty Android host controls on Linux, nineteen release controls and six real
+  hard-link methods. Counts overlap. See the
+  [current validation checkpoint](VALIDATION.md#current-verification-checkpoint--2026-11-01).
+- PRoot and untraced Native Termux each pass fifteen finite smoke/differential
+  checks, 326 invocations and 96 oracle comparisons on the same pinned bundle.
+  Native receipts show `TracerPid 0` at both ends; the PRoot caller stays traced.
+  Their 978 streams and 107 generated ELF files match byte-for-byte. Full Native
+  qualification remains blocked by denied real-hardlink creation.
 - Stable/security readiness: `PARTIAL / NOT READY`; earlier comparison-backend
   SIGKILL remains `OPEN`, not explained by later passing runs
 - Full canonical compiler: `NOT_IMPLEMENTED`

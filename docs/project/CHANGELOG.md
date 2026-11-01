@@ -14,6 +14,15 @@
 
 ## Unreleased
 
+### Validation
+
+- Complete the existing offline smoke+differential profile in genuine untraced
+  Native Termux and PRoot: 15 checks, 326 invocations and 96 oracle matches in
+  each. Compare all 978 streams and 107 generated ELF files byte-for-byte;
+  retain Native `TracerPid 0` receipts at both ends. Synchronize current status
+  pages and version metadata wording. Full Native qualification remains blocked
+  by denied real-hardlink creation; the historical signal incident remains open.
+
 ### Added
 
 - Retain bounded supervisor lifecycle and last-live deadline observations in host
@@ -51,15 +60,16 @@
 - Correct active feature/project status pages that still described the full
   Linux suite as unrun or used earlier checkpoint counts as current. Record
   matching finite compiler results through PRoot and Termux Python/QEMU while
-  retaining their traced context and the unrun native qualification gate.
+  retaining their traced context and the then-unrun native qualification gate.
 - Keep supervisor metadata ingestion bounded to a 4 KiB regular-file JSON
   control. Malformed, missing, oversized, symlink, directory and FIFO controls
   retain a failed invocation and its stream identities before a controlled
   host error. This repairs evidence loss and an out-of-deadline FIFO read;
   it does not explain the historical comparison-backend SIGKILL.
-- Align current validation/roadmap with the published Alpha 1 and fresh
-  eleven-gate baseline. Native execution of the newer differential profile
-  remains NOT RUN; Alpha 2, Stable and security qualification are not implied.
+- Align validation/roadmap with the published Alpha 1 and fresh eleven-gate
+  baseline at that checkpoint. Native execution of the newer differential
+  profile was then NOT RUN; Alpha 2, Stable and security qualification were
+  not implied.
 
 ## 1.0.0-alpha.1 — 2026-10-29
 

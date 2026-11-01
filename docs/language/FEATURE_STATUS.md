@@ -23,12 +23,14 @@ parser recognition and concept-document targets do not imply support in both.
 - direct standalone ELF, NQAF/1..5 compatibility and additive /6 dialect5
 - actual native file-reader source and verified scoped/generation execution
 
-Current exact-source Linux qualification passes eleven gates, including the
-full main suite with 1,084 PASS markers, 129 MCP methods and component-generation
-checks. Earlier counts describe historical checkpoints. Separate PRoot and
-Termux-runtime smoke/differential results are recorded in the
-[validation status](../project/VALIDATION.md); both local callers were traced,
-so they do not qualify untraced native Termux. Stable/security readiness remains
+Exact-source Linux qualification of `Testing` at `75b2309f` passes eleven gates,
+including the full main suite with 1,086 PASS markers, 135 MCP methods and
+component-generation checks. Earlier counts describe historical checkpoints.
+The same pinned finite smoke/differential profile passes in PRoot and untraced
+Native Termux: 15 checks, 326 invocations and 96 oracle matches in each; their
+streams and generated ELF files match. See the
+[validation status](../project/VALIDATION.md). Full Native qualification remains
+blocked by denied real-hardlink creation. Stable/security readiness remains
 PARTIAL because the earlier comparison-backend SIGKILL is unexplained; see
 [assurance](../../tests/security/README.md).
 This subset provides no general types/modules/FFI/inline assembly, ownership or

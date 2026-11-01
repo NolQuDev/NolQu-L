@@ -1,11 +1,12 @@
 # NolQu-L Roadmap Short
 
-Current metadata (2026-10-29): `1.0.0-alpha.1`, channel `dev`.
+Current metadata (2026-11-01): `1.0.0-alpha.1`, channel `dev`.
 [Alpha 1 is published](https://github.com/NolQuDev/NolQu-L/releases/tag/v1.0.0-alpha.1).
-Older version strings/counts below describe historical checkpoints. Alpha 2
-native qualification is not ready; its new offline differential profile has
-not yet been run in an untraced native Termux session. No bootstrap/Stable
-promotion follows from the published experimental Alpha.
+Older version strings/counts below describe historical checkpoints. The finite
+offline smoke+differential profile now passes in both PRoot and untraced Native
+Termux, with 96 oracle matches in each. Full Native/Alpha 2 qualification remains
+blocked by the real-hardlink host limit and open historical signal incident.
+No bootstrap/Stable promotion follows from these finite checks.
 
 ## Completed Foundation
 
@@ -52,9 +53,10 @@ published Alpha 1 source and passed eleven gates with 1,084 main markers and
 1. Resolve the unexplained comparison-backend SIGKILL with process/resource
    attribution before stable/security promotion; preserve failed-run evidence.
    Keep malformed supervisor metadata bounded and retain its failed invocation;
-   that repair is not attribution of the historical signal. Qualify the new
-   offline smoke+differential profile on actual native Termux, keeping native
-   filesystem limits explicit, before claiming broader target assurance.
+   that repair is not attribution of the historical signal. The offline
+   smoke+differential profile now passes on actual Native Termux; close the
+   remaining full-suite/filesystem qualification gap before claiming broader
+   target assurance. Keep the real-hardlink host limit explicit.
    Then select a complete type/module/toolchain prerequisite from measured gaps.
 2. Grow the canonical Full Compiler while preserving R0 compatibility or
    documenting intentional experimental-subset differences.

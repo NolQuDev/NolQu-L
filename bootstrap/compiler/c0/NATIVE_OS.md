@@ -3,8 +3,9 @@
 C0.32 is the current **experimental frontend/backend contract**. It adds
 lexically checked `unsafe` blocks, process arguments and a raw Linux x86_64
 syscall interface to the existing direct-ELF pipeline. The monolithic
-[`compiler.nq`](compiler.nq) / `c0.seed` remains C0.25. Public `VERSION=1.0.2a1`
-and `CHANNEL=dev` are unchanged.
+[`compiler.nq`](compiler.nq) / `c0.seed` remains C0.25. Current public metadata
+is `VERSION=1.0.0-alpha.1`, `CHANNEL=dev`; the original C0.32 checkpoint below
+used `1.0.2a1`. Neither value identifies a new compiler generation.
 
 The syntax, backend and runtime have scoped passing tests and independent
 Task 1/2/3/4 source review. Actual complete-source generations, public integration,
