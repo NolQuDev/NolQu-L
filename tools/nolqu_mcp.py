@@ -1803,7 +1803,7 @@ def compile_nql(
     Compile a canonical .nql source with nqlc. A .nq source is accepted only
     as a legacy compatibility input. Ordinary compilation supplies an output
     and never implicitly runs. Explicit --run remains supported. Backend is
-    nasm by default; canonical selects the experimental C0.32 subset.
+    nasm by default; canonical selects the experimental C0.33 subset.
     """
     return _compile_result(source_file, flags, output_file, emit_asm, backend,
                            compiler_profile, compiler=NQLC, require_extension=True)
@@ -3584,11 +3584,11 @@ def canonical_bootstrap_status() -> dict[str, Any]:
         "architecture": "x86_64-linux",
         "current_c0": _current_c0_version(),
         "current_frontend": (
-            "C0.32" if (ROOT / "bootstrap/compiler/c0/frontend.nql").is_file()
+            "C0.33" if (ROOT / "bootstrap/compiler/c0/frontend.nql").is_file()
             else "NOT_IMPLEMENTED"
         ),
         "current_backend": (
-            "C0.32" if (ROOT / "bootstrap/compiler/c0/backend.nql").is_file()
+            "C0.33" if (ROOT / "bootstrap/compiler/c0/backend.nql").is_file()
             else "NOT_IMPLEMENTED"
         ),
         "stages": stages,
@@ -3599,6 +3599,7 @@ def canonical_bootstrap_status() -> dict[str, Any]:
         "unsafe_blocks_verified": False,
         "process_arguments_verified": False,
         "syscall_abi_verified": False,
+        "return_flow_verified": False,
         "full_compiler_verified": False,
         "self_hosting_verified": False,
         "canonical_chain": [
@@ -3676,6 +3677,33 @@ def bootstrap_hash(stage: str) -> dict[str, Any]:
     return {"ok": state["status"] == "PASS", "stage": stage, **state}
 
 
+def _elf_inspection_complete(result: dict[str, Any]) -> bool:
+    """Positive absence claims require a successful, untruncated report."""
+    return (result.get("ok") is True and result.get("exit_code") == 0
+            and result.get("timed_out") is False
+            and not result.get("cancelled", False)
+            and result.get("stdout_truncated") is False
+            and result.get("stderr_truncated") is False)
+
+
+def _elf_non_executable_stack(report: str) -> bool:
+    found = False
+    number = r"(?:0[xX][0-9a-fA-F]+|[0-9]+)"
+    for line in report.splitlines():
+        fields = line.split()
+        if not fields or fields[0] != "GNU_STACK":
+            continue
+        found = True
+        if len(fields) < 7 or any(
+                re.fullmatch(number, field) is None
+                for field in [*fields[1:6], fields[-1]]):
+            return False
+        # No flags is a valid PF=0 row; an execute bit is never acceptable.
+        if any(re.fullmatch(r"[RW]+", field) is None for field in fields[6:-1]):
+            return False
+    return found
+
+
 @mcp.tool()
 def verify_elf_properties(artifact_path: str) -> dict[str, Any]:
     """Verify ELF64 x86_64, static linking, no interpreter, and non-exec stack."""
@@ -3685,21 +3713,30 @@ def verify_elf_properties(artifact_path: str) -> dict[str, Any]:
         return {"ok": False, "error": str(e)}
     if not artifact.is_file():
         return {"ok": False, "error": f"artifact not found: {artifact_path}"}
+    try:
+        with artifact.open("rb") as stream:
+            identification = stream.read(20)
+    except OSError as exc:
+        return {"ok": False, "error": f"cannot read ELF identification: {exc}"}
+    # `file` reports the pathname too; it cannot establish class or machine.
+    is_elf64 = (identification[:7] == b"\x7fELF\x02\x01\x01"
+                and identification[18:20] == b"\x3e\x00")
     file_result = _run_result(["file", str(artifact)], timeout=10, capability=CAP_READ_ONLY)
     elf_result = _run_result(["readelf", "-W", "-l", str(artifact)], timeout=10, capability=CAP_READ_ONLY)
-    file_text = file_result["stdout"]
+    inspection_complete = all(_elf_inspection_complete(result)
+                              for result in (file_result, elf_result))
     elf_text = elf_result["stdout"]
-    is_elf64 = "ELF 64-bit" in file_text and "x86-64" in file_text
-    no_interpreter = "INTERP" not in elf_text
-    no_dynamic = "DYNAMIC" not in elf_text
-    stack_lines = [line for line in elf_text.splitlines() if "GNU_STACK" in line]
-    non_executable_stack = bool(stack_lines) and all("RWE" not in line for line in stack_lines)
+    record_types = {fields[0] for line in elf_text.splitlines() if (fields := line.split())}
+    no_interpreter = "INTERP" not in record_types
+    no_dynamic = "DYNAMIC" not in record_types
+    non_executable_stack = inspection_complete and _elf_non_executable_stack(elf_text)
     return {
-        "ok": file_result["ok"] and elf_result["ok"] and is_elf64
+        "ok": inspection_complete and is_elf64
         and no_interpreter and no_dynamic and non_executable_stack,
         "artifact": str(artifact.relative_to(ROOT)),
         "elf64_x86_64": is_elf64,
-        "static": no_dynamic,
+        "inspection_complete": inspection_complete,
+        "static": inspection_complete and no_dynamic,
         "interpreter": not no_interpreter,
         "non_executable_stack": non_executable_stack,
         "sha256": _sha256(artifact),
@@ -3743,7 +3780,7 @@ def verify_no_host_dependency(artifact_or_stage: str) -> dict[str, Any]:
     interpreter = bool(elf.get("interpreter"))
     runtime_independent = (
         bool(elf.get("ok"))
-        and dynamic.get("ok", False)
+        and _elf_inspection_complete(dynamic)
         and not interpreter
         and not needed_libraries
     )
@@ -3755,6 +3792,7 @@ def verify_no_host_dependency(artifact_or_stage: str) -> dict[str, Any]:
         "scope": "ELF runtime interpreter and shared-library dependencies",
         "interpreter": interpreter,
         "needed_libraries": needed_libraries,
+        "inspection_complete": bool(elf.get("inspection_complete")) and _elf_inspection_complete(dynamic),
         "runtime_host_independent": runtime_independent,
         "canonical_hash_verified": canonical_hash_verified,
         "sha256": _sha256(artifact),
@@ -3810,11 +3848,11 @@ def bootstrap_diff(stage_a: str, stage_b: str) -> dict[str, Any]:
 
 _C031_SCOPE: ContextVar[dict[str, Any] | None] = ContextVar("c031_probe", default=None)
 _C031_PROBE_SECONDS = 2400.0
-_C031_TEST_SHA256 = "fc2b4ecadefa9d955e0aa78161cde519d72e4e582854eda71b100d28b2fa8356"
+_C031_TEST_SHA256 = "220a614b9cfbc2a05cfbbb0a8bd9c6f38262e27846762db2cff326214d19d88b"
 _C031_GATE_SHA256 = "9e66e6942a945e9243ee6322ceafe12cae42e9440d352f4e84d0931b6e50d056"
 _C031_LOADED_SHA256 = _sha256(pathlib.Path(__file__))
 _C031_FLAGS = ("capacity_verified", "compiler_profile_verified", "component_generation_verified",
-               "unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified")
+               "unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified")
 _C031_UNMEASURED = "next compiler workload not measured; Full Compiler remains NOT_IMPLEMENTED"
 
 
@@ -4340,7 +4378,7 @@ def _c031_validate(directory: pathlib.Path, before: dict[str, Any]) -> dict[str,
     module = ast.parse((ROOT / "tests/bootstrap/test_c0_component_generations.py").read_text())
     selectors = next(ast.literal_eval(node.value) for node in module.body
                      if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "GENERATION_ORACLES" for target in node.targets))
-    require(len(selectors) == 41 and len(set(selectors)) == 41, "invalid reviewed oracle set")
+    require(len(selectors) == 42 and len(set(selectors)) == 42, "invalid reviewed oracle set")
     oracles = _c031_records(receipt["oracles"], {"B", "C"}, "generation")
     for generation, oracle in oracles.items():
         require(oracle["selectors"] == list(selectors) and type(oracle["returncode"]) is int
@@ -4376,7 +4414,7 @@ def _c031_validate(directory: pathlib.Path, before: dict[str, Any]) -> dict[str,
             require(stage["binary"] == str(ROOT / "bootstrap/compiler/b0/x86_64-linux/b0.seed"), "B0 producer mismatch")
         elif label.endswith("-named-oracles"):
             require(stage["command"][1:] == ["-B", "-W", "error::ResourceWarning", "-m", "unittest", "-v", *selectors], "oracle command mismatch")
-            require(stage["stdout"] == empty and re.search(rb"\nRan 41 tests in [0-9.]+s\n\nOK\n$", streams["stderr"].read_bytes())
+            require(stage["stdout"] == empty and re.search(rb"\nRan 42 tests in [0-9.]+s\n\nOK\n$", streams["stderr"].read_bytes())
                     and not re.search(rb"(?im)^SKIP\b|\bskipped=|\.\.\. skipped ", streams["stderr"].read_bytes()),
                     "incomplete or skipped oracle output")
         elif label.endswith(("-frontend", "-backend")):
@@ -4467,14 +4505,14 @@ def _c031_proof() -> dict[str, Any]:
                 try:
                     for name, markers in (
                         ("c0_frontend", {"PASS c0-frontend"}),
-                        ("c0_backend", {"PASS c0-control-flow", "PASS c0-functions", "PASS c0-runtime-io",
+                        ("c0_backend", {"PASS c0-control-flow", "PASS c0-functions", "PASS c0-return-flow", "PASS c0-runtime-io",
                                         "PASS c0-capacity-backend", "PASS c0-native-os", "PASS c0-backend"}),
                         ("c0_capacity", {"PASS c0-capacity", "PASS c0-component-generations"}),
                     ):
                         remaining = scope["deadline"] - time.monotonic()
                         if remaining <= 0:
                             proof["timed_out"] = True
-                            raise ValueError("C0.32 aggregate gate budget exhausted")
+                            raise ValueError("C0.33 aggregate gate budget exhausted")
                         command_directory = directory / name
                         result = _c031_command(["bash", str(ROOT / f"tests/bootstrap/{name}.sh")],
                                                command_directory, remaining, environment)
@@ -4494,7 +4532,7 @@ def _c031_proof() -> dict[str, Any]:
                             raise ValueError(f"{name} skipped required tests")
                         if name == "c0_capacity":
                             summaries = re.findall(rb"\nRan ([0-9]+) tests? in [0-9.]+s\n\nOK\n", error_output)
-                            if summaries != [b"18", b"28", b"20", b"6"]:
+                            if summaries != [b"18", b"29", b"20", b"6"]:
                                 raise ValueError("capacity gate is missing complete required unittest suites")
                         if name == "c0_backend":
                             summaries = re.findall(rb"\nRan ([0-9]+) tests? in [0-9.]+s\n\nOK\n", error_output)
@@ -4529,7 +4567,7 @@ def _c031_proof() -> dict[str, Any]:
 def _c031_component_probe(component: str) -> dict[str, Any]:
     state = _bootstrap_stage_state("c0_" + component)
     result: dict[str, Any] = {
-        "ok": False, component + "_version": "C0.32", "built_by": "B0",
+        "ok": False, component + "_version": "C0.33", "built_by": "B0",
         "artifact": state["artifact"], "probe_status": state["status"],
         "full_compiler_verified": False, "self_hosting_verified": False,
         **dict.fromkeys(_C031_FLAGS, False), "call_statements_verified": False,
@@ -4542,7 +4580,7 @@ def _c031_component_probe(component: str) -> dict[str, Any]:
     else:
         result.update(input_format="NQAF/1, NQAF/2, NQAF/3, NQAF/4, NQAF/5 and NQAF/6",
                       output_format="ELF64 x86_64-linux", call_depth_capacity=64,
-                      semantics="lexical mutable i64 locals/parameters; checked arithmetic; comparisons; structured control flow; native calls/statements; explicit bounded byte/stream profiles; contextual unsafe scopes; argv and raw six-register Linux syscalls",
+                      semantics="lexical mutable i64 locals/parameters; checked arithmetic; comparisons; structured control flow and definite return; native calls/statements; explicit bounded byte/stream profiles; contextual unsafe scopes; argv and raw six-register Linux syscalls",
                       **dict.fromkeys(("semantic_resolution_verified", "codegen_verified", "control_flow_verified",
                                       "lexical_scope_verified", "function_calls_verified", "parameter_scope_verified",
                                       "byte_memory_verified", "stream_io_verified"), False))
@@ -4553,7 +4591,7 @@ def _c031_component_probe(component: str) -> dict[str, Any]:
     verified = proof["ok"]
     result.update(ok=verified, artifact_sha256=state["actual_sha256"], evidence=proof,
                   exit_code=proof["exit_code"], timed_out=proof["timed_out"],
-                  blocker=_C031_UNMEASURED if verified else proof.get("error", "C0.32 evidence unavailable"),
+                  blocker=_C031_UNMEASURED if verified else proof.get("error", "C0.33 evidence unavailable"),
                   probe_status=("SOURCE_AST_FRONTEND_VERIFIED" if component == "frontend" else "SOURCE_AST_TO_ELF_VERIFIED")
                   if verified else "TIMED_OUT" if proof["timed_out"] else "UNEXPECTED_RESULT")
     for key in tuple(result):
@@ -4601,7 +4639,7 @@ def run_c0_probe() -> dict[str, Any]:
         if scope["proof"] is not None:
             proof = _c031_proof()
             if not proof["ok"]:
-                error = proof.get("error", "C0.32 evidence unavailable")
+                error = proof.get("error", "C0.33 evidence unavailable")
                 for item in (result, *components):
                     for field in tuple(item):
                         if field.endswith(("_verified", "_complete", "_identical")) or field == "source_expectation_matches":

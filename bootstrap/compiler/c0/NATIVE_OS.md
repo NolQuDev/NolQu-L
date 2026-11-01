@@ -1,10 +1,12 @@
 # C0.32 Native OS Interface
 
-C0.32 is the current **experimental frontend/backend contract**. It adds
+C0.32 introduced the native contract below. Current experimental C0.33 preserves
+it and adds [structural return analysis](RETURN_FLOW.md). C0.32 adds
 lexically checked `unsafe` blocks, process arguments and a raw Linux x86_64
 syscall interface to the existing direct-ELF pipeline. The monolithic
-[`compiler.nq`](compiler.nq) / `c0.seed` remains C0.25. Public `VERSION=1.0.2a1`
-and `CHANNEL=dev` are unchanged.
+[`compiler.nq`](compiler.nq) / `c0.seed` remains C0.25. Current public metadata
+is `VERSION=1.0.0-alpha.1`, `CHANNEL=dev`; the original C0.32 checkpoint below
+used `1.0.2a1`. Neither value identifies a new compiler generation.
 
 The syntax, backend and runtime have scoped passing tests and independent
 Task 1/2/3/4 source review. Actual complete-source generations, public integration,
@@ -124,8 +126,9 @@ the first statement/closing brace. A tag alone is insufficient.
 
 Blocks nest, create lexical binding scopes and share the existing combined
 control-depth bound of 64. Entering/leaving one adds no runtime branch. Graph,
-name, arity, arithmetic and memory checks still apply. Every function still
-requires its final top-level `return`. There is no `unsafe fn`, file-wide mode,
+name, arity, arithmetic and memory checks still apply. At C0.32 every function
+required its final top-level `return`; C0.33 also accepts a structural return
+guarantee as defined in [RETURN_FLOW.md](RETURN_FLOW.md). There is no `unsafe fn`, file-wide mode,
 general unsafe-function precondition checker or proof that an invariant is true.
 An ordinary function may contain an unsafe implementation; that alone does not
 prove an arbitrary safe abstraction.

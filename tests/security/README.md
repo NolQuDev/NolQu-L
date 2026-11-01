@@ -1,5 +1,24 @@
 # Canonical native boundary assurance
 
+## ELF qualification boundary
+
+The host entry points are bootstrap `readelf` gates and MCP artifact inspection.
+Artifact paths/bytes and inspector output cross the qualification boundary;
+positive target, linkage and stack claims must follow actual ELF identification
+and complete successful reports. Filename text, omitted stack headers, malformed
+fields, split executable permissions and unsafe duplicate rows cannot establish
+those claims. Tests EI01--EI09 and MCP ELF01--ELF06 cover this boundary; the
+checksum SDK workflow checks a real compiler-generated artifact. Mutated ELF
+copies used as negative inspection fixtures are never executed.
+
+This is a host validation correctness fix. It adds no canonical build/runtime
+dependency, language safety guarantee or ISA backend. External inspectors remain
+trusted host tools; report parsing and hashing do not prevent same-user
+concurrent artifact replacement. Static Python parsing and shell syntax checks
+apply to these host changes; no NolQu-L ASan/UBSan instrumentation or exhaustive
+ELF validation is claimed. The original native timeout/signal investigation
+remains open and is independent of this repair.
+
 ## Offline Termux differential profile
 
 Prepare a new private bundle, then run its copied host tool from native Termux:
@@ -72,6 +91,42 @@ The malformed cases also check descriptor counts. All twelve earlier runner
 methods remain; these three brought the control count to fifteen. This repairs
 a host failure-retention and bounded-read defect; it does not attribute
 historical `C032-SIGNAL-01`.
+
+## Supervisor lifecycle and deadline observations
+
+New controls optionally include `control.lifecycle`. Its fixed set of monotonic
+elapsed timestamps records supervisor start, target spawn/reap, cleanup start and
+completion. `phase` is `spawning-target`, `waiting-target`, `cleaning-up` or
+`complete`; an interruption retains the signal delivered to the supervisor and
+the phase where it was observed. A failed exec retains exception type, errno and
+a message limited to 160 characters. Missing fields in historical controls mean
+NOT OBSERVED, rather than an inferred phase or zero duration.
+
+Cleanup records `target_sigkill_requested` when the supervisor calls its existing
+`Popen.kill()` path, and counts successful direct descendant SIGKILL sends. A
+request can race an already-exiting target; it is not proof of the unique sender
+of a later wait status. `target_signal_sender` remains `NOT_OBSERVED`, including
+when the target exits with signal 9. These observations do not attribute OOM or
+reconstruct the sender/cause of historical C032-SIGNAL-01.
+
+At a timeout, the caller captures one `deadline_observation` before teardown can
+replace the last live control. The existing regular-file/non-symlink 4096-byte
+reader bounds this observation. Missing, malformed or otherwise unreadable
+controls produce `available: false` and a bounded error, while timeout still
+fails. A real abort during observation is deferred through cleanup and evidence
+persistence, then raised to the caller. Cancellation is not converted into PASS.
+
+The protocol limit, result/stream contracts, process ownership, timeout/CPU/output
+limits and no-retry policy are unchanged. Old valid controls without lifecycle
+fields remain accepted. Successful runs add only a fixed set of clock/JSON fields;
+the deadline read occurs only on timeout. There is no polling, new trace service,
+compiler instrumentation or canonical dependency. Seven lifecycle methods in
+`test_bounded_runner.py` cover normal exit, natural signal, supervisor interruption,
+failed exec, timeout snapshot, unavailable live metadata and a real SIGINT at the
+observation boundary, alongside all earlier runner controls.
+
+The original native source-assurance timeout remains OPEN. A later passing run
+or replay is separate evidence and does not supply missing historical phase data.
 
 ## Waited-child resource accounting
 

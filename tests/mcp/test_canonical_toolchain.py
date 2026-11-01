@@ -667,7 +667,10 @@ class CanonicalSdkTests(unittest.TestCase):
             self.assertIn(b"GNU_STACK", inspected.stdout)
             self.assertNotIn(b"INTERP", inspected.stdout)
             self.assertNotIn(b"NEEDED", inspected.stdout)
-            self.assertNotIn(b"RWE", inspected.stdout)
+            qualified = await self.call(client, "verify_elf_properties", artifact_path=output.name)
+            self.assertTrue(qualified["ok"], qualified)
+            self.assertTrue(qualified["inspection_complete"], qualified)
+            self.assertTrue(qualified["non_executable_stack"], qualified)
             payload = bytes(range(256)) * 3 + b"canonical\n"
             executed = self.execute(output, payload)
             self.assertEqual(executed.returncode, 0, executed.stderr)
@@ -756,10 +759,10 @@ class CanonicalSdkTests(unittest.TestCase):
             self.assertEqual((actual.returncode, actual.stdout, actual.stderr), (0, payload, b""))
             self.assertEqual((literal.read_bytes(), literal.stat().st_mode), before)
             status = await self.call(client, "canonical_bootstrap_status")
-            self.assertEqual((status["current_frontend"], status["current_backend"]), ("C0.32", "C0.32"))
+            self.assertEqual((status["current_frontend"], status["current_backend"]), ("C0.33", "C0.33"))
             self.assertEqual(status["current_c0"], "C0.25")
             for flag in ("capacity_verified", "compiler_profile_verified", "component_generation_verified",
-                         "unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified"):
+                         "unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified"):
                 self.assertIs(status[flag], False, flag)
             for stage in ("full_compiler", "self_hosting", "verified"):
                 self.assertEqual(status["stages"][stage]["status"], "NOT_IMPLEMENTED")

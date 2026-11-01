@@ -5,18 +5,26 @@ compiler. Its canonical source is NolQu-L Core-0 and its canonical executable
 is built by B0, not by a host compiler or assembler.
 
 The emitter described by `compiler.nq`/`c0.seed` remains C0.25. The separate
-current frontend/backend source contract is experimental C0.32; see
-[NATIVE_OS.md](NATIVE_OS.md). Its scoped syntax/ABI/utility tests have passed,
-and actual complete-source generations pass. Final main/MCP and installed
-combined-proof execution gates also pass. An earlier comparison-backend
-SIGKILL remains unexplained; stable/security readiness remains PARTIAL.
-Public VERSION/CHANNEL remain 1.0.2a1/dev. No full Safety, Full Compiler,
-self-hosting or release readiness follows from the component designation.
-The passing full main predates a four-immediate diagnostic repair. Current
-post-repair MCP, generation/proof, impacted public and bounded assurance gates
-pass; full main after that repair was not rerun. The
-[session report](../../../docs/project/VALIDATION.md) records both
-identities and the failed assurance budget calibration without erasing either.
+frontend/backend source contract is experimental C0.33; see
+[RETURN_FLOW.md](RETURN_FLOW.md). C0.32 native behavior remains defined in
+[NATIVE_OS.md](NATIVE_OS.md). Scoped syntax/ABI/utility tests and complete-source
+component generations have passed. These are bounded component proofs, not
+Full Compiler, formal self-hosting or complete NolQu-L Safety.
+
+C0.33 removes redundant outer returns after exhaustive branches through
+independent frontend/backend proofs. Existing syntax, NQAF layouts, ABI and
+legacy corpus bytes are preserved; newly accepted streams require the C0.33
+backend. Both actual B/C component pairs include the new return-flow oracle.
+
+Public VERSION/CHANNEL are `1.0.0-alpha.1`/`dev`. The historical eleven-gate Linux baseline
+at `4593b5364bac59d2a04b98e5369da5f626381e2c` includes the full main and MCP
+suites; see the [retained CI run](https://github.com/NolQuDev/NolQu-L/actions/runs/41028673403).
+Host-wrapper qualification repairs preserve canonical compiler source/seed
+identities; their contract is in [OUTPUTS.md](../../OUTPUTS.md).
+Actual native Termux results and Linux/PRoot results remain separate. An earlier
+comparison-backend SIGKILL remains unexplained; stable/security readiness is
+PARTIAL. The [validation record](../../../docs/project/VALIDATION.md) preserves
+historical failures and limits rather than treating later passes as attribution.
 
 Canonical predecessor:
 

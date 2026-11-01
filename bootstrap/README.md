@@ -72,6 +72,9 @@ post-fix full main are distinguished in the
 The older 49-byte token-table helper is retained only
 as a bounded proof, not as an untrusted-stream framing validator.
 
+See the [host-wrapper output contract](OUTPUTS.md) for protected inputs, exact
+publication, cleanup and fail-closed ELF inspection.
+
 ## Machine-Level Foundation
 
 `machine/x86_64-linux/hex0.seed` is an x86_64 Linux ELF64 executable encoded as

@@ -163,6 +163,8 @@ class NolQuMcpCoreTests(unittest.TestCase):
         self.assertFalse(result["function_calls_verified"])
         self.assertFalse(result["parameter_scope_verified"])
         self.assertFalse(result["call_statements_verified"])
+        self.assertIn("return_flow_verified", result)
+        self.assertFalse(result["return_flow_verified"])
         self.assertFalse(result["byte_memory_verified"])
         self.assertFalse(result["stream_io_verified"])
 
@@ -189,7 +191,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertFalse(result["semantic_resolution_verified"])
             self.assertFalse(result["codegen_verified"])
-            self.assertEqual(result["backend_version"], "C0.32")
+            self.assertEqual(result["backend_version"], "C0.33")
             self.assertEqual(result["source_capacity"], 262144)
             self.assertEqual(result["token_capacity"], 65536)
             self.assertEqual(result["node_capacity"], 65536)
@@ -240,7 +242,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             result = self.mcp.run_c0_frontend_probe()
         self.assertFalse(result["ok"])
         self.assertEqual(result["probe_status"], "UNEXPECTED_RESULT")
-        self.assertEqual(result["frontend_version"], "C0.32")
+        self.assertEqual(result["frontend_version"], "C0.33")
         self.assertIn("NQAF/5", result["format"])
         self.assertEqual(result["source_capacity"], 262144)
         self.assertEqual(result["token_capacity"], 65536)
@@ -284,7 +286,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
     def assert_c031_unverified(self, result):
         for field in ("capacity_verified", "compiler_profile_verified",
                       "component_generation_verified", "unsafe_blocks_verified", "process_arguments_verified",
-                      "syscall_abi_verified", "full_compiler_verified",
+                      "syscall_abi_verified", "return_flow_verified", "full_compiler_verified",
                       "self_hosting_verified"):
             self.assertIn(field, result, field)
             self.assertIs(result[field], False, field)
@@ -293,14 +295,14 @@ class NolQuMcpCoreTests(unittest.TestCase):
         # A command-boundary double only; it supplies no generation proof.
         markers = {
             "c0_frontend": "PASS c0-frontend\n",
-            "c0_backend": ("PASS c0-control-flow\nPASS c0-functions\nPASS c0-runtime-io\n"
+            "c0_backend": ("PASS c0-control-flow\nPASS c0-functions\nPASS c0-return-flow\nPASS c0-runtime-io\n"
                            "PASS c0-capacity-backend\nPASS c0-native-os\nPASS c0-backend\n"),
             "c0_capacity": "PASS c0-capacity\nPASS c0-component-generations\n",
         }
         name = pathlib.Path(command[-1]).stem
         directory.mkdir()
         stdout = markers[name]
-        stderr = ("".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (18, 28, 20, 6))
+        stderr = ("".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (18, 29, 20, 6))
                   if name == "c0_capacity" else "\nRan 23 tests in 1.0s\n\nOK\n" if name == "c0_backend" else "")
         (directory / "stdout").write_text(stdout)
         (directory / "stderr").write_text(stderr)
@@ -1832,6 +1834,104 @@ class McpProtocolTests(unittest.TestCase):
             asyncio.run(inspect_server(directory, missing))
 
 
+class ElfQualificationTests(unittest.TestCase):
+    """Inspect non-executed ELF copies and controlled complete/incomplete reports."""
+
+    setUp = NolQuMcpCoreTests.setUp
+    tearDown = NolQuMcpCoreTests.tearDown
+
+    def artifact(self, name="artifact.elf", flags=6, machine=62):
+        data = bytearray((REPO_ROOT / "bootstrap/machine/x86_64-linux/hex0.seed").read_bytes())
+        self.assertEqual(data[:7], b"\x7fELF\x02\x01\x01")
+        phoff = struct.unpack_from("<Q", data, 32)[0]
+        phsize, phcount = struct.unpack_from("<HH", data, 54)
+        stacks = [phoff + i * phsize for i in range(phcount)
+                  if struct.unpack_from("<I", data, phoff + i * phsize)[0] == 0x6474e551]
+        self.assertEqual(len(stacks), 1)
+        struct.pack_into("<I", data, stacks[0] + 4, flags)
+        struct.pack_into("<H", data, 18, machine)
+        path = self.root / name
+        path.write_bytes(data)
+        return path
+
+    @staticmethod
+    def report(stdout, **changes):
+        return {"ok": True, "exit_code": 0, "timed_out": False,
+                "stdout_truncated": False, "stderr_truncated": False,
+                "stdout": stdout, "stderr": "", **changes}
+
+    def test_ELF01_real_permission_flags_are_checked(self):
+        for flags in range(8):
+            with self.subTest(flags=flags):
+                path = self.artifact(flags=flags)
+                result = self.mcp.verify_elf_properties(path.name)
+                self.assertEqual(result["non_executable_stack"], not bool(flags & 1), result)
+                self.assertEqual(result["ok"], not bool(flags & 1), result)
+
+    def test_ELF02_filename_cannot_spoof_machine(self):
+        path = self.artifact(name="ELF 64-bit x86-64.aarch64", machine=183)
+        result = self.mcp.verify_elf_properties(path.name)
+        self.assertFalse(result["elf64_x86_64"], result)
+        self.assertFalse(result["ok"], result)
+
+    def test_ELF03_incomplete_reports_do_not_qualify(self):
+        path = self.artifact()
+        for command_index in (0, 1):
+            for changes in ({"stdout_truncated": True}, {"stderr_truncated": True},
+                            {"timed_out": True}, {"cancelled": True},
+                            {"exit_code": 2}, {"ok": False}):
+                reports = [self.report("ELF 64-bit x86-64"),
+                           self.report("GNU_STACK 0 0 0 0 0 RW 0x10\n")]
+                reports[command_index].update(changes)
+                with self.subTest(command=command_index, changes=changes), \
+                        mock.patch.object(self.mcp, "_run_result", side_effect=reports):
+                    result = self.mcp.verify_elf_properties(path.name)
+                    self.assertFalse(result["ok"], result)
+
+    def test_ELF04_stack_report_fields_and_duplicate_rows(self):
+        path = self.artifact()
+        cases = (("RW", True), ("R W", True), ("", True), ("RWE", False),
+                 ("R E", False), ("RW E", False), ("E", False),
+                 ("RW garbage", False))
+        reports = [(f"GNU_STACK 0 0xEE 0 0 0 {flags} 0x1E\n", valid)
+                   for flags, valid in cases]
+        reports += [("", False), ("filename-GNU_STACK RW\n", False),
+                    ("GNU_STACK 0 0 0 0 0 RW\n", False),
+                    ("GNU_STACK bad 0 0 0 0 RW 0x10\n", False),
+                    ("GNU_STACK 0 0 0 0 0 RW bad-alignment\n", False),
+                    ("GNU_STACK 0 0 0 0 0 R E 0x10\nGNU_STACK 0 0 0 0 0 RW 0x10\n", False),
+                    ("GNU_STACK 0 0 0 0 0 RW 0x10\nGNU_STACK 0 0 0 0 0 RW 0x10\n", True)]
+        for report, expected in reports:
+            with self.subTest(report=report), mock.patch.object(
+                    self.mcp, "_run_result", side_effect=[
+                        self.report("ELF 64-bit x86-64"), self.report(report)]):
+                result = self.mcp.verify_elf_properties(path.name)
+                self.assertEqual(result["non_executable_stack"], expected, result)
+                self.assertEqual(result["ok"], expected, result)
+
+    def test_ELF05_linkage_report_must_be_complete(self):
+        path = self.artifact()
+        for changes in ({"stdout_truncated": True}, {"stderr_truncated": True},
+                        {"timed_out": True}, {"cancelled": True}, {"exit_code": 2}):
+            with self.subTest(changes=changes), mock.patch.object(
+                    self.mcp, "_run_result", side_effect=[
+                        self.report("ELF 64-bit x86-64"),
+                        self.report("GNU_STACK 0 0 0 0 0 RW 0x10\n"),
+                        self.report("There is no dynamic section in this file.", **changes)]):
+                result = self.mcp.verify_no_host_dependency(path.name)
+                self.assertFalse(result["ok"], result)
+                self.assertFalse(result["runtime_host_independent"], result)
+
+    def test_ELF06_interpreter_and_dynamic_headers_cannot_qualify(self):
+        path = self.artifact()
+        for header in ("INTERP", "DYNAMIC"):
+            with self.subTest(header=header), mock.patch.object(
+                    self.mcp, "_run_result", side_effect=[self.report("ELF 64-bit x86-64"),
+                        self.report(f"{header} 0 0 0 0 0 R 0x10\nGNU_STACK 0 0 0 0 0 RW 0x10\n")]):
+                result = self.mcp.verify_elf_properties(path.name)
+                self.assertFalse(result["ok"], result)
+
+
 class CanonicalCliMigrationTests(unittest.TestCase):
     def run_cli(self, *args: str, cwd: pathlib.Path | None = None):
         return subprocess.run(
@@ -1944,7 +2044,7 @@ class NativeProofTests(unittest.TestCase):
 
     def test_native_metadata_is_additive_and_unverified(self):
         metadata = self.mcp.canonical_bootstrap_status()
-        for field in ("unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified"):
+        for field in ("unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified"):
             self.assertIs(metadata.get(field), False, field)
         for probe in (self.mcp.run_c0_frontend_probe, self.mcp.run_c0_backend_probe):
             result = probe()
@@ -2044,7 +2144,7 @@ class NativeProofTests(unittest.TestCase):
             elif label.endswith("-named-oracles"):
                 binary = pathlib.Path(sys.executable)
                 command = [sys.executable, "-B", "-W", "error::ResourceWarning", "-m", "unittest", "-v", *selectors]
-                error = b"\nRan 41 tests in 1.0s\n\nOK\n"
+                error = b"\nRan 42 tests in 1.0s\n\nOK\n"
             else:
                 generation = label.split("-", 1)[0]
                 if label.endswith("-frontend"):
@@ -2125,7 +2225,7 @@ class NativeProofTests(unittest.TestCase):
         accepted = self.validate_synthetic(receipt)
         self.assertEqual((accepted["stages"], accepted["checks"]), (722, 275))
         self.assertEqual(len(accepted["native_machine_artifacts"]), 16)
-        for failure in ("check", "artifact", "selector", "identity", "duplicate-stage", "missing-stage", "trace", "oracle-binary"):
+        for failure in ("check", "artifact", "selector", "return-selector", "identity", "duplicate-stage", "missing-stage", "trace", "oracle-binary"):
             with self.subTest(failure=failure):
                 changed = copy.deepcopy(receipt)
                 if failure == "check":
@@ -2134,6 +2234,9 @@ class NativeProofTests(unittest.TestCase):
                     del changed["artifacts"]["C-native-copy-empty-0"]
                 elif failure == "selector":
                     changed["oracles"][0]["selectors"][-1] = changed["oracles"][0]["selectors"][0]
+                elif failure == "return-selector":
+                    changed["oracles"][0]["selectors"].remove(
+                        "test_c0_return_flow.ReturnFlowTests.test_generation_return_flow_contract")
                 elif failure == "identity":
                     name = str((self.root / "examples/canonical/native_cat.nql").resolve())
                     changed["identities"][name]["sha256"] = "0" * 64
@@ -2228,18 +2331,23 @@ class NativeProofTests(unittest.TestCase):
     def test_native_gate_requires_marker_and_complete_skip_free_suite(self):
         self.c031_probe_fixture()
         gate = NolQuMcpCoreTests.c031_gate_result.__get__(self)
-        for failure in ("marker", "suite", "skip", "timeout", "validation"):
+        for failure in ("marker", "return-marker", "suite", "capacity-suite", "skip", "timeout", "validation"):
             def command(argv, directory, timeout, env=None):
                 result = gate(argv, directory, timeout, env)
                 if pathlib.Path(argv[-1]).stem == "c0_backend":
                     if failure == "marker":
                         (directory / "stdout").write_text(result["stdout"].replace("PASS c0-native-os\n", ""))
+                    elif failure == "return-marker":
+                        (directory / "stdout").write_text(result["stdout"].replace("PASS c0-return-flow\n", ""))
                     elif failure == "suite":
                         (directory / "stderr").write_bytes(b"\nRan 22 tests in 1.0s\n\nOK\n")
                     elif failure == "skip":
                         (directory / "stderr").write_bytes(b"\nRan 23 tests in 1.0s\n\nOK (skipped=1)\n")
                     elif failure == "timeout":
                         result.update(ok=False, timed_out=True, exit_code=None)
+                if failure == "capacity-suite" and pathlib.Path(argv[-1]).stem == "c0_capacity":
+                    # The real suite has 29 methods. Reject the old truncated count.
+                    (directory / "stderr").write_text(result["stderr"].replace("Ran 29 tests", "Ran 28 tests"))
                 return result
             with self.subTest(failure=failure), mock.patch.object(self.mcp, "_c031_command", side_effect=command), mock.patch.object(
                     self.mcp, "_c031_validate", side_effect=ValueError("synthetic invalid receipt") if failure == "validation" else lambda *a: {}):

@@ -1,4 +1,4 @@
-# C0.32 source-to-AST frontend, compiled by B0 --compiler-profile.
+# C0.33 source-to-AST frontend with structural definite return, built by B0 --compiler-profile.
 # Legacy NQAF/1..5 is unchanged; native scopes/operations use NQAF/6 dialect5.
 # Flat state transitions are intentional: B0 has no nested statement blocks.
 fn main() {
@@ -332,11 +332,14 @@ fn main() {
         state = 5 * active + state * (active == 0)
         byte_store(1180201, byte_load(1180201) + active)
 
-        # After top-level return, allow one semicolon, then exactly '}' and EOF.
+        # The outer brace may follow an exhaustive structured return proof.
+        # Direct return keeps its old optional-semicolon/block-final syntax.
         active = (byte_load(1180202) == 10) * (kind == 14)
         state = 11 * active + state * (active == 0)
         byte_store(1180201, byte_load(1180201) + active)
-        active = ((byte_load(1180202) == 10) + (byte_load(1180202) == 11)) * (kind == 13) * (byte_load(1179680) == 0)
+        active = (byte_load(1180202) == 10) + (byte_load(1180202) == 11)
+        active = active + (byte_load(1180202) == 5) * byte_load(6488065)
+        active = active * (kind == 13) * (byte_load(1179680) == 0)
         state = 12 * active + state * (active == 0)
         byte_store(1180201, byte_load(1180201) + active)
         byte_store(1180200, byte_load(1180200) + 12 * active * byte_load(1180161))
@@ -530,6 +533,15 @@ fn main() {
         byte_store(index + 1, nodes / 256)
         byte_store(index + 2, nodes / 65536)
         byte_store(index + 3, nodes / 16777216)
+        # Flow summaries occupy spare bytes in the existing 16-byte records:
+        # +1 guarantees return, +2 saves the then-arm across an else transition.
+        # A new function never inherits the preceding function's guarantee.
+        temp = (active == 10) * ok
+        index = 6488065 * temp + 8384512 * (temp == 0)
+        byte_store(index, 0)
+        temp = (active == 6) * (byte_load(1179656) == 32) * ok
+        index = (6488065 + byte_load(1179680) * 16) * temp + 8384512 * (temp == 0)
+        byte_store(index, 1)
         temp = ((active == 6) + (active == 9)) * ok
         values = values * (temp == 0)
         state = state * (temp == 0) + temp * (5 + 5 * (active == 6) * (byte_load(1179656) == 32))
@@ -539,6 +551,19 @@ fn main() {
         byte_store(1179680, byte_load(1179680) + temp)
         index = (6488064 + byte_load(1179680) * 16) * temp + 8384512 * (temp == 0)
         byte_store(index, byte_load(1179656) * (active != 18) + 45 * (active == 18))
+        byte_store(index + 1, 0)
+        byte_store(index + 2, 0)
+        # A while may execute zero times. Only an exhaustive if/else or an
+        # unconditional unsafe scope can add its child's guarantee to a parent.
+        temp = (active == 9) * ok
+        index = (6488064 + byte_load(1179680) * 16) * temp + 8384512 * (temp == 0)
+        ch = byte_load(index + 1) * ((byte_load(index) == 45) + (byte_load(index) == 37) * byte_load(index + 2))
+        ch = ch * temp * (byte_load(1180216) != 37)
+        byte_store(index + 2, byte_load(index + 1) * (byte_load(1180216) == 37) + byte_load(index + 2) * (byte_load(1180216) != 37))
+        byte_store(index + 1, byte_load(index + 1) * (byte_load(1180216) != 37))
+        temp = temp * (byte_load(1180216) != 37)
+        index = (6488065 + (byte_load(1179680) - (byte_load(1179680) != 0)) * 16) * temp + 8384512 * (temp == 0)
+        byte_store(index, (byte_load(index) + ch) != 0)
         temp = (active == 9) * ok
         index = (6488064 + byte_load(1179680) * 16) * temp + 8384512 * (temp == 0)
         byte_store(index, 37)
@@ -950,8 +975,8 @@ fn main() {
     byte_store(6559007, 117)
     byte_store(6559008, 116)
     byte_store(6559009, 10)
-    # : error[C0P-004]: invalid syntax; expected fn name(parameters) with statements and final return
-    byte_store(6558600, 96)
+    # : error[C0P-004]: invalid syntax; expected fn name(parameters) with a return on every path
+    byte_store(6558600, 91)
     byte_store(6559080, 58)
     byte_store(6559081, 32)
     byte_store(6559082, 101)
@@ -1020,34 +1045,29 @@ fn main() {
     byte_store(6559145, 116)
     byte_store(6559146, 104)
     byte_store(6559147, 32)
-    byte_store(6559148, 115)
-    byte_store(6559149, 116)
-    byte_store(6559150, 97)
-    byte_store(6559151, 116)
-    byte_store(6559152, 101)
-    byte_store(6559153, 109)
-    byte_store(6559154, 101)
+    byte_store(6559148, 97)
+    byte_store(6559149, 32)
+    byte_store(6559150, 114)
+    byte_store(6559151, 101)
+    byte_store(6559152, 116)
+    byte_store(6559153, 117)
+    byte_store(6559154, 114)
     byte_store(6559155, 110)
-    byte_store(6559156, 116)
-    byte_store(6559157, 115)
-    byte_store(6559158, 32)
-    byte_store(6559159, 97)
-    byte_store(6559160, 110)
-    byte_store(6559161, 100)
-    byte_store(6559162, 32)
-    byte_store(6559163, 102)
-    byte_store(6559164, 105)
-    byte_store(6559165, 110)
-    byte_store(6559166, 97)
-    byte_store(6559167, 108)
-    byte_store(6559168, 32)
-    byte_store(6559169, 114)
-    byte_store(6559170, 101)
-    byte_store(6559171, 116)
-    byte_store(6559172, 117)
-    byte_store(6559173, 114)
-    byte_store(6559174, 110)
-    byte_store(6559175, 10)
+    byte_store(6559156, 32)
+    byte_store(6559157, 111)
+    byte_store(6559158, 110)
+    byte_store(6559159, 32)
+    byte_store(6559160, 101)
+    byte_store(6559161, 118)
+    byte_store(6559162, 101)
+    byte_store(6559163, 114)
+    byte_store(6559164, 121)
+    byte_store(6559165, 32)
+    byte_store(6559166, 112)
+    byte_store(6559167, 97)
+    byte_store(6559168, 116)
+    byte_store(6559169, 104)
+    byte_store(6559170, 10)
     # : error[C0P-005]: AST exceeds 65536 nodes; split the input
     byte_store(6558601, 59)
     byte_store(6559208, 58)

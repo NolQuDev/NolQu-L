@@ -246,7 +246,13 @@ class NativeFrontendTests(unittest.TestCase):
             for profile in (False, True):
                 with self.subTest(header=header, profile=profile):
                     self.reject(source, 'C0P-014', source.index(b'unsafe'), profile=profile)
-        for source in (b'fn main(){unsafe {# safety: owns effects\nreturn 0}}',
+        # C0.33 accepts the existing unsafe body's definite return, without an
+        # otherwise redundant outer return. An incomplete body still fails.
+        for profile in (False, True):
+            source = b'fn main(){unsafe {# safety: owns effects\nreturn 0}}'
+            _, nodes, _ = self.parse(source, profile=profile)
+            self.assertEqual(sum(node[0] == 32 for node in nodes), 1)
+        for source in (b'fn main(){unsafe {# safety: owns effects\nif 1{return 0}}}',
                        b'fn main(){unsafe {# safety: owns effects\n} }',
                        b'fn main(){unsafe {# safety: owns effects\nreturn 0} fn f(){return 0}',
                        b'fn main(){unsafe fn f(){return 0} return 0}',

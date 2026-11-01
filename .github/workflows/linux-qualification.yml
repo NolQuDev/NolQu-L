@@ -4,7 +4,7 @@ name: NolQu-L Linux qualification
   workflow_dispatch:
   pull_request:
   push:
-    branches: [Main, Dev, Stable, main, 'ci/**']
+    branches: [Main, Dev, Stable, main, Testing]
 
 permissions:
   contents: read

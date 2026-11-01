@@ -44,12 +44,14 @@ class AlphaReleaseTests(unittest.TestCase):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 m.release_tag(version, channel)
         environment = dict(GITHUB_REPOSITORY='NolQuDev/NolQu-L', GITHUB_SHA='b' * 40,
-                           GITHUB_REF='refs/heads/release/v1.0.0-alpha.1',
-                           GITHUB_EVENT_NAME='push')
+                           GITHUB_REF='refs/heads/Main',
+                           GITHUB_EVENT_NAME='workflow_dispatch')
         m.validate_context(environment, 'v1.0.0-alpha.1', 'b' * 40)
         for key, value in [('GITHUB_REPOSITORY', 'someone/fork'),
-                           ('GITHUB_SHA', 'c' * 40), ('GITHUB_REF', 'refs/heads/Main'),
-                           ('GITHUB_EVENT_NAME', 'pull_request')]:
+                           ('GITHUB_SHA', 'c' * 40), ('GITHUB_REF', 'refs/heads/Testing'),
+                           ('GITHUB_EVENT_NAME', 'pull_request'),
+                           ('GITHUB_REF', 'refs/heads/release/v1.0.0-alpha.1'),
+                           ('GITHUB_EVENT_NAME', 'push')]:
             with self.subTest(key=key), self.assertRaises(ValueError):
                 m.validate_context({**environment, key: value}, 'v1.0.0-alpha.1', 'b' * 40)
 
@@ -214,7 +216,7 @@ class AlphaReleaseTests(unittest.TestCase):
         runner = Path(directory) / 'runner'
         runner.mkdir()
         environment = dict(GITHUB_REPOSITORY='NolQuDev/NolQu-L', GITHUB_SHA=revision,
-            GITHUB_REF='refs/heads/release/v1.0.0-alpha.1', GITHUB_EVENT_NAME='push',
+            GITHUB_REF='refs/heads/Main', GITHUB_EVENT_NAME='workflow_dispatch',
             GITHUB_TOKEN='explicit-test-fixture', RUNNER_TEMP=str(runner),
             GITHUB_RUN_ID='11', GITHUB_RUN_ATTEMPT='1')
         return root, revision, environment
@@ -272,7 +274,9 @@ class AlphaReleaseTests(unittest.TestCase):
                     self.tag = payload['sha']
                     return dict(object=dict(type='commit', sha=self.tag))
                 if method == 'POST' and '/assets?name=' in suffix:
-                    name = suffix.split('name=', 1)[1]
+                    from urllib.parse import parse_qs, urlsplit
+                    query = parse_qs(urlsplit(suffix).query)
+                    name = query['name'][0]
                     asset = dict(id=len(self.assets) + 1, name=name, state='uploaded', size=len(payload),
                                  digest='sha256:' + ('0' * 64 if bad_asset else m.sha256(payload)))
                     self.assets.append(asset)
@@ -323,7 +327,7 @@ class AlphaReleaseTests(unittest.TestCase):
             self.assertTrue(api.release['prerelease'])
             self.assertEqual(api.release['make_latest'], 'false')
             receipt = json.loads((output / 'nolqu-l-alpha-assets/PUBLICATION.json').read_text())
-            self.assertEqual(len(receipt['assets']), 5)
+            self.assertEqual(len(receipt['assets']), 6)
             self.assertEqual(api.mutations[0][0:2], ('POST', 'git/refs'))
             self.assertEqual(api.mutations[0][2]['sha'], receipt['revision'])
             self.assertEqual(api.mutations[1][0:2], ('POST', 'releases'))
@@ -374,7 +378,7 @@ class AlphaReleaseTests(unittest.TestCase):
             self.assertTrue(api.published)
             metadata = (output / 'nolqu-l-alpha-assets/BUILD-METADATA.json').read_bytes()
             self.assertEqual(metadata, api.original_metadata)
-            self.assertEqual(len(api.assets), 5)
+            self.assertEqual(len(api.assets), 6)
 
     def test_published_during_listing_receives_no_asset_mutation(self):
         with tempfile.TemporaryDirectory(prefix='nql-release-state-race-') as directory:
@@ -405,10 +409,10 @@ class AlphaReleaseTests(unittest.TestCase):
         self.assertTrue(path.is_file(), 'Alpha release workflow is not implemented')
         import yaml
         workflow = yaml.safe_load(path.read_text())
-        self.assertEqual(set(workflow['on']), {'push', 'workflow_dispatch'})
-        self.assertEqual(workflow['on']['push']['branches'], ['release/**'])
+        self.assertEqual(set(workflow['on']), {'workflow_dispatch'})
         self.assertEqual(workflow['permissions'], {'contents': 'read'})
         job = workflow['jobs']['publish-alpha']
+        self.assertIn("github.ref == 'refs/heads/Main'", job['if'])
         self.assertEqual(job['permissions'], {'contents': 'write', 'actions': 'read'})
         checkout = next(step for step in job['steps'] if 'checkout@' in step.get('uses', ''))
         self.assertRegex(checkout['uses'], r'@[0-9a-f]{40}$')
@@ -416,6 +420,42 @@ class AlphaReleaseTests(unittest.TestCase):
         token_steps = [step for step in job['steps'] if 'GITHUB_TOKEN' in step.get('env', {})]
         self.assertEqual(len(token_steps), 1)
         self.assertIn('alpha_release.py', token_steps[0]['run'])
+
+    def test_readable_versioned_zip_preserves_bytes_modes_and_aliases(self):
+        m = self.module()
+        self.assertEqual(m.release_name('1.0.0-alpha.1'), 'NolQu-L 1.0.0 alpha.1')
+        source = io.BytesIO()
+        with tarfile.open(fileobj=source, mode='w:gz') as archive:
+            regular = tarfile.TarInfo('old/public.txt')
+            regular.size = 4
+            regular.mode = 0o755
+            archive.addfile(regular, io.BytesIO(b'NQL!'))
+            alias = tarfile.TarInfo('old/alias')
+            alias.type = tarfile.SYMTYPE
+            alias.linkname = 'public.txt'
+            archive.addfile(alias)
+        name = m.release_name('1.0.0-alpha.1')
+        data = m.source_zip(source.getvalue(), name)
+        self.assertEqual(data, m.source_zip(source.getvalue(), name))
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            self.assertEqual(archive.read(name + '/public.txt'), b'NQL!')
+            self.assertEqual(archive.getinfo(name + '/public.txt').external_attr >> 16 & 0o777, 0o755)
+            self.assertEqual(archive.read(name + '/alias'), b'public.txt')
+        with self.assertRaises(ValueError):
+            m.source_zip(source.getvalue(), '../escape')
+
+    def test_zip_rejects_private_duplicate_and_escaping_tar_members(self):
+        m = self.module()
+        for names in [('root/AGENTS.md',), ('root/../escape',),
+                      ('root/a', 'root/a'), ('root/a', 'other/b')]:
+            source = io.BytesIO()
+            with tarfile.open(fileobj=source, mode='w:gz') as archive:
+                for name in names:
+                    item = tarfile.TarInfo(name)
+                    item.size = 1
+                    archive.addfile(item, io.BytesIO(b'x'))
+            with self.subTest(names=names), self.assertRaises(ValueError):
+                m.source_zip(source.getvalue(), 'NolQu-L 1.0.0 alpha.1')
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-# C0.32 independently validated native OS / versioned NQAF-to-ELF backend, canonically built by B0 compiler profile.
+# C0.33 independently validated native OS and definite-return NQAF-to-ELF backend, built by B0 compiler profile.
 # Flat B0 grammar: exactly sixteen locals, all other state in the mapped arena.
 # See BACKEND.md for regions, metadata phases, legacy bytes and native lifetimes.
 fn main() {
@@ -116,7 +116,7 @@ fn main() {
         ok = ok * ((kind != 43) + (kind == 43) * (0 < right))
         temp = byte_load(6819872) * (pos != nodes - 1)
         ok = ok * ((temp == 0) * (next == 0) + temp * (pos < next) * (next < nodes))
-        ok = ok * ((pos != nodes - 1) + (pos == nodes - 1) * ((kind == 32) * (byte_load(6820042) < 3) + (kind == 41) * (3 <= byte_load(6820042))))
+        ok = ok * ((pos != nodes - 1) + (pos == nodes - 1) * (byte_load(6819872) * (byte_load(6820042) < 3) + (kind == 41) * (3 <= byte_load(6820042))))
 
         # Absent IDs read designated zero scratch, never an adjacent table.
         index = (byte_load(6820041) + got + (left - 1) * byte_load(6820041)) * ok * (left != 0) + 8384640 * (ok * (left != 0) == 0)
@@ -220,7 +220,8 @@ fn main() {
         temp = byte_load(6819900) + 256 * byte_load(6819900 + 1) + 65536 * byte_load(6819900 + 2) + 16777216 * byte_load(6819900 + 3)
         ok = ok * ((kind != 33) + (kind == 33) * (left == temp))
 
-        # Balanced structured delimiters; terminal return belongs to its block.
+        # Balanced structured delimiters; direct return remains block-final.
+        # Spare +2/+3 bytes hold independent guaranteed/saved-then return bits.
         # The stack has 65 records, including an inert root sentinel.
         ch = byte_load(6819944)
         # Function envelopes cannot contain each other or span lexical blocks.
@@ -230,7 +231,9 @@ fn main() {
         ok = ok * ((active == 0) + active * (((kind == 39) + (kind == 33)) * (temp == 0) + (kind != 39) * (kind != 33) * (temp != 0)))
         ok = ok * ((byte_load(6819874) == 0) + byte_load(6819874) * (ch == 0))
         ok = ok * ((kind != 40) + (kind == 40) * byte_load(6819964) * (byte_load(6819966) < 6))
-        ok = ok * ((kind != 41) + (kind == 41) * (byte_load(6815745) == 1))
+        ok = ok * ((kind != 41) + (kind == 41) * (byte_load(6815746) == 1))
+        active = (kind == 33) * (byte_load(6820042) < 3)
+        ok = ok * ((active == 0) + active * (byte_load(6815746) == 1))
         temp = temp * (kind != 39) * (kind != 41) + pos * (kind == 39)
         byte_store(6819960, temp)
         byte_store(6819960 + 1, (temp) / 256)
@@ -246,6 +249,8 @@ fn main() {
         active = (kind == 39) * ok
         index = 6815745 * active + 8384512 * (active == 0)
         byte_store(index, 0)
+        byte_store(index + 1, 0)
+        byte_store(index + 2, 0)
         index = 6815744 + ch * 16
         temp = byte_load(index)
         ok = ok * ((byte_load(6819872) == 0) + byte_load(6819872) * ((byte_load(index + 1) == 0) + (byte_load(index + 1) != 0) * (byte_load(6819868) + (kind == 41))))
@@ -259,11 +264,24 @@ fn main() {
         active = (kind == 32) * ok
         index = (index + 1) * active + 8384512 * (active == 0)
         byte_store(index, 1)
+        byte_store(index + 1, 1)
+        # Save the then proof before else resets the current arm. A sibling
+        # block and each new function start with fresh proof bits.
+        active = (kind == 37) * ok
+        index = (6815744 + ch * 16) * active + 8384512 * (active == 0)
+        byte_store(index + 3, byte_load(index + 2))
+        active = ((kind == 35) + (kind == 38) + (kind == 46)) * ok
+        index = (6815744 + ch * 16) * active + 8384512 * (active == 0)
+        temp = byte_load(index + 2) * ((kind == 46) + (kind == 38) * (byte_load(index) == 37) * byte_load(index + 3))
+        index = (6815746 + (ch - (ch != 0)) * 16) * active + 8384512 * (active == 0)
+        byte_store(index, (byte_load(index) + temp) != 0)
         active = ((kind == 37) + byte_load(6819870) + (kind == 45)) * ok
         ch = ch + (byte_load(6819870) + (kind == 45)) * ok
         index = (6815744 + ch * 16) * active + 8384512 * (active == 0)
         byte_store(index, kind)
         byte_store(index + 1, 0)
+        byte_store(index + 2, 0)
+        byte_store(index + 3, byte_load(index + 3) * (kind == 37))
         ch = ch - ((kind == 35) + (kind == 38) + (kind == 46)) * ok
         byte_store(6819944, ch)
         pos = pos + 1

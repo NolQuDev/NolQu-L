@@ -1,8 +1,42 @@
 # Changelog
 
+## Unreleased repository maintenance
+
+### Tooling
+
+- Reuse `Testing` for CI and review; release versions use tags and GitHub
+  Releases. Alpha publishing now requires an explicit manual run on the
+  qualified `Main` revision shared with `Dev`.
+- Add deterministic source ZIP downloads with readable versioned root names,
+  such as `NolQu-L 1.0.0 alpha.1`. GitHub storage filenames use periods for
+  spaces. Preserve original published assets and checksums during the initial
+  naming transition; provide separate named downloads and checksum metadata.
+
 ## Unreleased
 
+### Validation
+
+- Complete the existing offline smoke+differential profile in genuine untraced
+  Native Termux and PRoot: 15 checks, 326 invocations and 96 oracle matches in
+  each. Compare all 978 streams and 107 generated ELF files byte-for-byte;
+  retain Native `TracerPid 0` receipts at both ends. Synchronize current status
+  pages and version metadata wording. Full Native qualification remains blocked
+  by denied real-hardlink creation; the historical signal incident remains open.
+
 ### Added
+
+- Add experimental C0.33 structural return analysis. Exhaustive if/else and
+  returning unsafe blocks no longer need a redundant outer return. Frontend and
+  backend independently verify every function; loops remain conservative. Keep
+  NQAF/1..6 layouts and native ABI, require paired component upgrades for newly
+  accepted programs, and add direct/generation regressions plus a fail-closed
+  MCP return-flow flag. Public version and release maturity are unchanged.
+
+- Retain bounded supervisor lifecycle and last-live deadline observations in host
+  test receipts. Known cleanup requests remain distinct from an unobserved target
+  signal sender; aborts during observation preserve failure evidence. Existing
+  limits, target results, historical receipts and canonical compiler bytes stay
+  unchanged. The original native timeout and historical SIGKILL remain open.
 
 - Retain optional CPU time and largest-waited-child RSS from each private test
   supervisor after cleanup. New controls cover actual allocations, descendants,
@@ -11,18 +45,47 @@
 
 ### Fixed
 
+- Set the machine-trace JSON evidence mode explicitly to 0644. A private host
+  umask previously produced 0600 originals that the unchanged strict MCP proof
+  consumer correctly rejected. Exercise the export under umask 077 and retain
+  exact artifact identity and permission checks.
+
+- Match the MCP proof consumer to the actual 29-method capacity backend suite.
+  The stale 28-method assertion rejected complete evidence; a negative control
+  now rejects the old count while retaining the complete fail-closed inventory.
+
+- Apply one strict GNU_STACK permission contract across all bootstrap gates,
+  including split flags, missing/malformed rows and unsafe duplicates. Fix the
+  Core no-RWX LOAD predicate for split write/execute flags. MCP ELF inspectors
+  now identify the actual target from ELF bytes and reject incomplete reports;
+  filenames cannot qualify a wrong-target artifact. Expose `inspection_complete`
+  and require a complete dynamic-section report for runtime-independence checks.
+  Canonical compiler artifacts and language behavior are unchanged.
+- Reject bootstrap materializer/stream-adapter outputs that alias required
+  source, pin, wrapper or predecessor inputs. Recheck before exact-destination
+  publication and preserve pinned rebuild bytes and failed-output cleanup.
+- Consume complete ELF inspection reports before searching them. LLVM readelf
+  broken pipes can no longer invert positive or negative bootstrap checks;
+  inspector errors remain controlled failures. Add portable alias/publication
+  regressions and a required real-hardlink Linux check.
+- Reject executable GNU_STACK permissions in combined or separate flag fields
+  across all four Core gates, including the `R E` form. ELF inspection test
+  launchers preserve Python paths containing spaces and clean up their private
+  process group and suite files on timeout or cancellation.
+
 - Correct active feature/project status pages that still described the full
   Linux suite as unrun or used earlier checkpoint counts as current. Record
   matching finite compiler results through PRoot and Termux Python/QEMU while
-  retaining their traced context and the unrun native qualification gate.
+  retaining their traced context and the then-unrun native qualification gate.
 - Keep supervisor metadata ingestion bounded to a 4 KiB regular-file JSON
   control. Malformed, missing, oversized, symlink, directory and FIFO controls
   retain a failed invocation and its stream identities before a controlled
   host error. This repairs evidence loss and an out-of-deadline FIFO read;
   it does not explain the historical comparison-backend SIGKILL.
-- Align current validation/roadmap with the published Alpha 1 and fresh
-  eleven-gate baseline. Native execution of the newer differential profile
-  remains NOT RUN; Alpha 2, Stable and security qualification are not implied.
+- Align validation/roadmap with the published Alpha 1 and fresh eleven-gate
+  baseline at that checkpoint. Native execution of the newer differential
+  profile was then NOT RUN; Alpha 2, Stable and security qualification were
+  not implied.
 
 ## 1.0.0-alpha.1 — 2026-10-29
 

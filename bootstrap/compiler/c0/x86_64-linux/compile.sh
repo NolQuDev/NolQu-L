@@ -16,11 +16,21 @@ fi
 
 input_path="$1"
 output_path="$2"
+validate_output() {
+    local protected
+    [[ ! -d "$output_path" ]] || fail "output path '$output_path' is a directory"
+    for protected in "$input_path" "$HASH_PATH" "$C0_PATH" "${BASH_SOURCE[0]}"; do
+        [[ ! "$output_path" -ef "$protected" ]] || \
+            fail "output would replace required input '$protected'"
+    done
+}
+
+validate_output
+
 [[ -x "$C0_PATH" ]] || fail "missing executable C0 seed '$C0_PATH'"
 [[ -f "$HASH_PATH" ]] || fail "missing hash manifest '$HASH_PATH'"
 [[ -f "$input_path" ]] || fail "input file '$input_path' does not exist"
 [[ -r "$input_path" ]] || fail "input file '$input_path' is not readable"
-[[ ! -d "$output_path" ]] || fail "output path '$output_path' is a directory"
 
 read -r expected_hash expected_name < "$HASH_PATH" || fail "cannot read '$HASH_PATH'"
 [[ "$expected_hash" =~ ^[0-9a-f]{64}$ ]] || fail "invalid SHA-256 in '$HASH_PATH'"
@@ -30,7 +40,7 @@ actual_hash="${actual_hash%% *}"
 [[ "$actual_hash" == "$expected_hash" ]] || \
     fail "C0 seed hash mismatch: expected $expected_hash, got $actual_hash"
 
-output_dir="$(dirname "$output_path")"
+output_dir="$(dirname -- "$output_path")"
 [[ -d "$output_dir" ]] || fail "output directory '$output_dir' does not exist"
 
 if [[ "$(uname -m)" == "x86_64" ]]; then
@@ -41,7 +51,7 @@ else
     fail "x86_64 execution unavailable; install qemu-x86_64 on this host"
 fi
 
-temp_path="$(mktemp "$output_dir/.c0.tmp.XXXXXX")" || \
+temp_path="$(mktemp -- "$output_dir/.c0.tmp.XXXXXX")" || \
     fail "cannot create temporary output in '$output_dir'"
 
 cleanup() {
@@ -59,5 +69,6 @@ if [[ "$status" -ne 0 ]]; then
 fi
 
 chmod 0755 "$temp_path" || fail "cannot mark output executable"
+validate_output
 mv -fT -- "$temp_path" "$output_path" || fail "cannot install '$output_path'"
 trap - EXIT HUP INT TERM

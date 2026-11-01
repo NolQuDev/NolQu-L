@@ -11,17 +11,30 @@ fail() {
     exit 1
 }
 
+[[ $# -le 1 ]] || fail 'usage: materialize.sh [output]'
+
+validate_output() {
+    local protected
+    [[ ! -d "$OUTPUT_PATH" ]] || fail "output path '$OUTPUT_PATH' is a directory"
+    for protected in "$HEX_PATH" "$HASH_PATH" "${BASH_SOURCE[0]}"; do
+        [[ ! "$OUTPUT_PATH" -ef "$protected" ]] || \
+            fail "output would replace required input '$protected'"
+    done
+}
+
+validate_output
+
 [[ -f "$HEX_PATH" ]] || fail "missing byte manifest '$HEX_PATH'"
 [[ -f "$HASH_PATH" ]] || fail "missing hash manifest '$HASH_PATH'"
 
-output_dir="$(dirname "$OUTPUT_PATH")"
+output_dir="$(dirname -- "$OUTPUT_PATH")"
 [[ -d "$output_dir" ]] || fail "output directory '$output_dir' does not exist"
 
 read -r expected_hash expected_name < "$HASH_PATH" || fail "cannot read '$HASH_PATH'"
 [[ "$expected_hash" =~ ^[0-9a-f]{64}$ ]] || fail "invalid SHA-256 in '$HASH_PATH'"
 [[ "$expected_name" == "hex0.seed" ]] || fail "hash manifest must name hex0.seed"
 
-temp_path="$(mktemp "$output_dir/.hex0.seed.tmp.XXXXXX")" || \
+temp_path="$(mktemp -- "$output_dir/.hex0.seed.tmp.XXXXXX")" || \
     fail "cannot create temporary output in '$output_dir'"
 
 cleanup() {
@@ -67,7 +80,8 @@ actual_hash="${actual_hash%% *}"
     fail "seed hash mismatch: expected $expected_hash, got $actual_hash"
 
 chmod 0755 "$temp_path" || fail "cannot mark reconstructed seed executable"
-mv -f -- "$temp_path" "$OUTPUT_PATH" || fail "cannot install '$OUTPUT_PATH'"
+validate_output
+mv -fT -- "$temp_path" "$OUTPUT_PATH" || fail "cannot install '$OUTPUT_PATH'"
 trap - EXIT HUP INT TERM
 
 printf 'materialize: verified %s  %s\n' "$actual_hash" "$OUTPUT_PATH"

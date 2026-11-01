@@ -9,6 +9,7 @@ from pathlib import Path
 import platform
 import posixpath
 import re
+import stat
 import subprocess
 import sys
 import tarfile
@@ -51,9 +52,14 @@ def validate_context(environment, tag, revision):
     if (environment.get('GITHUB_REPOSITORY') != REPOSITORY
             or re.fullmatch('[0-9a-f]{40}', revision) is None
             or environment.get('GITHUB_SHA') != revision
-            or environment.get('GITHUB_REF') != 'refs/heads/release/' + tag
-            or environment.get('GITHUB_EVENT_NAME') not in ('push', 'workflow_dispatch')):
-        raise ValueError('release requires the exact official release branch and commit')
+            or environment.get('GITHUB_REF') != 'refs/heads/Main'
+            or environment.get('GITHUB_EVENT_NAME') != 'workflow_dispatch'):
+        raise ValueError('release requires a manual run on the exact official Main commit')
+
+
+def release_name(version):
+    release_tag(version, 'dev')
+    return 'NolQu-L ' + version.replace('-alpha.', ' alpha.')
 
 
 def qualified_run(runs, branch, revision):
@@ -111,7 +117,7 @@ def checked_assets(assets, expected):
 
 
 def source_archive(root, revision, prefix):
-    if re.fullmatch('[A-Za-z0-9._-]+', prefix) is None:
+    if re.fullmatch('[A-Za-z0-9][A-Za-z0-9 ._-]*', prefix) is None:
         raise ValueError('invalid archive prefix')
     policy = load('release_publication_policy', ROOT / 'tools/check_publication.py')
     payload = command(root, 'git', 'archive', '--format=tar', '--prefix=' + prefix + '/', revision)
@@ -140,6 +146,58 @@ def source_archive(root, revision, prefix):
             elif not (member.isdir() or member.isfile()):
                 raise ValueError('unsupported source archive entry')
     return gzip.compress(payload, mtime=0)
+
+
+def source_zip(source, prefix):
+    """Repackage verified source bytes; preserve regular-file modes and aliases."""
+    if re.fullmatch('[A-Za-z0-9][A-Za-z0-9 ._-]*', prefix) is None:
+        raise ValueError('invalid ZIP prefix')
+    policy = load('zip_publication_policy', ROOT / 'tools/check_publication.py')
+    result = io.BytesIO()
+    with tarfile.open(fileobj=io.BytesIO(source), mode='r:gz') as archive:
+        members = archive.getmembers()
+        if not members or len(members) > 20000 or sum(item.size for item in members) > MAX_DOWNLOAD:
+            raise ValueError('source ZIP capacity exceeded or empty archive')
+        old_root = members[0].name.split('/')[0]
+        seen = set()
+        entries = {item.name.rstrip('/'): item for item in members}
+        with zipfile.ZipFile(result, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as output:
+            for item in members:
+                name = item.name.rstrip('/')
+                if '\\' in name or ':' in name:
+                    raise ValueError('nonportable source ZIP path')
+                if (name in seen or posixpath.normpath(name) != name
+                        or old_root in ('', '.', '..')
+                        or not (name == old_root or name.startswith(old_root + '/'))):
+                    raise ValueError('duplicate or escaping source ZIP path')
+                seen.add(name)
+                relative = name[len(old_root):].lstrip('/')
+                if not relative and not item.isdir():
+                    raise ValueError('source ZIP root must be a directory')
+                if relative and policy.blocked_reason(relative):
+                    raise ValueError('private source ZIP path: ' + relative)
+                target = prefix + ('/' + relative if relative else '')
+                if item.isdir():
+                    payload, mode, target = b'', stat.S_IFDIR | (item.mode & 0o777), target + '/'
+                elif item.isfile():
+                    with archive.extractfile(item) as stream:
+                        payload = stream.read()
+                    mode = stat.S_IFREG | (item.mode & 0o777)
+                elif item.issym():
+                    link = posixpath.join(posixpath.dirname(name), item.linkname)
+                    destination = entries.get(link)
+                    if ('/' in item.linkname or item.linkname in ('', '.', '..')
+                            or destination is None or not destination.isfile()):
+                        raise ValueError('source ZIP link escape or ambiguous chain')
+                    payload, mode = item.linkname.encode(), stat.S_IFLNK | 0o777
+                else:
+                    raise ValueError('unsupported source ZIP entry')
+                info = zipfile.ZipInfo(target, date_time=(1980, 1, 1, 0, 0, 0))
+                info.create_system = 3
+                info.external_attr = mode << 16
+                info.compress_type = zipfile.ZIP_DEFLATED
+                output.writestr(info, payload)
+    return result.getvalue()
 
 
 def bundle_archive(root, prefix):
@@ -205,7 +263,7 @@ class GitHub:
                 raise RuntimeError('GitHub release request failed with HTTP ' + str(code)) from None
         if len(body) > MAX_DOWNLOAD:
             raise ValueError('release API/download size limit exceeded')
-        return body if binary or route.endswith('/zip') else json.loads(body)
+        return body if binary or route.endswith('/zip') else (json.loads(body) if body else None)
 
 
 def api_path(suffix):
@@ -314,12 +372,18 @@ def main():
     if existing_tag is not None and existing_tag != revision:
         raise ValueError('existing tag belongs to a different immutable revision')
     receipts, identities = qualification_receipts(api, revision)
-    name = 'nolqu-l-' + version
-    source = source_archive(ROOT, revision, name)
-    bundle = bundle_archive(ROOT, name + '-termux-bundle')
-    if source != source_archive(ROOT, revision, name) or bundle != bundle_archive(ROOT, name + '-termux-bundle'):
+    display = release_name(version)
+    # GitHub normalizes spaces in uploaded filenames. Keep the readable name
+    # inside archives and in the release title; storage names are predictable.
+    name = display.replace(' ', '.')
+    source = source_archive(ROOT, revision, display)
+    bundle = bundle_archive(ROOT, display + ' Termux')
+    zipped = source_zip(source, display)
+    if (source != source_archive(ROOT, revision, display)
+            or bundle != bundle_archive(ROOT, display + ' Termux')
+            or zipped != source_zip(source, display)):
         raise ValueError('release archives did not reproduce exactly')
-    assets = {name + '-source.tar.gz': source, name + '-termux-bundle.tar.gz': bundle,
+    assets = {name + '.zip': zipped, name + '-source.tar.gz': source, name + '-termux-bundle.tar.gz': bundle,
               'QUALIFICATION.json': (json.dumps(receipts, sort_keys=True, indent=2) + '\n').encode()}
     metadata = dict(project='NolQu-Lang', short_name='NolQu-L',
         version=version, channel=channel, source_revision=revision,
@@ -365,7 +429,7 @@ def main():
     bind_tag(api, tag, revision)
     if release is None:
         release = api.request('POST', api_path('releases'), dict(tag_name=tag,
-            target_commitish=revision, name='NolQu-Lang ' + version, body=body,
+            target_commitish=revision, name=display, body=body,
             draft=True, prerelease=True, make_latest='false'))
     release_id = str(int(release['id']))
     check_draft(api, release_id, tag, revision, body)
@@ -375,7 +439,7 @@ def main():
     for key, data in assets.items():
         if key not in present:
             check_draft(api, release_id, tag, revision, body)
-            asset = api.request('POST', api_path('releases/' + release_id + '/assets?name=' + urllib.parse.quote(key, safe='')), data, upload=True)
+            asset = api.request('POST', api_path('releases/' + release_id + '/assets?name=' + urllib.parse.quote(key, safe='') + '&label=' + urllib.parse.quote(key.replace(name, display), safe='')), data, upload=True)
             checked_assets([asset], {key: data})
     uploaded = api.request('GET', api_path('releases/' + release_id + '/assets?per_page=100'))
     if checked_assets(uploaded, assets) != set(assets):

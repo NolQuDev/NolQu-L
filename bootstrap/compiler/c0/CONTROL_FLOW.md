@@ -1,5 +1,9 @@
 # C0.28 Structured Control Flow Implementation Plan
 
+Historical C0.28 contract. C0.33 extends the terminal outer-return requirement
+through [structural return analysis](RETURN_FLOW.md); the original delimiter,
+scope, branch and direct block-final return rules below remain applicable.
+
 > For agentic workers: execute task-by-task with test-driven-development and
 > verification-before-completion. Continue the approved Core-0 roadmap in
 > NOLQU_MAJOR_DEVELOPMENT_UPD.md; this is not public language promotion.

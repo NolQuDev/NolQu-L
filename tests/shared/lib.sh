@@ -17,6 +17,51 @@ cleanup_tmp_dir() {
 
 trap cleanup_tmp_dir EXIT
 
+# Consume each inspector report before searching it. Under pipefail, grep -q
+# can close a live LLVM readelf pipe early and invert positive/negative gates.
+read_elf_reports() {
+    elf_header="$(LC_ALL=C readelf -h "$1")" || {
+        printf 'FAIL elf-header-inspection (%s)\n' "$1" >&2
+        return 1
+    }
+    elf_program_headers="$(LC_ALL=C readelf -lW "$1")" || {
+        printf 'FAIL elf-program-inspection (%s)\n' "$1" >&2
+        return 1
+    }
+}
+
+
+# Wide GNU/LLVM readelf rows have five numeric fields, zero or more
+# combined/split permission fields, then numeric alignment. Inspect every
+# matching row; an unsafe earlier row must survive a later safe duplicate.
+_elf_program_permissions() {
+    LC_ALL=C awk -v record_type="$1" -v permission_rule="$2" '
+        $1 == record_type {
+            found = 1
+            if (NF < 7) invalid = 1
+            for (i = 2; i <= 6; i++)
+                if ($i !~ /^(0[xX][0-9a-fA-F]+|[0-9]+)$/) invalid = 1
+            if ($NF !~ /^(0[xX][0-9a-fA-F]+|[0-9]+)$/) invalid = 1
+            flags = ""
+            for (i = 7; i < NF; i++) {
+                if ($i !~ /^[RWE]+$/) invalid = 1
+                flags = flags $i
+            }
+            if (permission_rule == "stack" && flags ~ /E/) invalid = 1
+            if (permission_rule == "load" && flags ~ /W/ && flags ~ /E/) invalid = 1
+        }
+        END { exit (!found || invalid) }
+    '
+}
+
+elf_has_non_executable_stack() {
+    _elf_program_permissions GNU_STACK stack
+}
+
+elf_has_no_writable_executable_load() {
+    _elf_program_permissions LOAD load
+}
+
 run_output() {
     local exe="$1"
     shift

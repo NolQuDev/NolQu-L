@@ -6,7 +6,82 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
-## Current verification checkpoint — 2026-10-30
+## C0.33 Validation Scope
+
+The current experimental component pair adds structural return analysis; its
+contract, required gates, compatibility boundary and test mapping are in
+[RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md). Nine scoped
+return-flow methods have passed in PRoot and untraced Native Termux, with
+legacy AST/ELF corpus parity. Exact-revision qualification is tracked in
+[PR #8](https://github.com/NolQuDev/NolQu-L/pull/8); the retained C0.32 baseline
+below does not qualify changed C0.33 component bytes.
+
+The original Native negative fixture requiring a redundant outer return after
+an unsafe body's direct return is migrated to positive tests in both profiles;
+an incomplete unsafe-body path remains rejected. The MCP capacity consumer also
+requires the actual 29-method suite, with a negative control for the stale
+28-method count. Failed first-candidate logs remain evidence. These repairs do
+not close the historical signal incident or reconstruct missing old artifacts.
+
+The complete Native component run subsequently passed its executable tests but
+failed proof consumption because four original machine-trace JSON files had
+mode 0600 under the host's private umask. The exporter now sets 0644 explicitly;
+an actual two-profile mmap test fails before this repair and passes afterward
+in Native Termux and PRoot. The regression creates traces under umask 077 and
+restores the enclosing mask. The consumer's mode/identity contract is unchanged;
+the failed proof remains evidence. PR #8 tracks qualification of the repaired
+exporter alongside the component pair.
+
+## Retained C0.32 Baseline — 2026-11-01
+
+Source revision `75b2309f570530adfd9e62ddb6b33431581a4a3c` on `Testing`
+completed exact-source Linux qualification on both
+[push](https://github.com/NolQuDev/NolQu-L/actions/runs/41276651835) and
+[PR](https://github.com/NolQuDev/NolQu-L/actions/runs/41276654513).
+All eleven gates passed: 1,086 main PASS markers, 135 MCP methods, twenty-six
+runner controls, twenty Android host controls on Linux, nineteen release
+controls and six real hard-link methods. Actual component generations retained
+722 stages, 275 checks, 475 artifact records and six equality comparisons.
+Counts overlap and are not a unique-test sum. The retained push artifact ZIP
+SHA-256 is `614a3de304755df8c3da15631731eb0ba9b0d82c492d2c8b6693e9098f468930`.
+
+Before this documentation update, all 410 selected public paths, executable
+modes and symlink target bytes matched that revision. A freshly prepared
+schema-2 bundle matching the Linux profile then ran sequentially in both local
+execution modes:
+
+| Execution environment | Actual finite-profile result | Native Termux status |
+| --- | --- | --- |
+| Fedora Python/QEMU in PRoot, Android aarch64 | 15 checks, 326 invocations, 96 oracle matches, both sensitivity detections; exit 0 | Traced; separate PRoot evidence |
+| Native Termux Python/QEMU, Android aarch64 | 15 checks, 326 invocations, 96 oracle matches, both sensitivity detections; exit 0 | Untraced at both snapshots; finite profile PASS |
+
+The Native profile and its terminal-bridge receipt each record `TracerPid 0`
+before and after execution. The PRoot caller remains traced at both snapshots.
+The two profiles' 326 corresponding exit codes, 978 input/stdout/stderr streams
+and 107 generated ELF files matched byte-for-byte, using identity audits and
+direct 128 KiB chunk comparison. All retained streams and completed supervisor
+controls were checked; waited-child CPU/RSS observations were available for
+every invocation in each profile. These are host observations, not guest memory
+bounds, leak proof, signal attribution or a controlled performance comparison.
+
+The bundle manifest SHA-256 is
+`5e00d53841b63644d97a3c1875a474a0c0ba7fc894683e9edcfdd4b226a7523a`;
+the 48-case corpus SHA-256 is
+`8fd66ecef1738a31044b39ed03926271a68cabfd49e9008294c81906608def9d`.
+Only the bounded host runner differs from the earlier copied bundle below;
+its compiler seed pins are unchanged. Each run retained the existing 600-second
+profile budget, 15-second invocation bound, 8 MiB per stream and 3 MiB input bound.
+
+This closes the earlier NOT RUN gap for this finite Native profile. Full Native
+qualification remains blocked: the complete MCP run has 134 passing methods
+out of 135, with four error subcases in one method because Android denies real
+hard-link creation. Linux's passing real-hardlink gate does not remove that
+host limit. Historical C032-SIGNAL-01 remains OPEN and C032-RETENTION-01 remains
+PARTIAL; later passing runs do not reconstruct missing evidence or identify
+the original signal's sender/cause. No compiler source/seed/pin, VERSION,
+CHANNEL, published release asset or bootstrap stage is changed by this update.
+
+## Earlier verification checkpoint — 2026-10-30
 
 Source revision `78aa35b693e97aa4d3524d8900473eb93d2edc26` completed exact-source
 Linux qualification on both
@@ -177,9 +252,11 @@ lengths and SHA-256 identities. The ZIP SHA-256 is
 
 Development uses Termux private storage. Actual hard-link creation is denied
 on the tested Android host; Linux hard-link results do not erase that limit.
-Native smoke completed 13 checks/32 invocations, and finite assurance completed
-594 invocations. The evidence, smoke, descriptor, decoder and cleanup controls
-cover their documented finite cases. The full native suite is not qualified.
+The 2026-11-01 Native smoke+differential profile completed 15 checks/326
+invocations and 96 oracle matches. Earlier Native smoke completed 13 checks/32
+invocations, and finite assurance completed 594 invocations at its recorded
+checkpoint. The evidence, smoke, descriptor, decoder and cleanup controls cover
+their documented finite cases. The full native suite is not qualified.
 No unsupported sanitizer, coverage percentage or exhaustive fuzz claim is made.
 
 ## Publication and release boundaries

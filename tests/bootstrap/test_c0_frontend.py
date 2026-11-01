@@ -228,8 +228,13 @@ fn main() {
         self.assertEqual(len(returns), 1)
         expression = nodes[returns[0][4] - 1]
         self.assertEqual(source[expression[2]:expression[2] + expression[3]], b"==")
+        # C0.33 proves both arms return; a redundant outer return is optional.
         source = b"fn main(){let ok=2 if ok {return 0} else {return 1}}"
-        self.reject(source, offset=len(source) - 1, code=4)
+        result = self.run_source(source)
+        self.assertEqual((result.returncode, result.stderr), (0, b""))
+        header, nodes = decode_nqaf(result.stdout)
+        assert_owned_graph(header, nodes)
+        self.assertEqual(sum(node[0] == 32 for node in nodes), 2)
 
     def test_invalid_grammar_and_lexemes(self):
         # Function names, main arity and unknown callees now belong to the

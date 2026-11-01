@@ -57,7 +57,8 @@ class LinuxCiTests(unittest.TestCase):
                      "test_repeated_hardlinks_keep_public_installation_discoverable",
                      "test_output_aliases_of_sources_components_and_public_tools_are_rejected",
                      "test_protected_paths_hardlinks_and_symlinks",
-                     "test_destination_is_rechecked_before_publication"):
+                     "test_destination_is_rechecked_before_publication",
+                     "test_MO07_hardlink_aliases_are_rejected"):
             self.assertIn(name, selectors)
         self.assertIn("assurance", gates)
         self.assertIn("release", gates)
@@ -78,7 +79,8 @@ class LinuxCiTests(unittest.TestCase):
 
     def test_current_repository_branches_trigger_qualification(self):
         branches = self.workflow()["on"]["push"]["branches"]
-        self.assertTrue({"Main", "Dev", "Stable"}.issubset(branches))
+        self.assertTrue({"Main", "Dev", "Stable", "Testing"}.issubset(branches))
+        self.assertNotIn('ci/**', branches)
 
     def test_branch_maturity_matches_alpha_and_release_roles(self):
         module = self.module()

@@ -26,19 +26,19 @@ C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_control_flow.py
 printf 'PASS c0-control-flow\n'
 C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_functions.py"
 printf 'PASS c0-functions\n'
+C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_return_flow.py"
+printf 'PASS c0-return-flow\n'
 C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_runtime_io.py" RuntimeTests
 printf 'PASS c0-runtime-io\n'
 C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_capacity_backend.py"
 printf 'PASS c0-capacity-backend\n'
 C0_BACKEND="$backend" bash "$ROOT_DIR/tests/bootstrap/c0_native_os.sh"
 
-readelf -h "$backend" | grep -q 'Machine:.*Advanced Micro Devices X86-64'
-if readelf -lW "$backend" | grep -Eq ' (INTERP|DYNAMIC) '; then
+read_elf_reports "$backend"
+grep -q 'Machine:.*Advanced Micro Devices X86-64' <<< "$elf_header"
+if grep -Eq ' (INTERP|DYNAMIC) ' <<< "$elf_program_headers"; then
     printf 'FAIL c0-backend-host-linkage\n' >&2
     exit 1
 fi
-readelf -lW "$backend" | awk '
-    $1 == "GNU_STACK" { found = 1; if ($7 ~ /E/) exit 1 }
-    END { if (!found) exit 1 }
-'
+elf_has_non_executable_stack <<< "$elf_program_headers"
 printf 'PASS c0-backend\n'
