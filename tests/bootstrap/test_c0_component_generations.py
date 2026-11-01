@@ -24,6 +24,7 @@ SOURCES = {name: ROOT / f"bootstrap/compiler/c0/{name}.nql"
            for name in ("frontend", "backend")}
 STAGE = ROOT / "bootstrap/compiler/c0/x86_64-linux"
 GENERATION_ORACLES = (
+    "test_c0_return_flow.ReturnFlowTests.test_generation_return_flow_contract",
     "test_c0_capacity_backend.CapacityBackendTests.test_wide_header_and_graph_mutations",
     "test_c0_capacity_backend.CapacityBackendTests.test_legacy_byte_parity_and_limits",
     "test_c0_capacity_backend.CapacityBackendTests.test_high_global_ids_use_local_frames",

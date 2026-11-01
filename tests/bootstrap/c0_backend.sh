@@ -26,6 +26,8 @@ C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_control_flow.py
 printf 'PASS c0-control-flow\n'
 C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_functions.py"
 printf 'PASS c0-functions\n'
+C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_return_flow.py"
+printf 'PASS c0-return-flow\n'
 C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_runtime_io.py" RuntimeTests
 printf 'PASS c0-runtime-io\n'
 C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_capacity_backend.py"

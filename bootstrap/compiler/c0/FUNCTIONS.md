@@ -1,5 +1,9 @@
 # C0.29 Functions Implementation Plan
 
+Historical C0.29 contract. C0.33 extends its final top-level return requirement
+through [structural return analysis](RETURN_FLOW.md). Function ABI, scope,
+parameter and existing NQAF/3 record meanings below remain unchanged.
+
 > Execute test-first in the current continuation workspace. Do not revert the
 > existing worktree, commit, or promote a seed before its verification gates.
 

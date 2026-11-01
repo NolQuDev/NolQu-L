@@ -163,6 +163,8 @@ class NolQuMcpCoreTests(unittest.TestCase):
         self.assertFalse(result["function_calls_verified"])
         self.assertFalse(result["parameter_scope_verified"])
         self.assertFalse(result["call_statements_verified"])
+        self.assertIn("return_flow_verified", result)
+        self.assertFalse(result["return_flow_verified"])
         self.assertFalse(result["byte_memory_verified"])
         self.assertFalse(result["stream_io_verified"])
 
@@ -189,7 +191,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertFalse(result["semantic_resolution_verified"])
             self.assertFalse(result["codegen_verified"])
-            self.assertEqual(result["backend_version"], "C0.32")
+            self.assertEqual(result["backend_version"], "C0.33")
             self.assertEqual(result["source_capacity"], 262144)
             self.assertEqual(result["token_capacity"], 65536)
             self.assertEqual(result["node_capacity"], 65536)
@@ -240,7 +242,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             result = self.mcp.run_c0_frontend_probe()
         self.assertFalse(result["ok"])
         self.assertEqual(result["probe_status"], "UNEXPECTED_RESULT")
-        self.assertEqual(result["frontend_version"], "C0.32")
+        self.assertEqual(result["frontend_version"], "C0.33")
         self.assertIn("NQAF/5", result["format"])
         self.assertEqual(result["source_capacity"], 262144)
         self.assertEqual(result["token_capacity"], 65536)
@@ -284,7 +286,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
     def assert_c031_unverified(self, result):
         for field in ("capacity_verified", "compiler_profile_verified",
                       "component_generation_verified", "unsafe_blocks_verified", "process_arguments_verified",
-                      "syscall_abi_verified", "full_compiler_verified",
+                      "syscall_abi_verified", "return_flow_verified", "full_compiler_verified",
                       "self_hosting_verified"):
             self.assertIn(field, result, field)
             self.assertIs(result[field], False, field)
@@ -293,7 +295,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
         # A command-boundary double only; it supplies no generation proof.
         markers = {
             "c0_frontend": "PASS c0-frontend\n",
-            "c0_backend": ("PASS c0-control-flow\nPASS c0-functions\nPASS c0-runtime-io\n"
+            "c0_backend": ("PASS c0-control-flow\nPASS c0-functions\nPASS c0-return-flow\nPASS c0-runtime-io\n"
                            "PASS c0-capacity-backend\nPASS c0-native-os\nPASS c0-backend\n"),
             "c0_capacity": "PASS c0-capacity\nPASS c0-component-generations\n",
         }
@@ -2042,7 +2044,7 @@ class NativeProofTests(unittest.TestCase):
 
     def test_native_metadata_is_additive_and_unverified(self):
         metadata = self.mcp.canonical_bootstrap_status()
-        for field in ("unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified"):
+        for field in ("unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified"):
             self.assertIs(metadata.get(field), False, field)
         for probe in (self.mcp.run_c0_frontend_probe, self.mcp.run_c0_backend_probe):
             result = probe()
@@ -2142,7 +2144,7 @@ class NativeProofTests(unittest.TestCase):
             elif label.endswith("-named-oracles"):
                 binary = pathlib.Path(sys.executable)
                 command = [sys.executable, "-B", "-W", "error::ResourceWarning", "-m", "unittest", "-v", *selectors]
-                error = b"\nRan 41 tests in 1.0s\n\nOK\n"
+                error = b"\nRan 42 tests in 1.0s\n\nOK\n"
             else:
                 generation = label.split("-", 1)[0]
                 if label.endswith("-frontend"):
@@ -2223,7 +2225,7 @@ class NativeProofTests(unittest.TestCase):
         accepted = self.validate_synthetic(receipt)
         self.assertEqual((accepted["stages"], accepted["checks"]), (722, 275))
         self.assertEqual(len(accepted["native_machine_artifacts"]), 16)
-        for failure in ("check", "artifact", "selector", "identity", "duplicate-stage", "missing-stage", "trace", "oracle-binary"):
+        for failure in ("check", "artifact", "selector", "return-selector", "identity", "duplicate-stage", "missing-stage", "trace", "oracle-binary"):
             with self.subTest(failure=failure):
                 changed = copy.deepcopy(receipt)
                 if failure == "check":
@@ -2232,6 +2234,9 @@ class NativeProofTests(unittest.TestCase):
                     del changed["artifacts"]["C-native-copy-empty-0"]
                 elif failure == "selector":
                     changed["oracles"][0]["selectors"][-1] = changed["oracles"][0]["selectors"][0]
+                elif failure == "return-selector":
+                    changed["oracles"][0]["selectors"].remove(
+                        "test_c0_return_flow.ReturnFlowTests.test_generation_return_flow_contract")
                 elif failure == "identity":
                     name = str((self.root / "examples/canonical/native_cat.nql").resolve())
                     changed["identities"][name]["sha256"] = "0" * 64
@@ -2326,12 +2331,14 @@ class NativeProofTests(unittest.TestCase):
     def test_native_gate_requires_marker_and_complete_skip_free_suite(self):
         self.c031_probe_fixture()
         gate = NolQuMcpCoreTests.c031_gate_result.__get__(self)
-        for failure in ("marker", "suite", "skip", "timeout", "validation"):
+        for failure in ("marker", "return-marker", "suite", "skip", "timeout", "validation"):
             def command(argv, directory, timeout, env=None):
                 result = gate(argv, directory, timeout, env)
                 if pathlib.Path(argv[-1]).stem == "c0_backend":
                     if failure == "marker":
                         (directory / "stdout").write_text(result["stdout"].replace("PASS c0-native-os\n", ""))
+                    elif failure == "return-marker":
+                        (directory / "stdout").write_text(result["stdout"].replace("PASS c0-return-flow\n", ""))
                     elif failure == "suite":
                         (directory / "stderr").write_bytes(b"\nRan 22 tests in 1.0s\n\nOK\n")
                     elif failure == "skip":

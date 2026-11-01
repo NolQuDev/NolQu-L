@@ -5,12 +5,18 @@ compiler. Its canonical source is NolQu-L Core-0 and its canonical executable
 is built by B0, not by a host compiler or assembler.
 
 The emitter described by `compiler.nq`/`c0.seed` remains C0.25. The separate
-frontend/backend source contract is experimental C0.32; see
+frontend/backend source contract is experimental C0.33; see
+[RETURN_FLOW.md](RETURN_FLOW.md). C0.32 native behavior remains defined in
 [NATIVE_OS.md](NATIVE_OS.md). Scoped syntax/ABI/utility tests and complete-source
 component generations have passed. These are bounded component proofs, not
 Full Compiler, formal self-hosting or complete NolQu-L Safety.
 
-Public VERSION/CHANNEL are `1.0.0-alpha.1`/`dev`. The eleven-gate Linux baseline
+C0.33 removes redundant outer returns after exhaustive branches through
+independent frontend/backend proofs. Existing syntax, NQAF layouts, ABI and
+legacy corpus bytes are preserved; newly accepted streams require the C0.33
+backend. Both actual B/C component pairs include the new return-flow oracle.
+
+Public VERSION/CHANNEL are `1.0.0-alpha.1`/`dev`. The historical eleven-gate Linux baseline
 at `4593b5364bac59d2a04b98e5369da5f626381e2c` includes the full main and MCP
 suites; see the [retained CI run](https://github.com/NolQuDev/NolQu-L/actions/runs/41028673403).
 Host-wrapper qualification repairs preserve canonical compiler source/seed

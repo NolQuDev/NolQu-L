@@ -1,7 +1,9 @@
 # C0 Source Frontend
 
 The sections below record the original scalar/NQAF/1 contract. The current
-candidate component contract is **C0.32**; its native additions are below.
+candidate component contract is **C0.33**. [RETURN_FLOW.md](RETURN_FLOW.md)
+defines its independent structural return proof; the C0.32 native contract is
+preserved below.
 The completed C0.31 capacity evidence remains historical and unchanged.
 [RUNTIME_IO.md](RUNTIME_IO.md) retains C0.30 call statements
 with single-owned call roots and NQAF/4. [FUNCTIONS.md](FUNCTIONS.md) defines named functions,
@@ -19,8 +21,10 @@ The historical grammar below describes C0.26, not the current language subset.
 The current source adds contextual `unsafe { ... }` with a required nonempty
 first-comment `# safety:` or `// safety:` invariant, lexical scope and the
 existing combined depth64 limit. Existing identifiers named `unsafe` remain
-valid, including operands ending if/while conditions. Functions still need a
-final top-level return. There is no new lexer keyword or file-wide safety mode.
+valid, including operands ending if/while conditions. C0.32 required a final
+top-level return; C0.33 also accepts a structural guarantee from both if/else
+arms or an enclosing unsafe block. See [RETURN_FLOW.md](RETURN_FLOW.md). There
+is no new lexer keyword or file-wide safety mode.
 
 An unsafe block or resolved `arg_count`, `arg_copy`, `byte_address` or `syscall6`
 selects NQAF/6, wide32/dialect5, profile0/1 with zero reserved fields. Global
@@ -61,9 +65,10 @@ The frontend accepts at most 262,144 source bytes, 65,536 tokens (excluding
 EOF), and 65,536 nodes. Each bound is independent. Offsets, lengths, IDs,
 operand entries and saved call links use complete unsigned 32-bit fields.
 Control nesting stays at 64 and function arity at six. No grammar is added.
-Each function still needs a terminal top-level `return`; the compiler sources
-express their exit status as `return ok == 0`, preserving success for any
-nonzero `ok` and failure for zero.
+At C0.31 each function needed a terminal top-level `return`; C0.33 extends
+that rule through [structural return analysis](RETURN_FLOW.md). The compiler
+sources retain `return ok == 0`, preserving success for nonzero `ok` and failure
+for zero.
 
 Raw source selects runtime profile 0. At byte zero only, `NQSC`, version 1,
 profile 1, zero flags and eight zero reserved bytes form a 16-byte envelope.

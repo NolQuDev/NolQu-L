@@ -36,7 +36,7 @@ implemented capabilities include:
 
 The Machine-Level Foundation, Stage 0, Bootstrap Compiler B0, and Core
 Compiler emitter through C0.25 are implemented and hash-verified for x86_64 Linux.
-The B0-built C0.32 frontend/backend additionally compile structured i64 programs
+The B0-built C0.33 frontend/backend additionally compile structured i64 programs
 with lexical scopes, loops, named functions, mutable parameters and bounded
 native recursion directly to ELF, with checked byte memory and Linux stream I/O.
 Their installed capacity is 262144 source bytes and 65536 tokens/nodes, with
@@ -47,7 +47,10 @@ byte storage remains 65536 bytes; the explicit compiler profile maps 16 MiB RW/N
 See [CAPACITY.md](bootstrap/compiler/c0/CAPACITY.md) for source/artifact identities,
 evidence and the completed pre/postinstallation checks, and
 [RUNTIME_IO.md](bootstrap/compiler/c0/RUNTIME_IO.md) for the runtime contract.
-C0.32 adds lexical unsafe blocks with invariant comments, native argv copying,
+C0.33 adds independent structural return analysis: exhaustive branches no
+longer need a redundant outer return. Existing NQAF layouts and native ABI are
+preserved; see [RETURN_FLOW.md](bootstrap/compiler/c0/RETURN_FLOW.md).
+C0.32 introduced lexical unsafe blocks with invariant comments, native argv copying,
 checked raw arena addresses and Linux x86_64 syscalls. The actual
 [native file reader](examples/canonical/README.md) handles literal filenames,
 binary streams and explicit descriptor/I/O rules in NolQu-L source. Independent
@@ -68,7 +71,7 @@ and the historical signal, whose cause remains OPEN. Detailed session records
 remain internal.
 The Full Compiler and self-hosting generations are not implemented. Reference
 Compiler R0 remains the default `nasm` compatibility backend. Public `nqlc`
-and `nql` also expose the experimental C0.32 subset through explicit
+and `nql` also expose the experimental C0.33 subset through explicit
 `--backend canonical`; this access does not promote Full Compiler, self-hosting
 or Verified status. See the [canonical toolchain guide](docs/compiler/CANONICAL_TOOLCHAIN.md)
 for supported syntax, project/install/MCP workflows and remaining integration gates.

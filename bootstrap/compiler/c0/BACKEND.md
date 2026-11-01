@@ -1,5 +1,15 @@
 # C0 AST Backend
 
+## C0.33: Independent Return-Path Validation
+
+The backend independently proves a return from every function using the existing
+validated statement delimiters. Both if/else arms must return; unsafe blocks
+propagate their body summary; while contributes no new guarantee. Direct returns
+retain the existing block-final syntax rule. Missing paths fail with C0B-002
+before ELF output. NQAF/1..6 layouts, code-emission sequences and ABI are
+unchanged. [RETURN_FLOW.md](RETURN_FLOW.md) defines the state, invariants, tests
+and paired component compatibility boundary.
+
 ## C0.32: Independent Native Permission And ABI
 
 The current candidate source adds NQAF/6 dialect5 while retaining /1..5.

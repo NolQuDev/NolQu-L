@@ -25,6 +25,13 @@
 
 ### Added
 
+- Add experimental C0.33 structural return analysis. Exhaustive if/else and
+  returning unsafe blocks no longer need a redundant outer return. Frontend and
+  backend independently verify every function; loops remain conservative. Keep
+  NQAF/1..6 layouts and native ABI, require paired component upgrades for newly
+  accepted programs, and add direct/generation regressions plus a fail-closed
+  MCP return-flow flag. Public version and release maturity are unchanged.
+
 - Retain bounded supervisor lifecycle and last-live deadline observations in host
   test receipts. Known cleanup requests remain distinct from an unobserved target
   signal sender; aborts during observation preserve failure evidence. Existing

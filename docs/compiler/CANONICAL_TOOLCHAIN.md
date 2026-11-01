@@ -4,7 +4,7 @@ Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
 below describe those historical runs; no release or bootstrap promotion occurs.
 
-The experimental C0.32 frontend/backend can be selected through the existing
+The experimental C0.33 frontend/backend can be selected through the existing
 `nqlc`, `nql`, installed commands and MCP tools. Default source behavior remains
 `nasm`/Reference Compiler R0. This connects implemented components to public
 commands; Full Compiler, self-hosting and Verified status remain false.
@@ -12,6 +12,12 @@ The native argv/syscall extension has scoped/generation evidence and passing
 final main/MCP/installed combined-proof execution gates. An earlier unexplained
 comparison-backend SIGKILL remains OPEN; stable/security readiness is PARTIAL.
 The completed C0.31 access checkpoint below remains historical evidence.
+
+C0.33 accepts functions whose existing structured statements prove a return on
+every normal path. Both conditional arms must return; loops alone do not supply
+a proof. [RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md) defines
+semantics, diagnostics and the paired component upgrade boundary. CLI flags,
+NQAF layouts, runtime profiles and native ABI remain unchanged.
 
 ## Compile, Check And Run
 

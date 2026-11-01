@@ -12,10 +12,11 @@ The Core/Experimental lists below describe the Reference Compiler R0
 compatibility language. Canonical C0 has its own bounded experimental subset;
 parser recognition and concept-document targets do not imply support in both.
 
-### Canonical C0.32 Experimental Subset
+### Canonical C0.33 Experimental Subset
 
 - checked signed i64, lexical bindings, comparisons, if/else and while
 - named functions, positional arguments up to six, bounded native recursion
+- independent structural return proof; exhaustive if/else needs no redundant return
 - checked byte memory, fixed stdin/stdout/stderr intrinsics, explicit arena profile
 - native `arg_count` and byte-preserving `arg_copy`
 - contextual lexical `unsafe` blocks with a required nonempty invariant comment
@@ -23,7 +24,7 @@ parser recognition and concept-document targets do not imply support in both.
 - direct standalone ELF, NQAF/1..5 compatibility and additive /6 dialect5
 - actual native file-reader source and verified scoped/generation execution
 
-Exact-source Linux qualification of `Testing` at `75b2309f` passes eleven gates,
+The C0.32 baseline exact-source Linux qualification of `Testing` at `75b2309f` passes eleven gates,
 including the full main suite with 1,086 PASS markers, 135 MCP methods and
 component-generation checks. Earlier counts describe historical checkpoints.
 The same pinned finite smoke/differential profile passes in PRoot and untraced
@@ -36,7 +37,9 @@ PARTIAL because the earlier comparison-backend SIGKILL is unexplained; see
 This subset provides no general types/modules/FFI/inline assembly, ownership or
 lifetime checker, full Safety modes, Full Compiler or full self-hosting. Unsafe
 source containment is checked independently by the backend; it is not proof of
-every later kernel effect. See [NATIVE_OS.md](../../bootstrap/compiler/c0/NATIVE_OS.md)
+every later kernel effect. C0.33 return-flow evidence and minimum component
+compatibility are defined in [RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md).
+See [NATIVE_OS.md](../../bootstrap/compiler/c0/NATIVE_OS.md)
 and the [toolchain guide](../compiler/CANONICAL_TOOLCHAIN.md).
 
 ### Core
