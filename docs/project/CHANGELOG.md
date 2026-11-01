@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased repository maintenance
+
+### Tooling
+
+- Reuse `Testing` for CI and review; release versions use tags and GitHub
+  Releases. Alpha publishing now requires an explicit manual run on the
+  qualified `Main` revision shared with `Dev`.
+- Add deterministic source ZIP downloads with readable versioned root names,
+  such as `NolQu-L 1.0.0 alpha.1`. GitHub storage filenames use periods for
+  spaces. Preserve original published assets and checksums during the initial
+  naming transition; provide separate named downloads and checksum metadata.
+
 ## Unreleased
 
 ### Added

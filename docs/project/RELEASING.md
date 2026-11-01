@@ -23,18 +23,42 @@ from `1.0.2a1`. Source/ABI contracts and canonical seed bytes are unaffected.
 ## Alpha publication gate
 
 The Alpha publisher is `.github/scripts/alpha_release.py`, launched by the
-pinned `.github/workflows/alpha-release.yml` only on `release/**` (or a manual
-run on that same release branch). Create `release/v<version>` only after review
-and full qualification of the identical Main/Dev revision. The script checks
-repository, event, ref, Alpha version and clean checkout before remote writes.
+pinned `.github/workflows/alpha-release.yml` through an explicit manual run on
+`Main`, after maintainer approval and full qualification of the identical
+Main/Dev revision. Release versions use tags and GitHub Releases; do not create
+`release/**` branches. `Testing` is the single persistent testing branch. The
+script checks repository, manual event, Main ref, Alpha version and clean
+checkout before remote writes.
 
 Both branches need the latest successful exact-source Linux qualification,
 including release controls. The publisher verifies each downloaded artifact's
 SHA-256 and complete gate/source-identity receipt. It builds the public source
-and offline bundle archives twice, compares bytes and writes SHA256SUMS,
+and offline bundle archives plus a source ZIP twice, compares bytes and writes SHA256SUMS,
 BUILD-METADATA.json and QUALIFICATION.json before creating a draft release.
 Source packaging uses committed Git bytes and rejects private paths and links
 escaping the archive. No local agent state enters these archives.
+
+Download names follow `NolQu-L X.Y.Z alpha.N`. For example, the release title
+and ZIP root directory are `NolQu-L 1.0.0 alpha.1`. GitHub normalizes special
+characters in asset filenames, so the portable uploaded source ZIP name is
+`NolQu-L.1.0.0.alpha.1.zip`; download labels retain spaces. Source ZIP entries
+preserve committed file bytes, executable modes and supported direct aliases.
+Existing published archives are never silently replaced to change a name.
+
+The maintainer-authorized 2026-11-01 maintenance workflow consolidates the
+recorded `ci/**` heads into `Testing` and removes the recorded release branch
+only after exact-source Testing CI succeeds and each old head is verified as
+an ancestor. It checks frozen heads, Main/Dev/Stable, the existing Alpha tag,
+and all five original release asset identities before mutation, and repeats
+ref checks at deletion boundaries. It adds a named source ZIP, an identical
+copy of the existing Termux bundle and a separate checksum list; the original
+assets, checksums, download URLs and tag remain available. This changes display
+metadata and packaging, not the published compiler/source revision. Its
+repository token runs only in the official Testing push by `NolQuDev`; it is
+not a general branch-deletion or release-overwrite interface. The receipt is
+retained as a workflow artifact. GitHub ref deletion is not atomic with its
+preceding read; other privileged writers must not change these refs during
+maintenance. Changed or unknown heads are never intentionally deleted.
 
 The job has only repository contents-write/actions-read permissions; checkout
 credentials are not persisted. Its token is supplied only to the publishing

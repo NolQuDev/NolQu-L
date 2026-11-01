@@ -4,6 +4,7 @@
 | --- | --- | --- |
 | `Main` | Integration of tested development, fixes and documentation | Default branch; may contain Alpha or later work |
 | `Dev` | Alpha development | Keep `VERSION` in `MAJOR.MINOR.PATCH-alpha.N` form |
+| `Testing` | Persistent testing and review | Reuse for all test cycles; no per-run testing branches |
 | `Stable` | Release Candidate preparation through final release | Empty until an RC is ready |
 
 `Stable` currently has an empty file tree: no Alpha code, version metadata,
@@ -22,7 +23,12 @@ commits into `Main` empties the integration tree. The release workflow starts
 by populating `Stable` from a qualified RC source revision, not by merging the
 empty branch back into `Main`.
 
-Linux qualification runs on the three named branches once they contain the
+Release versions are tags and GitHub Releases, not branches named after a
+version. Do not create `release/**` or another `ci/**` branch for a test run.
+All test commits remain reachable from `Testing`; inspect its current head
+before updating it and preserve concurrent work.
+
+Linux qualification runs on all four named branches once they contain the
 workflow. It rejects non-Alpha versions for `Dev` and Alpha/Beta versions for
 `Stable`; pull requests use their destination branch's rule. `Main` allows mixed
 integration. The empty `Stable` branch has no workflow to execute yet.

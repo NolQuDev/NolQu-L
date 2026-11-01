@@ -79,7 +79,8 @@ class LinuxCiTests(unittest.TestCase):
 
     def test_current_repository_branches_trigger_qualification(self):
         branches = self.workflow()["on"]["push"]["branches"]
-        self.assertTrue({"Main", "Dev", "Stable"}.issubset(branches))
+        self.assertTrue({"Main", "Dev", "Stable", "Testing"}.issubset(branches))
+        self.assertNotIn('ci/**', branches)
 
     def test_branch_maturity_matches_alpha_and_release_roles(self):
         module = self.module()

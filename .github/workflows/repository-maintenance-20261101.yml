@@ -1,0 +1,46 @@
+name: NolQu-L requested repository maintenance 2026-11-01
+
+'on':
+  push:
+    branches: [Testing]
+    paths:
+      - '.github/scripts/repository_maintenance_20261101.py'
+      - '.github/workflows/repository-maintenance-20261101.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nolqu-l-requested-maintenance-20261101
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    if: github.repository == 'NolQuDev/NolQu-L' && github.ref == 'refs/heads/Testing' && github.actor == 'NolQuDev'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Checkout reviewed maintenance source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Run maintenance controls before any remote mutation
+        run: |
+          python3 -m venv "$RUNNER_TEMP/maintenance-venv"
+          "$RUNNER_TEMP/maintenance-venv/bin/python" -m pip install 'PyYAML==6.0.3'
+          "$RUNNER_TEMP/maintenance-venv/bin/python" -B tests/meta/test_repository_maintenance.py -v
+      - name: Wait for qualification then apply the explicit maintenance request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 -B .github/scripts/repository_maintenance_20261101.py
+      - name: Preserve maintenance receipt and added assets
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: nolqu-l-maintenance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/nolqu-l-maintenance
+          if-no-files-found: warn
