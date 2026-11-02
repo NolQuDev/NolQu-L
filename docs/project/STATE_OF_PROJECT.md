@@ -1,6 +1,6 @@
 # State Of Project
 
-Current metadata (2026-11-01): `1.0.0-alpha.1`, channel `dev`, by maintainer
+Current metadata (2026-11-02): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`.
 [Alpha 1 was published](https://github.com/NolQuDev/NolQu-L/releases/tag/v1.0.0-alpha.1)
 on 2026-10-29. Older version strings and test counts below describe their
@@ -26,19 +26,29 @@ outside the canonical compiler stages.
 - Bootstrap Compiler B0: `PASS`
 - Core Compiler C0.25 source-driven bounded expression parser: `PASS`
 - C0.31 capacity/access foundation: completed and verified within its original scope
-- C0.32 source frontend (B0-built, NQAF/1..6): scoped/generation tests pass, experimental
-- C0.32 AST backend (checked ELF/native argv/syscalls): scoped/generation tests pass, experimental
+- C0.34 source frontend (B0-built, NQAF/1..7): checked unary negation and structural returns, experimental
+- C0.34 AST backend (checked ELF/native argv/syscalls/unary): scoped/generation tests pass, experimental
+- C0.34 compiler-bearing revision `cb47007b` passes eleven Linux gates on
+  [push](https://github.com/NolQuDev/NolQu-L/actions/runs/41355788389) and
+  [PR](https://github.com/NolQuDev/NolQu-L/actions/runs/41355794471): 1,088 main
+  PASS markers retain all 1,087 C0.33 baseline markers; 135 MCP methods pass.
+  Actual Native component proof passes 722 stages, 275 checks, 475 artifacts,
+  six equal comparisons and 43 named methods on each B/C pair, with
+  `TracerPid 0` at both ends. A separate unary campaign passes 180 checks and
+  396 invocations in each of PRoot and Native; all 1,188 streams and 108 ELF
+  pairs match. Current documentation-only follow-up checks are tracked in
+  [PR #9](https://github.com/NolQuDev/NolQu-L/pull/9).
 - Historical C0.32 post-formatter baseline: `PASS`, 1079 markers; observed host-helper revision: `PASS`, 1080 markers, every baseline label retained
 - Earlier C0.32 canonical/MCP/public/assurance checkpoint: `PASS` within its
   [recorded reliability scope](VALIDATION.md); MCP 124, fresh proof 722/275,
   17 host evidence controls, 16 actual adapter comparisons, unchanged runner 11 baseline,
   and 594 assurance invocations; host retention is experimental
-- Latest exact-source Linux qualification on `Testing` at `75b2309f`: eleven
+- Retained C0.32 exact-source Linux qualification on `Testing` at `75b2309f`: eleven
   gates `PASS`, 1,086 main markers, 135 MCP methods, twenty-six runner controls,
   twenty Android host controls on Linux, nineteen release controls and six real
   hard-link methods. Counts overlap. See the
   [current validation checkpoint](VALIDATION.md#current-verification-checkpoint--2026-11-01).
-- PRoot and untraced Native Termux each pass fifteen finite smoke/differential
+- The retained C0.32 PRoot and Native results each pass fifteen finite smoke/differential
   checks, 326 invocations and 96 oracle comparisons on the same pinned bundle.
   Native receipts show `TracerPid 0` at both ends; the PRoot caller stays traced.
   Their 978 streams and 107 generated ELF files match byte-for-byte. Full Native

@@ -15,8 +15,7 @@ All eleven scoped unary methods passed in PRoot and actual Native Termux; the
 Native receipt reports TracerPid 0 at both ends. Independent review added 72
 finite checks, including malformed wire, a 65536-node packet and slot limits,
 without a concrete correctness finding. Separate B0 rebuilds in both execution
-modes produced identical component bytes. These scoped results do not replace
-the required complete generation, regression and exact-revision CI gates.
+modes produced identical component bytes. These scoped results are complemented by the complete proof below.
 
 The complete proof requires all eight backend suites, including eleven unary
 methods, and 43 named oracles for each actual B/C component pair. Missing unary
@@ -27,6 +26,42 @@ was reproduced, repaired and covered before publication. Failed candidates and
 streams remain private evidence. C0.33 is the retained baseline, not evidence
 for the new source/pins. No release/version change or Stable promotion occurs;
 C032-SIGNAL-01 remains OPEN and historical retention remains PARTIAL.
+
+### Complete C0.34 Compiler Qualification
+
+Compiler-bearing revision `cb47007b45e18aa477a33bff3671eb708abde853` passed
+all eleven exact-source Linux gates on
+[push](https://github.com/NolQuDev/NolQu-L/actions/runs/41355788389) and
+[PR](https://github.com/NolQuDev/NolQu-L/actions/runs/41355794471). Each archive
+records 1,088 main PASS markers, retaining all 1,087 C0.33 baseline markers,
+135 MCP methods, 26 runner controls, 20 Android controls on Linux, 19 release
+controls and six real-hardlink methods. The existing finite Linux assurance
+profile also passes 15 checks, 326 invocations and 96 oracle comparisons.
+These overlapping counts are not summed as unique tests.
+
+The original actual Native job completed exit 0 in 1,304 seconds with all three
+component gates passing. The original validator accepted 722 stages, 275 checks,
+475 artifacts, six equal comparisons and 43 named oracle methods per B/C pair.
+All 2,641 raw files and 46 bound input identities were checked; TracerPid was 0
+at both ends. An MCP transport error near 1,200 seconds did not stop that job;
+its actual final bridge receipt and streams were recovered without rerunning
+gates. Full Compiler and formal self-hosting flags remain false.
+
+A separate deterministic unary campaign (seed `0xC034`, 300-second overall
+run budget, 20-second individual invocation timeout) passes 180 checks and
+396 invocations in each of PRoot and actual Native Termux. It covers 54 defined
+programs in both runtime profiles and source/wire rejection controls. All 1,188
+streams and 108 generated ELF pairs match byte-for-byte across modes. The six
+component comparison identities also match Linux and Native. This is finite
+mutation/differential evidence without coverage instrumentation. Installed CLI
+checks pass in both modes with an identical output ELF.
+
+Independent scoped reviews found no concrete remaining issue: compiler core
+72 checks; host proof consumer nine methods, 51 boundary probes and three
+negative-test sensitivity mutations. Their scope does not establish formal
+absence of bugs or diagnose the historical signal incident. Documentation-only
+follow-up qualification is tracked by [PR #9](https://github.com/NolQuDev/NolQu-L/pull/9);
+its compiler/proof input bytes remain those of the revision above.
 
 ## Retained C0.33 Validation Scope
 
