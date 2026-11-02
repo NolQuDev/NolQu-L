@@ -1467,8 +1467,9 @@ temporary file on normal and signal exits.
 
 The following is the C0.25 checkpoint, not the current implementation gap.
 C0.26..31 completed the parser, functions, byte/stream runtime, capacity and
-component-generation work above. C0.32's current scope and remaining acceptance
-are in [NATIVE_OS.md](NATIVE_OS.md); full types/modules/toolchain migration remain.
+component-generation work above. Later native, return-flow and unary contracts
+are in [NATIVE_OS.md](NATIVE_OS.md), [RETURN_FLOW.md](RETURN_FLOW.md) and
+[UNARY_NEGATION.md](UNARY_NEGATION.md); full types/modules/toolchain migration remain.
 
 C0.25 proves the first source-driven parser over coalesced, located lexical
 records while preserving C0.19's bounded generations byte-for-byte. The next

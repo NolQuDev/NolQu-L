@@ -40,14 +40,17 @@ prove deterministic instruction emission, memory and control-flow patches,
 symbol resolution, runnable ELF generation, diagnostics, and resource cleanup.
 
 Bootstrap Compiler B0 is implemented and built by Stage 0. It builds the C0.25
-bounded emitter and the separate C0.32 source frontend and AST backend. These
+bounded emitter and the separate C0.34 source frontend and AST backend. These
 components compile checked i64 functions, lexical control flow, byte/stream
-operations and explicitly scoped native operations directly to ELF64. NQAF/1..6 is the explicit frontend/backend
-boundary; the backend validates the stream independently before code generation.
+operations, structural return analysis, checked unary negation and explicitly
+scoped native operations directly to ELF64. NQAF/1..7 is the versioned
+frontend/backend boundary; the backend validates the stream independently before code generation.
 The runtime contract and gates are in
 [RUNTIME_IO.md](../../bootstrap/compiler/c0/RUNTIME_IO.md),
 [CAPACITY.md](../../bootstrap/compiler/c0/CAPACITY.md) and
-[NATIVE_OS.md](../../bootstrap/compiler/c0/NATIVE_OS.md).
+[NATIVE_OS.md](../../bootstrap/compiler/c0/NATIVE_OS.md),
+[RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md) and
+[UNARY_NEGATION.md](../../bootstrap/compiler/c0/UNARY_NEGATION.md).
 
 Full Compiler, self-hosting and Verified nqlc remain `NOT_IMPLEMENTED`. The C0
 components have bounded full-source generation comparisons; this remains a
