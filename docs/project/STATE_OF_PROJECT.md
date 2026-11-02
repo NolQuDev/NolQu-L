@@ -37,7 +37,7 @@ outside the canonical compiler stages.
   `TracerPid 0` at both ends. A separate unary campaign passes 180 checks and
   396 invocations in each of PRoot and Native; all 1,188 streams and 108 ELF
   pairs match. Current documentation-only follow-up checks are tracked in
-  [PR #9](https://github.com/NolQuDev/NolQu-L/pull/9).
+  [Testing](https://github.com/NolQuDev/NolQu-L/tree/Testing).
 - Historical C0.32 post-formatter baseline: `PASS`, 1079 markers; observed host-helper revision: `PASS`, 1080 markers, every baseline label retained
 - Earlier C0.32 canonical/MCP/public/assurance checkpoint: `PASS` within its
   [recorded reliability scope](VALIDATION.md); MCP 124, fresh proof 722/275,

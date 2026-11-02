@@ -60,7 +60,7 @@ Independent scoped reviews found no concrete remaining issue: compiler core
 72 checks; host proof consumer nine methods, 51 boundary probes and three
 negative-test sensitivity mutations. Their scope does not establish formal
 absence of bugs or diagnose the historical signal incident. Documentation-only
-follow-up qualification is tracked by [PR #9](https://github.com/NolQuDev/NolQu-L/pull/9);
+follow-up qualification is tracked on [Testing](https://github.com/NolQuDev/NolQu-L/tree/Testing);
 its compiler/proof input bytes remain those of the revision above.
 
 ## Retained C0.33 Validation Scope
