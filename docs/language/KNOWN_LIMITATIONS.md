@@ -2,9 +2,9 @@
 
 ## Project State
 
-NolQu-L is still an active development project. Even with a stable `1.0.1`
-baseline, the current `1.0.2a1` line is still growing and tightening parts of
-the toolchain.
+NolQu-L is an active Alpha development project. The public version is
+`1.0.0-alpha.1`, channel `dev`. Stable has not been initialized as a release
+line. Older version strings describe historical checkpoints, not current maturity.
 
 ## Language Limitations
 
@@ -22,14 +22,17 @@ the toolchain.
 ## Backend Limitations
 
 - the canonical Machine/Stage0/B0 and C0.25 emitter are implemented; separate
-  C0.32 source frontend/direct-ELF backend extend the completed C0.31 foundation
+  C0.35 source frontend/direct-ELF backend extend the completed C0.31 foundation
 - current C0 supports one compilation unit and signed i64, not the full R0
   language, general types/modules/FFI or inline assembly
 - complete compiler-source A/B/C generations pass, but Full Compiler,
   full-language Self-Hosting and the later Verified compiler remain unimplemented
-- full main1079 predates the diagnostic formatter repair; current post-repair
-  canonical/MCP/public/assurance gates pass, while post-repair full main was not
-  rerun; the [session report](../project/VALIDATION.md) records the scope
+- historical C0.34 Linux qualification retains all 1,087 C0.33 baseline markers
+  and adds one unary marker (1,088 total); this supersedes the old post-formatter
+  full-main gap. See the [validation status](../project/VALIDATION.md)
+- canonical bitwise operations do not yet include shifts or short-circuit
+  logical expressions; Core bitwise precedence differs from R0 as documented in
+  [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md)
 - native unsafe blocks check permission/headers/source containment, not general
   ownership, lifetimes, syscall-specific kernel effects or full Safety modes
 - `byte_address` exposes raw bits after checking a span; later pointer use is

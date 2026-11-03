@@ -1,4 +1,4 @@
-# C0.34 source-to-AST frontend with structural definite return, built by B0 --compiler-profile.
+# C0.35 source-to-AST frontend with structural definite return, built by B0 --compiler-profile.
 # Legacy NQAF/1..5 is unchanged; native scopes/operations use NQAF/6 dialect5.
 # Flat state transitions are intentional: B0 has no nested statement blocks.
 fn main() {
@@ -79,6 +79,7 @@ fn main() {
         kind = kind + (20 + temp) * (ch == 60) + (22 + temp) * (ch == 62)
         kind = kind + 5 * (ch == 61) * temp + 25 * (ch == 33) * temp
         kind = kind + 26 * (ch == 44)
+        kind = kind + 48 * (ch == 38) + 49 * (ch == 94) + 50 * (ch == 124) + 51 * (ch == 126)
         kind = kind * byte_load(1180200) * (byte_load(1180211) == 0) * (pos < count)
         byte_store(1180210, kind != 0)
         byte_store(1180215, ((kind == 21) + (kind == 23) + (kind == 24) + (kind == 25)))
@@ -187,6 +188,9 @@ fn main() {
         temp = (kind == 17) * (index != 4) * (index != 5) * (index != 11)
         byte_store(1180261, (byte_load(1180261) + temp) != 0)
         active = active + temp
+        temp = (48 <= kind) * (kind <= 51)
+        byte_store(1180262, (byte_load(1180262) + temp) != 0)
+        active = active + temp
         byte_store(1180161, (byte_load(1180161) + active) != 0)
         pos = pos + 1
     }
@@ -288,10 +292,11 @@ fn main() {
         active = byte_load(1180202) == 8
         byte_store(1180203, active * byte_load(1179668))
         byte_store(1180204, active * (byte_load(1179668) == 0))
-        byte_store(1180205, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25))
+        byte_store(1180205, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50))
         byte_store(1180206, byte_load(4194312 + operators * 12))
-        temp = 3 * ((kind == 15) + (kind == 17)) + 4 * ((kind == 16) + (kind == 18))
-        temp = temp + 2 * (20 <= kind) * (kind <= 23) + (kind == 24) + (kind == 25)
+        temp = 6 * ((kind == 15) + (kind == 17)) + 7 * ((kind == 16) + (kind == 18))
+        temp = temp + 5 * (20 <= kind) * (kind <= 23) + 4 * ((kind == 24) + (kind == 25))
+        temp = temp + 3 * (kind == 48) + 2 * (kind == 49) + (kind == 50)
         byte_store(1180207, temp)
         index = (kind == 2) + (kind == 3) + (kind == 6) + (kind == 8) + (kind == 13) + (kind == 14) + (kind == 0)
         index = index + (kind == 4) * (byte_load(327680 + (pos + (pos < tokens)) * 12) == 19) + byte_load(1180222) + byte_load(1180240)
@@ -308,8 +313,8 @@ fn main() {
 
         # A prefix remains on the existing operator stack while its operand
         # (including a complete call/group) is parsed. Equal prefix precedence
-        # is never reduced on a push: repeated minus is right-associative.
-        temp = byte_load(1180203) * (kind == 17)
+        # is never reduced on a push: prefix -/~ is right-associative.
+        temp = byte_load(1180203) * ((kind == 17) + (kind == 51))
         byte_store(1180200, byte_load(1180200) + 19 * temp)
 
         # Reduce left-associatively while the top precedence is at least incoming.
@@ -331,7 +336,7 @@ fn main() {
         byte_store(1180200, byte_load(1180200) + temp * (5 * index + 6 * (operators == 0)))
 
         # Reuse reduction dispatch, but unary consumes one operand, not two.
-        temp = (byte_load(1180200) == 5) * (byte_load(1180206) == 47)
+        temp = (byte_load(1180200) == 5) * ((byte_load(1180206) == 47) + (byte_load(1180206) == 51))
         byte_store(1180200, byte_load(1180200) + 15 * temp)
 
         # Delimiters are structured statement records, not arbitrary jump targets.
@@ -511,8 +516,8 @@ fn main() {
         byte_store(index + 1, pos / 256)
         byte_store(index + 2, pos / 65536)
         byte_store(index + 3, pos / 16777216)
-        byte_store(index + 8, byte_load(327680 + pos * 12) * (active != 14) * (active != 19) + 42 * (active == 14) + 47 * (active == 19))
-        byte_store(index + 9, byte_load(1180207) * (active != 19) + 5 * (active == 19))
+        byte_store(index + 8, byte_load(327680 + pos * 12) * (active != 14) * (active != 19) + 42 * (active == 14) + (47 + 4 * (byte_load(327680 + pos * 12) == 51)) * (active == 19))
+        byte_store(index + 9, byte_load(1180207) * (active != 19) + 8 * (active == 19))
         temp = (active == 14) * ok
         index = (5373952 + operators * 16) * temp + 8384512 * (temp == 0)
         byte_store(index, values)
@@ -720,16 +725,17 @@ fn main() {
 
     # Header/body are emitted only after the complete parse. Wide nodes stay
     # in place. All legacy spans/IDs fit u16 because these three bounds hold.
-    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261)) != 0
+    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261) + byte_load(1180262)) != 0
     byte_store(1180165, active)
     kind = (1 + byte_load(1180162)) * (byte_load(1180161) == 0) + 3 * byte_load(1180161) + byte_load(1180160)
     kind = kind * (byte_load(1180260) == 0) + 5 * byte_load(1180260)
     kind = kind * (byte_load(1180261) == 0) + 6 * byte_load(1180261)
+    kind = kind * (byte_load(1180262) == 0) + 7 * byte_load(1180262)
     byte_store(6553600, 78)
     byte_store(6553601, 81)
     byte_store(6553602, 65)
     byte_store(6553603, 70)
-    byte_store(6553604, ((kind * (active == 0) + 5 * active) * (byte_load(1180260) == 0) + 6 * byte_load(1180260)) * (byte_load(1180261) == 0) + 7 * byte_load(1180261))
+    byte_store(6553604, (((kind * (active == 0) + 5 * active) * (byte_load(1180260) == 0) + 6 * byte_load(1180260)) * (byte_load(1180261) == 0) + 7 * byte_load(1180261)) * (byte_load(1180262) == 0) + 8 * byte_load(1180262))
     byte_store(6553605, 16 + 16 * active)
     byte_store(6553608, count)
     byte_store(6553609, count / 256)

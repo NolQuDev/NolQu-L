@@ -25,6 +25,18 @@
 
 ### Added
 
+- Add experimental C0.35 support for all-64-bit signed i64
+  `&`, `^`, `|` and prefix `~`, with eager left-to-right binary operands,
+  independent NQAF/8 validation and the existing NEGATE-only INT64_MIN rule.
+  New syntax uses wide32/dialect7, profile0/1 and kinds48..51; kind47 remains
+  valid in /7 and /8. Old source retains exact NQAF/1..7 and successful ELF bytes.
+  Document the deliberate Core/R0 precedence difference, 24-byte binary and
+  17-byte NOT emission, unchanged bounds/B0/dependencies, BW01..BW06 checks
+  and matched pair upgrade/rollback in [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md).
+  Require independent review, full regression/generation/MCP proof and separate
+  Native receipts on the exact pair. Public `1.0.0-alpha.1`, Dev Alpha and historical
+  open incidents are unchanged; no release, self-hosting or Verified claim.
+
 - Add experimental C0.34 checked i64 prefix negation, including INT64_MIN
   literals, locals, calls and grouping. NQAF/7 has independently checked unary
   ownership and native unsafe containment; overflow retains located C0R-001.
