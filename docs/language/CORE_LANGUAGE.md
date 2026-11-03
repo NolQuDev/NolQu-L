@@ -17,6 +17,9 @@ Core NolQu-L is intentionally smaller than "everything the parser can currently 
 
 These features are the current core language surface.
 
+The broad surface below retains the R0 reference description. Canonical C0
+implements a smaller experimental subset whose qualification is separate.
+
 ### Values
 
 - integers
@@ -36,6 +39,16 @@ These features are the current core language surface.
 - comparisons: `>`, `<`, `==`, `!=`, `>=`, `<=`
 - logical condition operators: `and`, `or`, `not`
 - function call expressions
+
+The experimental C0.35 subset adds signed i64 `&`, `^`, `|` and prefix `~`,
+with independent review and exact-pair qualification gates. These use
+all 64 bits, eager binary evaluation left to right once per operand and
+right-associative prefix `-`/`~`. Precedence, highest first, is call/grouping,
+`-`/`~`, `*`/`/`, `+`/`-`, relational, equality, `&`, `^`, `|`. This deliberately
+differs from R0's bitwise/additive level; mixed unparenthesized expressions
+cannot establish differential equivalence. R0 is unchanged. C0.35 adds no
+shifts or short-circuit logic; NOT does not extend the NEGATE-only minimum
+literal exception. See the [C0.35 contract](../../bootstrap/compiler/c0/BITWISE.md).
 
 ### Control Flow
 

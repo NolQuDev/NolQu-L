@@ -5,12 +5,18 @@ compiler. Its canonical source is NolQu-L Core-0 and its canonical executable
 is built by B0, not by a host compiler or assembler.
 
 The emitter described by `compiler.nq`/`c0.seed` remains C0.25. The separate
-frontend/backend source contract is experimental C0.34; see
+frontend/backend source contract is experimental C0.35; see
+[BITWISE.md](BITWISE.md). Checked negation remains defined in
 [UNARY_NEGATION.md](UNARY_NEGATION.md). The C0.33 return contract remains in
 [RETURN_FLOW.md](RETURN_FLOW.md). C0.32 native behavior remains defined in
 [NATIVE_OS.md](NATIVE_OS.md). Scoped syntax/ABI/utility tests and complete-source
 component generations have passed. These are bounded component proofs, not
 Full Compiler, formal self-hosting or complete NolQu-L Safety.
+
+C0.35 adds eager 64-bit AND/XOR/OR and prefix NOT in NQAF/8 dialect7,
+without changing the prior source representations or runtime ABI. The twelve
+bitwise methods and their named actual B/C oracle are required proof inputs.
+The B0 predecessor, emitter C0.25 and existing capacity bounds are unchanged.
 
 C0.34 adds checked unary negation with independent topology/literal validation,
 NQAF/7 dialect6 and the existing overflow diagnostic. Existing source retains

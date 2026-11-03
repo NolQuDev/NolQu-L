@@ -6,6 +6,30 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
+## C0.35 Bitwise Qualification Contract
+
+The experimental pair adds signed i64 `&`, `^`, `|` and unary `~` through
+independent NQAF/8 validation. [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md)
+defines precedence, eager effects, NEGATE-only minimum permission, machine cost,
+threat boundaries and BW01..BW06 test mapping. Existing Alpha metadata, ABI,
+bootstrap topology and capacity bounds remain unchanged.
+
+Qualification requires all nine backend suites, including twelve bitwise
+methods, and 44 ordered named oracles on each actual B/C pair. Missing bitwise
+markers, truncated/skipped suites, omitted oracles or changed inputs fail
+closed; metadata-only reads keep `bitwise_verified=false`. The finite integer
+oracle uses seed `0xC035` and compares 82 full-width values per profile inside
+generated programs. Independent raw-call packets and exact instruction
+sequences supplement malformed-wire tests. Sixteen retained C0.34 unary
+AST/ELF comparisons cover both profiles separately from older corpus hashes.
+
+Complete exact-source Linux CI and actual untraced Native proof must be
+reported separately. A passing compiler gate does not qualify the whole
+language's Safety, Full Compiler, self-hosting or Stable. The historical
+C032-SIGNAL-01 remains OPEN; historical retention is PARTIAL and denied Native
+real-hardlink creation still limits the full Native MCP suite. This contract
+adds no release or replacement of previously published artifacts.
+
 ## C0.34 Validation Scope
 
 The experimental component pair adds checked prefix negation and NQAF/7. Its

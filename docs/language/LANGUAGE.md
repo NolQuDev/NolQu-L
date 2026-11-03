@@ -4,6 +4,11 @@ This document describes the user-facing NolQu-L syntax and behavior as of `1.0.2
 
 It does not treat every parser feature as equally stable. For the official status split, see [CORE_LANGUAGE.md](CORE_LANGUAGE.md) and [FEATURE_STATUS.md](FEATURE_STATUS.md).
 
+The inherited `1.0.2a1` reference label is historical; the active public version
+remains `1.0.0-alpha.1`, Dev Alpha. The broad syntax below describes the R0
+reference surface. Canonical C0 is a smaller experimental subset; its C0.35
+bitwise extension has independent review and exact-pair qualification gates. See [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md).
+
 ## Status Guide
 
 - `core`: intended to stay stable and readable
@@ -88,6 +93,21 @@ Supported integer bitwise operators:
 
 Shift counts follow x86-64 integer shift behavior: only the low 6 bits of the
 count are used, equivalent to `count & 63`.
+
+That shift rule belongs to R0. The C0.35 extension adds only `&`, `^`, `|` and
+prefix `~`, acting on all 64 bits with signed i64 results and no bitwise
+overflow fault. Binary operands evaluate eagerly, left to right, once each;
+NOT evaluates once. Checked arithmetic inside operands retains its fault order.
+Only a directly owning NEGATE permits the INT64_MIN literal magnitude; NOT
+does not enlarge the literal range.
+
+Experimental C0 precedence, highest first, is calls/grouping, right-associative
+prefix `-`/`~`, `*`/`/`, `+`/`-`, relational, equality, `&`, `^`, `|`; binary
+operators associate left. Thus `6&3==2` means `6&(3==2)`. R0 keeps its shared
+bitwise/additive level. Mixed unparenthesized expressions are not a valid
+differential oracle; overlap comparisons require fully parenthesized expressions
+within common defined semantics. The [C0.35 contract](../../bootstrap/compiler/c0/BITWISE.md)
+defines NQAF/8, compatibility and qualification; it adds no R0 behavior change.
 
 Example:
 

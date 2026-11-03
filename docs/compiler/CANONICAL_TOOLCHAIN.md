@@ -4,7 +4,7 @@ Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
 below describe those historical runs; no release or bootstrap promotion occurs.
 
-The experimental C0.34 frontend/backend can be selected through the existing
+The experimental C0.35 frontend/backend can be selected through the existing
 `nqlc`, `nql`, installed commands and MCP tools. Default source behavior remains
 `nasm`/Reference Compiler R0. This connects implemented components to public
 commands; Full Compiler, self-hosting and Verified status remain false.
@@ -25,6 +25,11 @@ its operand once; negating INT64_MIN at runtime faults at that operator. It
 selects NQAF/7 dialect6 and requires the matching component pair; existing
 source bytes and ABI remain compatible. Unary plus is unsupported. See
 [UNARY_NEGATION.md](../../bootstrap/compiler/c0/UNARY_NEGATION.md).
+
+C0.35 adds `&`, `^`, `|` and prefix `~` over all 64 bits. These are eager
+operations; they do not introduce short-circuit logic or shifts. Bitwise source
+selects NQAF/8 dialect7 and retains checked arithmetic in its operands. See
+[BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md) for precedence and examples.
 
 ## Compile, Check And Run
 
@@ -106,7 +111,7 @@ frame. The ELF cap is 8388608 bytes. Default byte storage is 65536 bytes.
 it is never inferred from source length. This mapped bound is not measured RSS.
 Both complete compiler sources fit the unchanged 262144-byte capacity;
 historical 8 KiB/u16 limits no longer describe it. New native sources select
-NQAF/6 dialect5 and unary source selects /7 dialect6; legacy sources retain
+NQAF/6 dialect5 and unary source selects /7 dialect6; bitwise source selects /8 dialect7. Legacy sources retain
 /1..5. The compiler sources themselves still use /5 dialect4/profile1. See
 [CAPACITY.md](../../bootstrap/compiler/c0/CAPACITY.md) for measured identities
 and separate C0.31/C0.32 component-generation provenance. Arg-count alone

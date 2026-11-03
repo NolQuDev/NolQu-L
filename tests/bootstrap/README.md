@@ -61,6 +61,10 @@ Current coverage:
   output gate accepts the highest fixture-representable artifact at 589,808
   bytes and rejects the next 18-byte step; the patch gate accepts exactly
   5,376 accesses and rejects 5,377, with no B0 grammar growth
+- C0.35 bitwise gate: independent NQAF/8 packets, all-64-bit Python value
+  oracles, precedence/eager effects, unary ownership, checked operand faults,
+  unsafe/range containment, legacy bytes and exact instruction encodings. The
+  named bitwise oracle also runs on each actual B/C pair.
 - C0.25 predecessor build, canonical hashes, deterministic materialization,
   standalone ELF metadata, real source locations, checked u8 expressions,
   bounded locals and strings, byte memory, input/output, exact nested-loop

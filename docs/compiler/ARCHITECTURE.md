@@ -40,9 +40,9 @@ prove deterministic instruction emission, memory and control-flow patches,
 symbol resolution, runnable ELF generation, diagnostics, and resource cleanup.
 
 Bootstrap Compiler B0 is implemented and built by Stage 0. It builds the C0.25
-bounded emitter and the separate C0.34 source frontend and AST backend. These
+bounded emitter and the separate C0.35 source frontend and AST backend. These
 components compile checked i64 functions, lexical control flow, byte/stream
-operations, structural return analysis, checked unary negation and explicitly
+operations, structural return analysis, checked unary negation, eager i64 bitwise operations and explicitly
 scoped native operations directly to ELF64. NQAF/1..7 is the versioned
 frontend/backend boundary; the backend validates the stream independently before code generation.
 The runtime contract and gates are in

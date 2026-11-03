@@ -1,5 +1,29 @@
 # C0 AST Backend
 
+## C0.35: Independent Bitwise Validation And Codegen
+
+The experimental backend accepts NQAF/8, wide32/dialect7, profile0/1 with zero
+reserved fields. Independent review and complete exact-pair qualification gates
+are required. Kinds48/49/50 add AND/XOR/OR with existing contiguous left/right
+postorder ownership; kind51 NOT requires a unique immediately preceding left
+root and zero right/next. All four kinds require exact one-byte source anchors
+and zero flags/next. Kind47 NEGATE remains valid in both /7 and /8; the C0.34
+section below retains its checkpoint meaning. Old source retains exact
+NQAF/1..7 and successful ELF bytes.
+
+Version, topology, anchors and native unsafe source containment are checked
+before ELF output. NOT cannot confer minimum-literal permission; the backend
+still requires an integer leaf directly owned by NEGATE with derived metadata.
+All 64 result bits have signed i64 interpretation. Eager binary evaluation is
+left to right, once per operand; existing operand arithmetic faults remain.
+
+Each binary operation emits 24 bytes (two slot loads, instruction, store);
+NOT emits 17 bytes (one load, instruction, store), with no overflow branch.
+Slot reductions and inherited subtree code-starts preserve liveness and full
+loop-condition reevaluation. Existing arena/frame/call bounds, B0 and canonical
+dependencies remain unchanged. [BITWISE.md](BITWISE.md) defines exact opcodes,
+BW01..BW06, paired upgrade/rollback and required qualification gates.
+
 ## C0.34: Checked Unary Ownership And Codegen
 
 NQAF/7 dialect6 adds kind47 NEGATE with one contiguous, immediately preceding

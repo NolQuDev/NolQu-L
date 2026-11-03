@@ -378,7 +378,7 @@ def decode_nqaf(data):
     if len(data) < 16 or data[:4] != b"NQAF":
         raise ValueError("invalid NQAF header")
     version = data[4]
-    if version in (5, 6, 7):
+    if version in (5, 6, 7, 8):
         if len(data) < 32:
             raise ValueError(f"truncated NQAF/{version} header")
         (_, _, size, flags, length, count, root, tokens, dialect, profile,
@@ -404,7 +404,7 @@ def decode_nqaf(data):
     nodes = []
     for index in range(count):
         position = size + length + index * size
-        if version in (5, 6, 7):
+        if version in (5, 6, 7, 8):
             kind, node_flags, r16, offset, span, left, right, nxt, r1, r2 = struct.unpack_from(
                 "<BBHIIIIIII", data, position)
             reserved = r16 or r1 or r2

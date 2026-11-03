@@ -1,7 +1,9 @@
 # C0 Source Frontend
 
-The sections below record the original scalar/NQAF/1 contract. The current
-component contract is **C0.34**. [UNARY_NEGATION.md](UNARY_NEGATION.md) defines
+The sections below retain the original scalar/NQAF/1 and later checkpoint
+contracts. The experimental source contract is **C0.35**;
+[BITWISE.md](BITWISE.md) defines its bitwise extension and required independent
+review and qualification gates. [UNARY_NEGATION.md](UNARY_NEGATION.md) defines
 checked prefix negation and NQAF/7. [RETURN_FLOW.md](RETURN_FLOW.md) defines the
 C0.33 independent structural return proof; the C0.32 native contract is
 preserved below.
@@ -16,6 +18,23 @@ stack at 35000 and call frames at 36000 in the legacy layout. The historical
 source/token/node limits in that layout are unchanged; NQAF/5 uses the wide
 layout below.
 The historical grammar below describes C0.26, not the current language subset.
+
+## C0.35: Signed i64 Bitwise Candidate
+
+Actual `&`, `^`, `|` or prefix `~` syntax selects NQAF/8, wide32/dialect7,
+profile0/1 and function envelopes. Kinds48/49/50/51 are AND/XOR/OR/NOT;
+kind47 NEGATE remains valid in /7 and /8. Source without the new syntax retains
+its exact NQAF/1..7 bytes. Header/record sizes, reserved zeros and arena bounds
+are unchanged.
+
+The bounded operator stack uses this precedence, highest first: call/grouping,
+right-associative `-`/`~`, `*`/`/`, `+`/`-`, relational, equality, `&`, `^`, `|`.
+Binary operators associate left. Operands evaluate eagerly, left to right,
+once; NOT evaluates once and does not grant the NEGATE-only INT64_MIN literal
+exception. No shift or short-circuit syntax is added. R0 retains its different
+bitwise/additive level; mixed unparenthesized expressions are not a differential
+oracle. [BITWISE.md](BITWISE.md) records the complete semantics, wire ownership,
+BW01..BW06 checks and qualification requirements.
 
 ## C0.34: Checked Prefix Negation
 
