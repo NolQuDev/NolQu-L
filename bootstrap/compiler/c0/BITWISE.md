@@ -30,7 +30,7 @@ Precedence, highest first:
 | Equality | `==`, `!=` | Left |
 | Bitwise AND | `&` | Left |
 | Bitwise XOR | `^` | Left |
-| Bitwise OR | `|` | Left |
+| Bitwise OR | `\|` | Left |
 
 Thus `1|2^3&4` is `1|(2^(3&4))`, `6&3==2` is `6&(3==2)`, and `-~7`
 is `-(~7)`. This deliberately experimental Core precedence differs from R0's
@@ -60,7 +60,7 @@ its exact previous NQAF/1..7 bytes and successful ELF bytes.
 | --- | --- | --- | --- |
 | 48 AND | `&` | Exact one-byte `&` | Contiguous left/right postorder subtrees |
 | 49 XOR | `^` | Exact one-byte `^` | Contiguous left/right postorder subtrees |
-| 50 OR | `|` | Exact one-byte `|` | Contiguous left/right postorder subtrees |
+| 50 OR | `\|` | Exact one-byte `\|` | Contiguous left/right postorder subtrees |
 | 51 NOT | `~` | Exact one-byte `~` | Unique left root immediately preceding NOT |
 
 All four kinds have zero flags and `next`; NOT also has zero `right`. For
