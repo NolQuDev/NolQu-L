@@ -19,6 +19,22 @@ separately. Absent/skipped/truncated tests or stale identities fail closed.
 No full-language Safety, Stable, Full Compiler or formal self-hosting promotion
 is implied. Current capacity, ABI, version and historical open incidents remain.
 
+The C0.36 exact PR tree passed all11 Linux gates:1090 main PASS markers retain
+all1089 baseline markers;140 MCP methods passed. The actual component receipt
+contains722 stages,275 checks,475 artifacts and6 comparisons, with45 ordered
+named methods on each B/C pair. All2641 recorded artifact/stream files and48
+source input identities were checked. The independent Native complete probe
+passed in 1681.0 seconds with TracerPid0 at both ends. Linux and
+Native component comparisons and input identities match. These counts describe
+bounded evidence and do not count every inner temporary oracle image as a
+separate parent receipt artifact.
+
+A separate deterministic seed0xC036 campaign compares72 truth/effect cases
+across two profiles and logical/explicit-if forms:72 raw streams and6 ELF
+pairs match across PRoot and Native. Coverage is not measured; no exhaustive
+fuzzing, applicable NolQu-L sanitizer or whole-language Safety claim is made.
+The current scope stays experimental; historical C032-SIGNAL-01 remains OPEN.
+
 ## C0.35 Bitwise Qualification Contract
 
 The experimental pair adds signed i64 `&`, `^`, `|` and unary `~` through

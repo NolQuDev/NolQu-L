@@ -42,6 +42,14 @@ promise a stable public contract. Existing syntax outside those exact newly
 reserved names preserves its prior AST and successful ELF bytes. Historical
 wire versions retain their earlier identifier rules.
 
+The compatible contextual-keyword alternative makes `not -7` ambiguous with
+an existing identifier subtraction, and `not(group)` ambiguous with a call.
+Binding-dependent parsing would add nonlocal grammar rules and risk silent
+reinterpretation. Reserving these three words keeps parsing independent of
+name lookup and follows the documented logical vocabulary; the explicit
+prerelease rename cost is documented as an implementation decision under the
+maintainer's Pillar8 development scope, not an invented stable-language RFC.
+
 R0 has a distinct condition grammar, including its leading `not` behavior.
 Differential comparisons require genuinely common, fully grouped defined
 semantics; mixed unparenthesized R0 conditions are not a canonical precedence

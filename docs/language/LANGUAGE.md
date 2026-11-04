@@ -1,6 +1,8 @@
 # NolQu-L Reference 1.0.2a1
 
-This document describes the user-facing NolQu-L syntax and behavior as of `1.0.2a1`.
+This document describes the Reference Compiler R0 surface. Current project
+metadata is `1.0.0-alpha.1`, channel `dev`; historical `1.0.2a1` descriptions
+do not define the active version.
 
 It does not treat every parser feature as equally stable. For the official status split, see [CORE_LANGUAGE.md](CORE_LANGUAGE.md) and [FEATURE_STATUS.md](FEATURE_STATUS.md).
 
