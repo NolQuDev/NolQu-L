@@ -6,6 +6,19 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
+## C0.36 Short-Circuit Qualification Contract
+
+[SHORT_CIRCUIT.md](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md) defines
+normalized i64 truth, conditional RHS effects, static validation of both
+operands, exact keyword migration, NQAF/9 dialect8, machine cost and
+SC01..SC06. All earlier checks remain required. The new scoped logical suite,
+its complete marker and an additional named actual B/C oracle are required
+proof inputs; metadata-only reads retain `short_circuit_verified=false`.
+Review, exact-source Linux CI and actual untraced Native proof must be reported
+separately. Absent/skipped/truncated tests or stale identities fail closed.
+No full-language Safety, Stable, Full Compiler or formal self-hosting promotion
+is implied. Current capacity, ABI, version and historical open incidents remain.
+
 ## C0.35 Bitwise Qualification Contract
 
 The experimental pair adds signed i64 `&`, `^`, `|` and unary `~` through

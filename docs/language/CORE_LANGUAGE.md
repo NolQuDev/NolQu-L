@@ -40,6 +40,12 @@ implements a smaller experimental subset whose qualification is separate.
 - logical condition operators: `and`, `or`, `not`
 - function call expressions
 
+The experimental C0.36 subset adds normalized i64 short-circuit `and`/`or`
+and prefix `not`, with static checking of both operands. Exact logical words
+become reserved Core identifiers; prefix names retain their meaning. NQAF/9
+requires a matching component pair; see
+[SHORT_CIRCUIT.md](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md).
+
 The experimental C0.35 subset adds signed i64 `&`, `^`, `|` and prefix `~`,
 with independent review and exact-pair qualification gates. These use
 all 64 bits, eager binary evaluation left to right once per operand and
@@ -47,7 +53,7 @@ right-associative prefix `-`/`~`. Precedence, highest first, is call/grouping,
 `-`/`~`, `*`/`/`, `+`/`-`, relational, equality, `&`, `^`, `|`. This deliberately
 differs from R0's bitwise/additive level; mixed unparenthesized expressions
 cannot establish differential equivalence. R0 is unchanged. C0.35 adds no
-shifts or short-circuit logic; NOT does not extend the NEGATE-only minimum
+shifts; bitwise NOT does not extend the NEGATE-only minimum
 literal exception. See the [C0.35 contract](../../bootstrap/compiler/c0/BITWISE.md).
 
 ### Control Flow

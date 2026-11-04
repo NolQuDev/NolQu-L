@@ -167,6 +167,8 @@ class NolQuMcpCoreTests(unittest.TestCase):
         self.assertFalse(result["unary_negation_verified"])
         self.assertIn("bitwise_verified", result)
         self.assertFalse(result["bitwise_verified"])
+        self.assertIn("short_circuit_verified", result)
+        self.assertFalse(result["short_circuit_verified"])
         self.assertIn("return_flow_verified", result)
         self.assertFalse(result["return_flow_verified"])
         self.assertFalse(result["byte_memory_verified"])
@@ -195,12 +197,13 @@ class NolQuMcpCoreTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertFalse(result["semantic_resolution_verified"])
             self.assertFalse(result["codegen_verified"])
-            self.assertEqual(result["backend_version"], "C0.35")
+            self.assertEqual(result["backend_version"], "C0.36")
             self.assertEqual(result["source_capacity"], 262144)
             self.assertEqual(result["token_capacity"], 65536)
             self.assertEqual(result["node_capacity"], 65536)
             self.assertIn("NQAF/5", result["input_format"])
             self.assertIn("NQAF/8", result["input_format"])
+            self.assertIn("NQAF/9", result["input_format"])
             self.assertIn("bitwise", result["semantics"])
             self.assertEqual(result["compiler_profile_byte_capacity"], 16777216)
             self.assertFalse(result["control_flow_verified"])
@@ -248,9 +251,10 @@ class NolQuMcpCoreTests(unittest.TestCase):
             result = self.mcp.run_c0_frontend_probe()
         self.assertFalse(result["ok"])
         self.assertEqual(result["probe_status"], "UNEXPECTED_RESULT")
-        self.assertEqual(result["frontend_version"], "C0.35")
+        self.assertEqual(result["frontend_version"], "C0.36")
         self.assertIn("NQAF/5", result["format"])
         self.assertIn("NQAF/8", result["format"])
+        self.assertIn("NQAF/9", result["format"])
         self.assertEqual(result["source_capacity"], 262144)
         self.assertEqual(result["token_capacity"], 65536)
         self.assertEqual(result["node_capacity"], 65536)
@@ -293,7 +297,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
     def assert_c031_unverified(self, result):
         for field in ("capacity_verified", "compiler_profile_verified",
                       "component_generation_verified", "unsafe_blocks_verified", "process_arguments_verified",
-                      "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "full_compiler_verified",
+                      "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified", "full_compiler_verified",
                       "self_hosting_verified"):
             self.assertIn(field, result, field)
             self.assertIs(result[field], False, field)
@@ -302,15 +306,22 @@ class NolQuMcpCoreTests(unittest.TestCase):
         # A command-boundary double only; it supplies no generation proof.
         markers = {
             "c0_frontend": "PASS c0-frontend\n",
-            "c0_backend": ("PASS c0-control-flow\nPASS c0-functions\nPASS c0-return-flow\nPASS c0-unary-negation\nPASS c0-bitwise\nPASS c0-runtime-io\n"
+            "c0_backend": ("PASS c0-control-flow\nPASS c0-functions\nPASS c0-return-flow\nPASS c0-unary-negation\nPASS c0-bitwise\nPASS c0-short-circuit\nPASS c0-runtime-io\n"
                            "PASS c0-capacity-backend\nPASS c0-native-os\nPASS c0-backend\n"),
             "c0_capacity": "PASS c0-capacity\nPASS c0-component-generations\n",
         }
         name = pathlib.Path(command[-1]).stem
         directory.mkdir()
         stdout = markers[name]
+        methods = ()
+        if name == "c0_backend":
+            module = ast.parse((self.root / "tests/bootstrap/test_c0_short_circuit.py").read_text())
+            suite = next(node for node in module.body
+                         if isinstance(node, ast.ClassDef) and node.name == "ShortCircuitTests")
+            methods = [node.name for node in suite.body
+                       if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")]
         stderr = ("".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (18, 29, 20, 6))
-                  if name == "c0_capacity" else "".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (16,13,17,9,11,12,13,29,23)) if name == "c0_backend" else "")
+                  if name == "c0_capacity" else "".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (16,13,17,9,11,12,len(methods),13,29,23)) if name == "c0_backend" else "")
         (directory / "stdout").write_text(stdout)
         (directory / "stderr").write_text(stderr)
         return dict(ok=True, exit_code=0, timed_out=False, cleanup_complete=True,
@@ -2042,6 +2053,148 @@ class CanonicalCliMigrationTests(unittest.TestCase):
         self.assertTrue(result["canonical_hash_verified"])
 
 
+class ShortCircuitProofTests(unittest.TestCase):
+    """C0.36 proof-consumer controls; synthetic streams are not compiler proof."""
+
+    setUp = NolQuMcpCoreTests.setUp
+    tearDown = NolQuMcpCoreTests.tearDown
+    c031_probe_fixture = NolQuMcpCoreTests.c031_probe_fixture
+
+    def machine_fixture(self, parent=None):
+        return NativeProofTests.machine_fixture(self, parent)
+
+    def test_short_circuit_metadata_stays_unverified(self):
+        directory = self.root / "bootstrap/compiler/c0"
+        directory.mkdir(parents=True)
+        for component in ("frontend", "backend"):
+            (directory / (component + ".nql")).write_text("# source presence only\n")
+        with mock.patch.object(self.mcp, "_c031_proof", side_effect=AssertionError("metadata ran proof")):
+            status = self.mcp.canonical_bootstrap_status()
+            self.assertEqual((status["current_frontend"], status["current_backend"]), ("C0.36", "C0.36"))
+            for result in (status, self.mcp.run_c0_frontend_probe(), self.mcp.run_c0_backend_probe()):
+                self.assertIs(result.get("short_circuit_verified"), False)
+                self.assertFalse(result["full_compiler_verified"])
+                self.assertFalse(result["self_hosting_verified"])
+            frontend = self.mcp.run_c0_frontend_probe()
+            backend = self.mcp.run_c0_backend_probe()
+            self.assertEqual(frontend["frontend_version"], "C0.36")
+            self.assertEqual(backend["backend_version"], "C0.36")
+            self.assertIn("NQAF/9", frontend["format"])
+            self.assertIn("NQAF/9", backend["input_format"])
+            for meaning in ("short-circuit", "and evaluates right iff left is nonzero",
+                            "or evaluates right iff left is zero", "logical not", "0/1", "once", "statically checked"):
+                self.assertIn(meaning, backend["semantics"])
+
+    def short_circuit_gate_fixture(self):
+        self.c031_probe_fixture()
+        # The sibling suite is written concurrently. This private boundary fixture
+        # has three discoverable methods, including the required generation oracle.
+        suite = self.root / "tests/bootstrap/test_c0_short_circuit.py"
+        suite.write_text("class ShortCircuitTests:\n"
+                         "    def test_truth(self): pass\n"
+                         "    def test_skip(self): pass\n"
+                         "    def test_generation_short_circuit_contract(self): pass\n")
+    def short_circuit_gate_result(self, argv, directory, timeout, env=None, *, suite=True, marker=True):
+        result = NolQuMcpCoreTests.c031_gate_result(self, argv, directory, timeout, env)
+        if pathlib.Path(argv[-1]).stem == "c0_backend":
+            if not marker:
+                result["stdout"] = result["stdout"].replace(
+                    "PASS c0-short-circuit\n", "")
+            if not suite:
+                result["stderr"] = result["stderr"].replace(
+                    "\nRan 3 tests in 1.0s\n\nOK\n", "")
+            (directory / "stdout").write_text(result["stdout"])
+            (directory / "stderr").write_text(result["stderr"])
+        return result
+
+    def short_circuit_unit_validation(self, directory, before):
+        # A complete unit-only seam ensures an unrelated archival failure cannot
+        # make missing-marker/missing-suite negatives appear to pass.
+        work, receipt = NativeProofTests.machine_fixture(self, directory)
+        return {"unit_only_validation_control": True,
+                "native_machine_artifacts": self.mcp._c031_native_evidence(receipt, work)}
+
+    def test_short_circuit_gate_rejects_missing_marker(self):
+        self.short_circuit_gate_fixture()
+        def command(*args, **kwargs):
+            return self.short_circuit_gate_result(*args, **kwargs, marker=False)
+        with mock.patch.object(self.mcp, "_c031_command", side_effect=command), mock.patch.object(
+                self.mcp, "_c031_validate", side_effect=self.short_circuit_unit_validation) as validate:
+            result = self.mcp.run_c0_backend_probe()
+        self.assertFalse(result["ok"], "old backend evidence qualified without the short-circuit marker")
+        self.assertIn("missing required gate markers", result["blocker"])
+        validate.assert_not_called()
+
+    def test_short_circuit_gate_rejects_missing_suite(self):
+        self.short_circuit_gate_fixture()
+        def command(*args, **kwargs):
+            return self.short_circuit_gate_result(*args, **kwargs, suite=False)
+        with mock.patch.object(self.mcp, "_c031_command", side_effect=command), mock.patch.object(
+                self.mcp, "_c031_validate", side_effect=self.short_circuit_unit_validation) as validate:
+            result = self.mcp.run_c0_backend_probe()
+        self.assertFalse(result["ok"], "the marker alone qualified without the complete new suite")
+        self.assertIn("complete required unittest suites", result["blocker"])
+        validate.assert_not_called()
+
+    def test_short_circuit_gate_requires_all_class_methods(self):
+        self.short_circuit_gate_fixture()
+        with mock.patch.object(self.mcp, "_c031_command", side_effect=self.short_circuit_gate_result), mock.patch.object(
+                self.mcp, "_c031_validate", side_effect=self.short_circuit_unit_validation):
+            accepted = self.mcp.run_c0_backend_probe()
+        self.assertTrue(accepted["ok"], accepted.get("blocker"))
+        self.assertTrue(accepted["short_circuit_verified"])
+        self.assertTrue(accepted["evidence"]["unit_only_validation_control"])
+        def truncated(*args, **kwargs):
+            result = self.short_circuit_gate_result(*args, **kwargs)
+            if pathlib.Path(args[0][-1]).stem == "c0_backend":
+                (args[1] / "stderr").write_text(result["stderr"].replace("Ran 3 tests", "Ran 2 tests"))
+            return result
+        with mock.patch.object(self.mcp, "_c031_command", side_effect=truncated), mock.patch.object(
+                self.mcp, "_c031_validate", side_effect=self.short_circuit_unit_validation) as validate:
+            rejected = self.mcp.run_c0_backend_probe()
+        self.assertFalse(rejected["ok"])
+        self.assertIs(rejected["short_circuit_verified"], False)
+        self.assertIn("complete required unittest suites", rejected["blocker"])
+        validate.assert_not_called()
+
+    def test_short_circuit_generation_requires_named_oracle(self):
+        import copy
+        receipt = NativeProofTests.generation_fixture(self)
+        accepted = self.mcp._c031_validate(self.receipt_path.parent.parent, self.before)
+        self.assertEqual(accepted["oracles"], 2)
+        selector = "test_c0_short_circuit.ShortCircuitTests.test_generation_short_circuit_contract"
+        source = self.root / "tests/bootstrap/test_c0_component_generations.py"
+        definition = ast.parse(source.read_text())
+        inventory = list(next(ast.literal_eval(node.value) for node in definition.body
+            if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name)
+            and target.id == "GENERATION_ORACLES" for target in node.targets)))
+        self.assertIn(selector, inventory)
+        for failure in ("missing", "replacement"):
+            with self.subTest(failure=failure):
+                changed = copy.deepcopy(receipt)
+                selectors = [item for item in inventory if item != selector]
+                if failure == "replacement":
+                    selectors.append("test_c0_short_circuit.ShortCircuitTests.test_full_i64_truth_normalization")
+                source.write_text("GENERATION_ORACLES = " + repr(tuple(selectors)) + "\n")
+                relative = "tests/bootstrap/test_c0_component_generations.py"
+                self.before[relative].update(self.mcp._c031_fingerprint(source))
+                changed["identities"][str(source.resolve())] = self.mcp._c031_fingerprint(source)
+                for oracle in changed["oracles"]:
+                    oracle["selectors"] = list(selectors)
+                for stage in changed["stages"]:
+                    if stage["label"].endswith("-named-oracles"):
+                        stage["command"] = stage["command"][:7] + selectors
+                        stream = pathlib.Path(stage["prefix"] + ".stderr")
+                        stream.write_text(f"\nRan {len(selectors)} tests in 1.0s\n\nOK\n")
+                        stage["stderr"] = self.mcp._c031_fingerprint(stream)
+                self.receipt_path.write_text(json.dumps(changed))
+                # Isolate the named-oracle contract from the outer source hash
+                # gate: even a consistent 45-selector replacement must fail.
+                with mock.patch.object(self.mcp, "_c031_inputs", return_value=self.before):
+                    with self.assertRaisesRegex(ValueError, "oracle"):
+                        self.mcp._c031_validate(self.receipt_path.parent.parent, self.before)
+
+
 class NativeProofTests(unittest.TestCase):
     """Synthetic receipt mutations test the consumer, never compiler capability."""
 
@@ -2051,7 +2204,7 @@ class NativeProofTests(unittest.TestCase):
 
     def test_native_metadata_is_additive_and_unverified(self):
         metadata = self.mcp.canonical_bootstrap_status()
-        for field in ("unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified"):
+        for field in ("unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified"):
             self.assertIs(metadata.get(field), False, field)
         for probe in (self.mcp.run_c0_frontend_probe, self.mcp.run_c0_backend_probe):
             result = probe()
@@ -2151,7 +2304,7 @@ class NativeProofTests(unittest.TestCase):
             elif label.endswith("-named-oracles"):
                 binary = pathlib.Path(sys.executable)
                 command = [sys.executable, "-B", "-W", "error::ResourceWarning", "-m", "unittest", "-v", *selectors]
-                error = b"\nRan 44 tests in 1.0s\n\nOK\n"
+                error = b"\nRan 45 tests in 1.0s\n\nOK\n"
             else:
                 generation = label.split("-", 1)[0]
                 if label.endswith("-frontend"):
@@ -2232,7 +2385,7 @@ class NativeProofTests(unittest.TestCase):
         accepted = self.validate_synthetic(receipt)
         self.assertEqual((accepted["stages"], accepted["checks"]), (722, 275))
         self.assertEqual(len(accepted["native_machine_artifacts"]), 16)
-        for failure in ("check", "artifact", "selector", "return-selector", "unary-selector", "bitwise-selector", "identity", "duplicate-stage", "missing-stage", "trace", "oracle-binary"):
+        for failure in ("check", "artifact", "selector", "return-selector", "unary-selector", "bitwise-selector", "short-circuit-selector", "identity", "duplicate-stage", "missing-stage", "trace", "oracle-binary"):
             with self.subTest(failure=failure):
                 changed = copy.deepcopy(receipt)
                 if failure == "check":
@@ -2250,6 +2403,9 @@ class NativeProofTests(unittest.TestCase):
                 elif failure == "bitwise-selector":
                     changed["oracles"][0]["selectors"].remove(
                         "test_c0_bitwise.BitwiseTests.test_generation_bitwise_contract")
+                elif failure == "short-circuit-selector":
+                    changed["oracles"][0]["selectors"].remove(
+                        "test_c0_short_circuit.ShortCircuitTests.test_generation_short_circuit_contract")
                 elif failure == "identity":
                     name = str((self.root / "examples/canonical/native_cat.nql").resolve())
                     changed["identities"][name]["sha256"] = "0" * 64

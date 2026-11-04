@@ -1,7 +1,19 @@
 # C0 Source Frontend
 
+## C0.36: Logical Expressions
+
+Exact `and`, `or`, `not` keywords add short-circuit logical expressions under
+[SHORT_CIRCUIT.md](SHORT_CIRCUIT.md). AND binds above OR and below bitwise OR;
+NOT shares the right-associative prefix level. Both subtrees are parsed and
+owned in contiguous postorder; backend guards control runtime selection.
+Actual logical syntax alone selects wide NQAF/9 dialect8 with kinds52..54 and
+full keyword spans. Newly reserved exact identifiers require renaming; keyword
+prefix names and prior syntax retain their earlier representations. The same
+bounded stacks and existing source/token/node arena limits apply.
+
+
 The sections below retain the original scalar/NQAF/1 and later checkpoint
-contracts. The experimental source contract is **C0.35**;
+contracts. The experimental source contract is **C0.36**;
 [BITWISE.md](BITWISE.md) defines its bitwise extension and required independent
 review and qualification gates. [UNARY_NEGATION.md](UNARY_NEGATION.md) defines
 checked prefix negation and NQAF/7. [RETURN_FLOW.md](RETURN_FLOW.md) defines the

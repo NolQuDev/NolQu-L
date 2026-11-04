@@ -22,7 +22,7 @@ line. Older version strings describe historical checkpoints, not current maturit
 ## Backend Limitations
 
 - the canonical Machine/Stage0/B0 and C0.25 emitter are implemented; separate
-  C0.35 source frontend/direct-ELF backend extend the completed C0.31 foundation
+  C0.36 source frontend/direct-ELF backend extend the completed C0.31 foundation
 - current C0 supports one compilation unit and signed i64, not the full R0
   language, general types/modules/FFI or inline assembly
 - complete compiler-source A/B/C generations pass, but Full Compiler,
@@ -30,8 +30,8 @@ line. Older version strings describe historical checkpoints, not current maturit
 - historical C0.34 Linux qualification retains all 1,087 C0.33 baseline markers
   and adds one unary marker (1,088 total); this supersedes the old post-formatter
   full-main gap. See the [validation status](../project/VALIDATION.md)
-- canonical bitwise operations do not yet include shifts or short-circuit
-  logical expressions; Core bitwise precedence differs from R0 as documented in
+- canonical bitwise operations do not yet include shifts; logical expressions
+  are available experimentally in /9 with the newly reserved and/or/not words; Core bitwise precedence differs from R0 as documented in
   [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md)
 - native unsafe blocks check permission/headers/source containment, not general
   ownership, lifetimes, syscall-specific kernel effects or full Safety modes

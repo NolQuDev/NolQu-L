@@ -5,13 +5,21 @@ compiler. Its canonical source is NolQu-L Core-0 and its canonical executable
 is built by B0, not by a host compiler or assembler.
 
 The emitter described by `compiler.nq`/`c0.seed` remains C0.25. The separate
-frontend/backend source contract is experimental C0.35; see
+frontend/backend source contract is experimental C0.36; see
+[SHORT_CIRCUIT.md](SHORT_CIRCUIT.md). Bitwise behavior remains in
 [BITWISE.md](BITWISE.md). Checked negation remains defined in
 [UNARY_NEGATION.md](UNARY_NEGATION.md). The C0.33 return contract remains in
 [RETURN_FLOW.md](RETURN_FLOW.md). C0.32 native behavior remains defined in
 [NATIVE_OS.md](NATIVE_OS.md). Scoped syntax/ABI/utility tests and complete-source
 component generations have passed. These are bounded component proofs, not
 Full Compiler, formal self-hosting or complete NolQu-L Safety.
+
+C0.36 adds short-circuit `and`/`or` and prefix `not`, normalized to i64 0/1,
+with independently validated NQAF/9 dialect8. Both operands remain statically
+checked. The exact logical words are now reserved Core identifiers; prefix
+names and successful old program bytes remain preserved. Bounds, B0, ABI and
+public release version are unchanged. New tests and their named actual B/C
+oracle are required proof inputs; see SHORT_CIRCUIT.md for qualification.
 
 C0.35 adds eager 64-bit AND/XOR/OR and prefix NOT in NQAF/8 dialect7,
 without changing the prior source representations or runtime ABI. The twelve

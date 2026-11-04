@@ -12,10 +12,11 @@ The Core/Experimental lists below describe the Reference Compiler R0
 compatibility language. Canonical C0 has its own bounded experimental subset;
 parser recognition and concept-document targets do not imply support in both.
 
-### Canonical C0.35 Experimental Subset
+### Canonical C0.36 Experimental Subset
 
 - checked signed i64, lexical bindings, comparisons, if/else and while
-- eager 64-bit bitwise `&`, `^`, `|` and unary `~`; shifts/logical operators remain unsupported here
+- eager 64-bit bitwise `&`, `^`, `|` and unary `~`; shifts remain unsupported here
+- short-circuit `and`/`or` and prefix `not`, normalized i64 0/1; new exact logical keywords are reserved
 - checked prefix `-`, including the INT64_MIN literal; runtime overflow is diagnosed
 - named functions, positional arguments up to six, bounded native recursion
 - independent structural return proof; exhaustive if/else needs no redundant return
@@ -23,7 +24,7 @@ parser recognition and concept-document targets do not imply support in both.
 - native `arg_count` and byte-preserving `arg_copy`
 - contextual lexical `unsafe` blocks with a required nonempty invariant comment
 - unsafe checked `byte_address` and raw Linux x86_64 `syscall6`
-- direct standalone ELF, NQAF/1..7 compatibility and additive /8 dialect7
+- direct standalone ELF, NQAF/1..8 compatibility and additive /9 dialect8
 - actual native file-reader source and verified scoped/generation execution
 
 The C0.32 baseline exact-source Linux qualification of `Testing` at `75b2309f` passes eleven gates,
@@ -41,6 +42,9 @@ lifetime checker, full Safety modes, Full Compiler or full self-hosting. Unsafe
 source containment is checked independently by the backend; it is not proof of
 every later kernel effect. C0.33 return-flow evidence and minimum component
 compatibility are defined in [RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md).
+C0.36 logical semantics, exact keyword migration, independent graph validation
+and conditional machine cost are defined in
+[SHORT_CIRCUIT.md](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md).
 C0.35 bitwise semantics and the Core/R0 precedence distinction are defined in
 [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md).
 C0.34 unary semantics, minimum-literal ownership, machine cost and paired upgrade

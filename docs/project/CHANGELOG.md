@@ -25,6 +25,18 @@
 
 ### Added
 
+- Add experimental C0.36 short-circuit `and`/`or` and prefix `not`, normalized
+  to i64 0/1, with independent NQAF/9 validation. Skipped operands execute no
+  effects; both operands still undergo static name, arity, literal and unsafe
+  checks. Exact logical words are newly reserved Core identifiers; rename old
+  bindings to names such as `and_value`. Preserve prior syntax/ELF and wire
+  rules outside that explicit prerelease migration. The bounded LHS-parent
+  map uses existing spare arena; expected binary guard/join cost is 52 bytes,
+  logical NOT 23. Require exact code, regression, generation, MCP and separate
+  Native/Linux proof plus review. Bounds, B0, ABI and public version remain
+  unchanged; [SHORT_CIRCUIT.md](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md)
+  defines qualification and paired rollback. No release/self-hosting claim.
+
 - Add experimental C0.35 support for all-64-bit signed i64
   `&`, `^`, `|` and prefix `~`, with eager left-to-right binary operands,
   independent NQAF/8 validation and the existing NEGATE-only INT64_MIN rule.
