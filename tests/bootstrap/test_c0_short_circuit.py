@@ -636,20 +636,32 @@ class ShortCircuitTests(unittest.TestCase):
 
     def test_generation_short_circuit_contract(self):
         # This exact method is selected on each actual B/C pair; env chooses real compilers.
+        # Assertions use independent branches: an always-skipped AND must not
+        # skip the oracle's own checks. Full values and selected output are
+        # observed separately in both runtime profiles.
         source = (b'fn tick(x){byte_store(0,byte_load(0)+1)return x}'
                   b'fn rhs(){byte_store(1,byte_load(1)+1)return 1}'
                   b'fn main(){let n=3 while tick(n) and rhs(){n=n-1}'
                   b'let a=0 and (1/0) let b=1 or byte_load(-1) '
-                  b'return (a==0) and (b==1) and (byte_load(0)==4) and '
-                  b'(byte_load(1)==3) and ((4294967296 and -1)==1) and '
-                  b'((0 or -9223372036854775808)==1) and (not -7==0) and '
-                  b'(1 or 0 and 0) and ((2 and 0|2)==1)}')
+                  b'if a!=0{return 11} if b!=1{return 12}'
+                  b'if byte_load(0)!=4{return 13} if byte_load(1)!=3{return 14}'
+                  b'if (4294967296 and -1)!=1{return 15}'
+                  b'if (0 or -9223372036854775808)!=1{return 16}'
+                  b'if (not -7)!=0{return 17} if (1 or 0 and 0)!=1{return 18}'
+                  b'if (2 and 0|2)!=1{return 19} if (1 and 0)!=0{return 20}'
+                  b'byte_store(2,65) let v=1 and output_write(2,1) '
+                  b'if v!=1{return 21} return 1}')
         for profile in (False, True):
-            self.value(source, 1, profile)
-            p = self.execute(self.image(independent_named_wire(b'and', int(profile))))
-            self.assertEqual((p.returncode, p.stdout, p.stderr), (1, b'', b''))
-            self.reject_wire(independent_unsafe_rhs(b'and', int(profile)), 10)
-            self.reject_wire(independent_wire(b'or', int(profile), b'1', b'9223372036854775808'), 5)
+            with self.subTest(profile=profile):
+                self.value(source, 1, profile, output=b'A')
+                self.value(b'fn main(){return 1 and 0}', 0, profile)
+                self.value(b'fn main(){byte_store(0,66) '
+                           b'let v=1 and output_write(0,1) return v}',
+                           1, profile, output=b'B')
+                p = self.execute(self.image(independent_named_wire(b'and', int(profile))))
+                self.assertEqual((p.returncode, p.stdout, p.stderr), (1, b'', b''))
+                self.reject_wire(independent_unsafe_rhs(b'and', int(profile)), 10)
+                self.reject_wire(independent_wire(b'or', int(profile), b'1', b'9223372036854775808'), 5)
         wire = bytearray(independent_wire())
         wire[4], wire[24] = 8, 7
         self.reject_wire(wire, 2)

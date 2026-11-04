@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import struct
 import subprocess
@@ -2056,6 +2057,27 @@ class CanonicalCliMigrationTests(unittest.TestCase):
 class ShortCircuitProofTests(unittest.TestCase):
     """C0.36 proof-consumer controls; synthetic streams are not compiler proof."""
 
+    # Reviewed independently of the production constant: deletion/rename in the
+    # bound suite must not define a smaller or different proof contract.
+    REVIEWED_METHODS = (
+        "test_independent_wire_and_profiles",
+        "test_full_i64_truth_normalization",
+        "test_precedence_prefixes_and_left_associativity",
+        "test_exact_keywords_and_identifier_boundaries",
+        "test_left_to_right_selected_effects_once",
+        "test_skipped_streams_and_syscalls",
+        "test_nested_calls_preserve_pending_guards",
+        "test_loop_rechecks_lhs_and_selected_rhs",
+        "test_skipped_faults_and_selected_error_locations",
+        "test_skipped_static_semantic_safety_and_minimum_rejection",
+        "test_wire_versions_anchors_and_ownership_reject",
+        "test_high_u32_ids_offsets_and_guard_map",
+        "test_legacy_c035_bytes_unchanged",
+        "test_exact_machine_bytes_and_branch_destinations",
+        "test_finite_malformed_input_and_prefix_chains",
+        "test_generation_short_circuit_contract",
+    )
+
     setUp = NolQuMcpCoreTests.setUp
     tearDown = NolQuMcpCoreTests.tearDown
     c031_probe_fixture = NolQuMcpCoreTests.c031_probe_fixture
@@ -2087,22 +2109,26 @@ class ShortCircuitProofTests(unittest.TestCase):
 
     def short_circuit_gate_fixture(self):
         self.c031_probe_fixture()
-        # The sibling suite is written concurrently. This private boundary fixture
-        # has three discoverable methods, including the required generation oracle.
+        # Synthetic bodies only; the positive seam must still carry the complete
+        # reviewed inventory rather than invent a shortened three-method suite.
         suite = self.root / "tests/bootstrap/test_c0_short_circuit.py"
-        suite.write_text("class ShortCircuitTests:\n"
-                         "    def test_truth(self): pass\n"
-                         "    def test_skip(self): pass\n"
-                         "    def test_generation_short_circuit_contract(self): pass\n")
-    def short_circuit_gate_result(self, argv, directory, timeout, env=None, *, suite=True, marker=True):
+        suite.write_text("class ShortCircuitTests:\n" + "".join(
+            f"    def {name}(self): pass\n" for name in self.REVIEWED_METHODS))
+
+    def short_circuit_gate_result(self, argv, directory, timeout, env=None, *, suite=True, marker=True,
+                                  suite_count=None):
         result = NolQuMcpCoreTests.c031_gate_result(self, argv, directory, timeout, env)
         if pathlib.Path(argv[-1]).stem == "c0_backend":
             if not marker:
                 result["stdout"] = result["stdout"].replace(
                     "PASS c0-short-circuit\n", "")
-            if not suite:
-                result["stderr"] = result["stderr"].replace(
-                    "\nRan 3 tests in 1.0s\n\nOK\n", "")
+            if not suite or suite_count is not None:
+                # The new suite follows the six legacy suites. Change only its
+                # summary; the old backend suite also has sixteen methods.
+                summaries = list(re.finditer(r"\nRan [0-9]+ tests in 1\.0s\n\nOK\n", result["stderr"]))
+                start, end = summaries[6].span()
+                summary = f"\nRan {suite_count} tests in 1.0s\n\nOK\n" if suite else ""
+                result["stderr"] = result["stderr"][:start] + summary + result["stderr"][end:]
             (directory / "stdout").write_text(result["stdout"])
             (directory / "stderr").write_text(result["stderr"])
         return result
@@ -2145,10 +2171,7 @@ class ShortCircuitProofTests(unittest.TestCase):
         self.assertTrue(accepted["short_circuit_verified"])
         self.assertTrue(accepted["evidence"]["unit_only_validation_control"])
         def truncated(*args, **kwargs):
-            result = self.short_circuit_gate_result(*args, **kwargs)
-            if pathlib.Path(args[0][-1]).stem == "c0_backend":
-                (args[1] / "stderr").write_text(result["stderr"].replace("Ran 3 tests", "Ran 2 tests"))
-            return result
+            return self.short_circuit_gate_result(*args, **kwargs, suite_count=15)
         with mock.patch.object(self.mcp, "_c031_command", side_effect=truncated), mock.patch.object(
                 self.mcp, "_c031_validate", side_effect=self.short_circuit_unit_validation) as validate:
             rejected = self.mcp.run_c0_backend_probe()
@@ -2156,6 +2179,60 @@ class ShortCircuitProofTests(unittest.TestCase):
         self.assertIs(rejected["short_circuit_verified"], False)
         self.assertIn("complete required unittest suites", rejected["blocker"])
         validate.assert_not_called()
+
+    def assert_short_circuit_source_rejected(self, source, *, suite_count=None):
+        # Mutation precedes _c031_inputs(), so the real outer fingerprint gate
+        # binds this source normally. Only the command/generation seams are fake.
+        (self.root / "tests/bootstrap/test_c0_short_circuit.py").write_text(source)
+        def command(*args, **kwargs):
+            return self.short_circuit_gate_result(*args, **kwargs, suite_count=suite_count)
+        with mock.patch.object(self.mcp, "_c031_command", side_effect=command), mock.patch.object(
+                self.mcp, "_c031_validate", side_effect=self.short_circuit_unit_validation) as validate:
+            result = self.mcp.run_c0_backend_probe()
+        self.assertFalse(result["ok"], "changed source inventory qualified with internally consistent evidence")
+        self.assertIs(result["short_circuit_verified"], False)
+        for flag in self.mcp._C031_FLAGS:
+            self.assertIs(result[flag], False, flag)
+        self.assertFalse(result["full_compiler_verified"])
+        self.assertFalse(result["self_hosting_verified"])
+        self.assertIn("short-circuit", result["blocker"])
+        validate.assert_not_called()
+
+    def test_short_circuit_gate_rejects_source_deleted_before_probe(self):
+        self.short_circuit_gate_fixture()
+        for failure in ("machine-bytes", "generation-only"):
+            methods = ([name for name in self.REVIEWED_METHODS
+                        if name != "test_exact_machine_bytes_and_branch_destinations"]
+                       if failure == "machine-bytes" else ["test_generation_short_circuit_contract"])
+            source = "class ShortCircuitTests:\n" + "".join(
+                f"    def {name}(self): pass\n" for name in methods)
+            # Both an honestly truncated log (15 or 1) and a claimed full log
+            # must be rejected, without reaching generation validation.
+            for suite_count in (None, 16):
+                with self.subTest(failure=failure, log="matching source" if suite_count is None else "claimed full"):
+                    self.assert_short_circuit_source_rejected(source, suite_count=suite_count)
+
+    def test_short_circuit_gate_rejects_source_renamed_before_probe(self):
+        self.short_circuit_gate_fixture()
+        suite = self.root / "tests/bootstrap/test_c0_short_circuit.py"
+        source = suite.read_text().replace("test_exact_machine_bytes_and_branch_destinations",
+                                           "test_machine_bytes_renamed")
+        self.assert_short_circuit_source_rejected(source)
+
+    def test_short_circuit_gate_rejects_duplicate_async_or_injected_methods(self):
+        self.short_circuit_gate_fixture()
+        original = (self.root / "tests/bootstrap/test_c0_short_circuit.py").read_text()
+        mutations = {
+            "duplicate": original + "    def test_exact_machine_bytes_and_branch_destinations(self): pass\n",
+            "async-required": original.replace("def test_exact_machine_bytes_and_branch_destinations",
+                                                "async def test_exact_machine_bytes_and_branch_destinations"),
+            "injected": original + "    def test_injected(self): pass\n",
+            "async-injected": original + "    async def test_injected(self): pass\n",
+            "assigned-injected": original + "    test_injected = lambda self: None\n",
+        }
+        for failure, source in mutations.items():
+            with self.subTest(failure=failure):
+                self.assert_short_circuit_source_rejected(source)
 
     def test_short_circuit_generation_requires_named_oracle(self):
         import copy

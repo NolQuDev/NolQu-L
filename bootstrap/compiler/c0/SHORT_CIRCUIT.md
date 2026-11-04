@@ -135,6 +135,12 @@ proof identities. The named tests in `test_c0_short_circuit.py`, retained
 bitwise/unary/native/return/capacity suites, paired B0 rebuilds and actual B/C
 oracles are required evidence. Proofs fail closed on missing/skipped methods,
 missing markers, stale identities, invalid streams or incomplete generations.
+The MCP gate requires the exact reviewed inventory of sixteen logical methods;
+a source file shortened before invocation cannot set its own passing count.
+The named B/C oracle checks results and counters with independent branches,
+including false RHS truth and visible selected output in both profiles. Its
+assertions do not depend on a conjunction being tested. A deliberate emitted
+AND mutation that always skips RHS must fail that oracle in both profiles.
 
 | Invariant | Required named tests |
 | --- | --- |

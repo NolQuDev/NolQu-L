@@ -19,15 +19,27 @@ separately. Absent/skipped/truncated tests or stale identities fail closed.
 No full-language Safety, Stable, Full Compiler or formal self-hosting promotion
 is implied. Current capacity, ABI, version and historical open incidents remain.
 
-The C0.36 exact PR tree passed all11 Linux gates:1090 main PASS markers retain
-all1089 baseline markers;140 MCP methods passed. The actual component receipt
-contains722 stages,275 checks,475 artifacts and6 comparisons, with45 ordered
-named methods on each B/C pair. All2641 recorded artifact/stream files and48
-source input identities were checked. The independent Native complete probe
-passed in 1681.0 seconds with TracerPid0 at both ends. Linux and
-Native component comparisons and input identities match. These counts describe
-bounded evidence and do not count every inner temporary oracle image as a
-separate parent receipt artifact.
+An earlier C0.36 cohort passed all eleven Linux gates: 1,090 main PASS markers
+retained all 1,089 baseline markers; 140 MCP methods passed. Its separate Native
+probe completed in 1,681.0 seconds with TracerPid 0 at both ends. Review then
+identified two proof gaps: a shortened test source could define its own suite
+count, and logical assertions could themselves skip oracle checks. Those
+successful runs remain execution evidence, not closure of the discovered gaps.
+The corrected gate requires the exact sixteen-method inventory. The named B/C
+oracle now uses independent checks, including selected output and `1 and 0`;
+a deliberate always-skip AND mutation must fail in both profiles. The changed
+proof inputs require fresh Linux and Native qualification before integration.
+
+The component receipt records 722 stages, 275 checks, 475 artifacts and six
+comparisons, with 45 ordered named methods on each B/C pair. Each qualification
+must check all 2,641 recorded artifact/stream files and 48 source identities.
+These parent counts do not count every inner temporary oracle image separately.
+
+Five alternating samples on the retained 83,849-byte C0.35 frontend source show
+Native backend median 1.443719 to 1.589191 seconds (+10.08%); its AST and ELF
+remain byte-identical. Independent compiler review accepted this explicit
+compile-time cost for the bounded validation/emission work. This is one measured
+workload, with no runtime speedup or peak-memory claim.
 
 A separate deterministic seed0xC036 campaign compares72 truth/effect cases
 across two profiles and logical/explicit-if forms:72 raw streams and6 ELF

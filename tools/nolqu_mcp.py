@@ -3858,6 +3858,24 @@ _C031_FLAGS = ("capacity_verified", "compiler_profile_verified", "component_gene
                "unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified")
 _C031_UNMEASURED = "next compiler workload not measured; Full Compiler remains NOT_IMPLEMENTED"
 _C036_SHORT_CIRCUIT_SELECTOR = "test_c0_short_circuit.ShortCircuitTests.test_generation_short_circuit_contract"
+_C036_SHORT_CIRCUIT_METHODS = (
+    "test_independent_wire_and_profiles",
+    "test_full_i64_truth_normalization",
+    "test_precedence_prefixes_and_left_associativity",
+    "test_exact_keywords_and_identifier_boundaries",
+    "test_left_to_right_selected_effects_once",
+    "test_skipped_streams_and_syscalls",
+    "test_nested_calls_preserve_pending_guards",
+    "test_loop_rechecks_lhs_and_selected_rhs",
+    "test_skipped_faults_and_selected_error_locations",
+    "test_skipped_static_semantic_safety_and_minimum_rejection",
+    "test_wire_versions_anchors_and_ownership_reject",
+    "test_high_u32_ids_offsets_and_guard_map",
+    "test_legacy_c035_bytes_unchanged",
+    "test_exact_machine_bytes_and_branch_destinations",
+    "test_finite_malformed_input_and_prefix_chains",
+    "test_generation_short_circuit_contract",
+)
 
 
 def _c036_short_circuit_methods() -> tuple[str, ...]:
@@ -3866,11 +3884,20 @@ def _c036_short_circuit_methods() -> tuple[str, ...]:
                if isinstance(node, ast.ClassDef) and node.name == "ShortCircuitTests"]
     if len(classes) != 1:
         raise ValueError("missing or duplicate short-circuit test class")
-    methods = tuple(node.name for node in classes[0].body
-                    if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"))
-    if len(methods) != len(set(methods)) or "test_generation_short_circuit_contract" not in methods:
-        raise ValueError("short-circuit suite has missing or duplicate required methods")
-    return methods
+    methods = [node for node in classes[0].body
+               if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test_")]
+    names = tuple(node.name for node in methods)
+    if (any(isinstance(node, ast.AsyncFunctionDef) for node in methods)
+            or len(names) != len(_C036_SHORT_CIRCUIT_METHODS)
+            or set(names) != set(_C036_SHORT_CIRCUIT_METHODS)):
+        raise ValueError("short-circuit suite does not match the reviewed inventory of 16 synchronous methods")
+    for node in classes[0].body:
+        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(isinstance(target, ast.Name) and target.id.startswith("test_")
+                   for binding in targets for target in ast.walk(binding)):
+                raise ValueError("short-circuit suite has an unexpected test method assignment")
+    return _C036_SHORT_CIRCUIT_METHODS
 
 
 def _c031_fingerprint(path: pathlib.Path) -> dict[str, Any]:
@@ -4553,8 +4580,9 @@ def _c031_proof() -> dict[str, Any]:
                             if summaries != [b"18", b"29", b"20", b"6"]:
                                 raise ValueError("capacity gate is missing complete required unittest suites")
                         if name == "c0_backend":
+                            short_circuit_methods = _c036_short_circuit_methods()
                             summaries = re.findall(rb"\nRan ([0-9]+) tests? in [0-9.]+s\n\nOK\n", error_output)
-                            short_circuit_count = str(len(_c036_short_circuit_methods())).encode()
+                            short_circuit_count = str(len(short_circuit_methods)).encode()
                             if summaries != [b"16", b"13", b"17", b"9", b"11", b"12", short_circuit_count, b"13", b"29", b"23"]:
                                 raise ValueError("backend gate is missing complete required unittest suites")
                         if _c031_inputs() != before:

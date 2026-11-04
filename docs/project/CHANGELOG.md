@@ -16,6 +16,12 @@
 
 ### Validation
 
+- Require the reviewed sixteen-method C0.36 inventory before accepting suite
+  counts, including source deletion/rename controls. Strengthen the actual B/C
+  logical oracle with independent result/effect checks so incorrect RHS skipping
+  cannot bypass its own assertions. Preserve earlier evidence and repeat
+  qualification when those proof inputs change.
+
 - Complete the existing offline smoke+differential profile in genuine untraced
   Native Termux and PRoot: 15 checks, 326 invocations and 96 oracle matches in
   each. Compare all 978 streams and 107 generated ELF files byte-for-byte;
