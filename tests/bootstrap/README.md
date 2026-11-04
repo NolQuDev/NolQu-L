@@ -61,6 +61,10 @@ Current coverage:
   output gate accepts the highest fixture-representable artifact at 589,808
   bytes and rejects the next 18-byte step; the patch gate accepts exactly
   5,376 accesses and rejects 5,377, with no B0 grammar growth
+- C0.36 logical gate: independent NQAF/9 packets, normalized full-width truth,
+  skipped/selected effects and faults, static validation of both operands,
+  exact conditional branch bodies, prior byte parity and a named actual B/C
+  oracle. Complete new marker/suite/selector evidence is mandatory.
 - C0.35 bitwise gate: independent NQAF/8 packets, all-64-bit Python value
   oracles, precedence/eager effects, unary ownership, checked operand faults,
   unsafe/range containment, legacy bytes and exact instruction encodings. The

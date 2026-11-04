@@ -32,6 +32,8 @@ C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_unary_negation.
 printf 'PASS c0-unary-negation\n'
 C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_bitwise.py"
 printf 'PASS c0-bitwise\n'
+C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_short_circuit.py"
+printf 'PASS c0-short-circuit\n'
 C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_runtime_io.py" RuntimeTests
 printf 'PASS c0-runtime-io\n'
 C0_BACKEND="$backend" python3 "$ROOT_DIR/tests/bootstrap/test_c0_capacity_backend.py"

@@ -1,6 +1,8 @@
 # NolQu-L Reference 1.0.2a1
 
-This document describes the user-facing NolQu-L syntax and behavior as of `1.0.2a1`.
+This document describes the Reference Compiler R0 surface. Current project
+metadata is `1.0.0-alpha.1`, channel `dev`; historical `1.0.2a1` descriptions
+do not define the active version.
 
 It does not treat every parser feature as equally stable. For the official status split, see [CORE_LANGUAGE.md](CORE_LANGUAGE.md) and [FEATURE_STATUS.md](FEATURE_STATUS.md).
 
@@ -132,6 +134,15 @@ Supported comparison operators:
 - `!=`
 - `>=`
 - `<=`
+
+Canonical experimental C0.36 accepts logical expressions in all expression
+positions. Zero is false, any other i64 value true; `and`, `or` and prefix
+`not` produce exactly 0/1. `and` binds below bitwise OR and above `or`; `not`
+shares the right-associative prefix level with `-`/`~`. Both operands are
+statically checked, and runtime evaluation skips the unneeded RHS. The exact
+logical words are newly reserved in Core source. R0 condition grammar below
+retains its historical scope; see the
+[Core contract](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md).
 
 Condition clauses may be combined with `and` and `or`. They short-circuit from
 left to right, so skipped clauses do not run their expressions. A leading `not`

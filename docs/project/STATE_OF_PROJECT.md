@@ -26,8 +26,8 @@ outside the canonical compiler stages.
 - Bootstrap Compiler B0: `PASS`
 - Core Compiler C0.25 source-driven bounded expression parser: `PASS`
 - C0.31 capacity/access foundation: completed and verified within its original scope
-- C0.35 source frontend (B0-built, NQAF/1..8): eager i64 bitwise, checked unary negation and structural returns, experimental
-- C0.35 AST backend (checked ELF/native argv/syscalls/unary/bitwise): scoped/generation tests pass, experimental
+- C0.36 source frontend (B0-built, NQAF/1..9): short-circuit logic, eager i64 bitwise, checked unary negation and structural returns, experimental
+- C0.36 AST backend (checked ELF/native argv/syscalls/unary/bitwise/logical): scoped/generation tests pass, experimental
 - C0.35 bitwise source, wire ownership, exact machine cost and the matched-pair
   upgrade are specified in [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md).
   The required gate adds twelve methods and one named oracle on each actual B/C pair.

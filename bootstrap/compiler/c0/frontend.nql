@@ -1,5 +1,6 @@
-# C0.35 source-to-AST frontend with structural definite return, built by B0 --compiler-profile.
+# C0.36 source-to-AST frontend with logical expressions, built by B0 --compiler-profile.
 # Legacy NQAF/1..5 is unchanged; native scopes/operations use NQAF/6 dialect5.
+# Exact logical keywords select NQAF/9 dialect8; prefixes remain identifiers.
 # Flat state transitions are intentional: B0 has no nested statement blocks.
 fn main() {
     let got = input_read(1180288, 16)
@@ -101,6 +102,11 @@ fn main() {
         ch = (temp == 5) * (byte_load(start) == 119) * (byte_load(start + 1) == 104)
         ch = ch * (byte_load(start + 2) == 105) * (byte_load(start + 3) == 108)
         index = index + 4 * ch * (byte_load(start + 4) == 101)
+        ch = (temp == 3) * (byte_load(start) == 97) * (byte_load(start + 1) == 110)
+        index = index + 48 * ch * (byte_load(start + 2) == 100)
+        index = index + 49 * (temp == 2) * (byte_load(start) == 111) * (byte_load(start + 1) == 114)
+        ch = (temp == 3) * (byte_load(start) == 110) * (byte_load(start + 1) == 111)
+        index = index + 50 * ch * (byte_load(start + 2) == 116)
         kind = kind + index * byte_load(1180208) + 5 * byte_load(1180209)
         ch = byte_load(pos)
 
@@ -176,7 +182,7 @@ fn main() {
         index = pos + 2 * (pos + 2 <= tokens)
         active = active + temp * (byte_load(327680 + index * 12) != 11) + (1 < state)
         # Contextual scopes require function envelopes even without any call.
-        # No lexer keyword is reserved: ordinary unsafe identifiers retain bytes.
+        # Unsafe stays contextual: ordinary unsafe identifiers retain bytes.
         temp = (kind == 4) * (ch == 6) * (byte_load(327680 + (pos + 1) * 12) == 12) * (operators == 0)
         temp = temp * (byte_load(start) == 117) * (byte_load(start + 1) == 110) * (byte_load(start + 2) == 115)
         temp = temp * (byte_load(start + 3) == 97) * (byte_load(start + 4) == 102) * (byte_load(start + 5) == 101)
@@ -190,6 +196,9 @@ fn main() {
         active = active + temp
         temp = (48 <= kind) * (kind <= 51)
         byte_store(1180262, (byte_load(1180262) + temp) != 0)
+        active = active + temp
+        temp = (52 <= kind) * (kind <= 54)
+        byte_store(1180263, (byte_load(1180263) + temp) != 0)
         active = active + temp
         byte_store(1180161, (byte_load(1180161) + active) != 0)
         pos = pos + 1
@@ -218,7 +227,8 @@ fn main() {
     # header-start offset per node, written only for a bounded kind45 allocation.
     # [0x6a0000,0x6b0000) holds one exact native-name class byte per node.
     # Both end before inactive stores at 0x7ff000 and inside the 16 MiB arena.
-    # Scratch [1180240,1180264) is free within [0x120000,0x130000).
+    # Scratch [1180240,1180264) is within [0x120000,0x130000).
+    # 1180263 selects logical function envelopes and NQAF/9 dialect8.
     # Action18 opens unsafe directly into statement state5; action9 closes it.
     while ok * (state != 13) {
         kind = byte_load(327680 + pos * 12)
@@ -292,11 +302,12 @@ fn main() {
         active = byte_load(1180202) == 8
         byte_store(1180203, active * byte_load(1179668))
         byte_store(1180204, active * (byte_load(1179668) == 0))
-        byte_store(1180205, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50))
+        byte_store(1180205, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (kind == 52) + (kind == 53))
         byte_store(1180206, byte_load(4194312 + operators * 12))
-        temp = 6 * ((kind == 15) + (kind == 17)) + 7 * ((kind == 16) + (kind == 18))
-        temp = temp + 5 * (20 <= kind) * (kind <= 23) + 4 * ((kind == 24) + (kind == 25))
-        temp = temp + 3 * (kind == 48) + 2 * (kind == 49) + (kind == 50)
+        temp = 8 * ((kind == 15) + (kind == 17)) + 9 * ((kind == 16) + (kind == 18))
+        temp = temp + 7 * (20 <= kind) * (kind <= 23) + 6 * ((kind == 24) + (kind == 25))
+        temp = temp + 5 * (kind == 48) + 4 * (kind == 49) + 3 * (kind == 50)
+        temp = temp + 2 * (kind == 52) + (kind == 53)
         byte_store(1180207, temp)
         index = (kind == 2) + (kind == 3) + (kind == 6) + (kind == 8) + (kind == 13) + (kind == 14) + (kind == 0)
         index = index + (kind == 4) * (byte_load(327680 + (pos + (pos < tokens)) * 12) == 19) + byte_load(1180222) + byte_load(1180240)
@@ -313,8 +324,8 @@ fn main() {
 
         # A prefix remains on the existing operator stack while its operand
         # (including a complete call/group) is parsed. Equal prefix precedence
-        # is never reduced on a push: prefix -/~ is right-associative.
-        temp = byte_load(1180203) * ((kind == 17) + (kind == 51))
+        # is never reduced on a push: prefix -/~/not is right-associative.
+        temp = byte_load(1180203) * ((kind == 17) + (kind == 51) + (kind == 54))
         byte_store(1180200, byte_load(1180200) + 19 * temp)
 
         # Reduce left-associatively while the top precedence is at least incoming.
@@ -336,7 +347,7 @@ fn main() {
         byte_store(1180200, byte_load(1180200) + temp * (5 * index + 6 * (operators == 0)))
 
         # Reuse reduction dispatch, but unary consumes one operand, not two.
-        temp = (byte_load(1180200) == 5) * ((byte_load(1180206) == 47) + (byte_load(1180206) == 51))
+        temp = (byte_load(1180200) == 5) * ((byte_load(1180206) == 47) + (byte_load(1180206) == 51) + (byte_load(1180206) == 54))
         byte_store(1180200, byte_load(1180200) + 15 * temp)
 
         # Delimiters are structured statement records, not arbitrary jump targets.
@@ -410,7 +421,7 @@ fn main() {
         temp = byte_load(327684 + index * 12) + 256 * byte_load(327685 + index * 12) + 65536 * byte_load(327684 + index * 12 + 2) + 16777216 * byte_load(327684 + index * 12 + 3)
         start = start * ((active == 1) + (active == 8) + (active == 9) + (active == 10) + (active == 11) + (active == 12) + (active == 15) + (active == 18)) + temp * ((active == 5) + (active == 16) + (active == 20))
         temp = byte_load(327688 + index * 12) + 256 * byte_load(327689 + index * 12) + 65536 * byte_load(327688 + index * 12 + 2) + 16777216 * byte_load(327688 + index * 12 + 3)
-        # Saved operator/callee spans retain all four bytes.
+        # Saved operator/callee spans retain all four bytes and keyword widths.
         byte_store(1180224, temp)
         byte_store(1180225, temp / 256)
         byte_store(1180226, temp / 65536)
@@ -516,8 +527,8 @@ fn main() {
         byte_store(index + 1, pos / 256)
         byte_store(index + 2, pos / 65536)
         byte_store(index + 3, pos / 16777216)
-        byte_store(index + 8, byte_load(327680 + pos * 12) * (active != 14) * (active != 19) + 42 * (active == 14) + (47 + 4 * (byte_load(327680 + pos * 12) == 51)) * (active == 19))
-        byte_store(index + 9, byte_load(1180207) * (active != 19) + 8 * (active == 19))
+        byte_store(index + 8, byte_load(327680 + pos * 12) * (active != 14) * (active != 19) + 42 * (active == 14) + (47 + 4 * (byte_load(327680 + pos * 12) == 51) + 7 * (byte_load(327680 + pos * 12) == 54)) * (active == 19))
+        byte_store(index + 9, byte_load(1180207) * (active != 19) + 10 * (active == 19))
         temp = (active == 14) * ok
         index = (5373952 + operators * 16) * temp + 8384512 * (temp == 0)
         byte_store(index, values)
@@ -725,17 +736,18 @@ fn main() {
 
     # Header/body are emitted only after the complete parse. Wide nodes stay
     # in place. All legacy spans/IDs fit u16 because these three bounds hold.
-    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261) + byte_load(1180262)) != 0
+    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261) + byte_load(1180262) + byte_load(1180263)) != 0
     byte_store(1180165, active)
     kind = (1 + byte_load(1180162)) * (byte_load(1180161) == 0) + 3 * byte_load(1180161) + byte_load(1180160)
     kind = kind * (byte_load(1180260) == 0) + 5 * byte_load(1180260)
     kind = kind * (byte_load(1180261) == 0) + 6 * byte_load(1180261)
     kind = kind * (byte_load(1180262) == 0) + 7 * byte_load(1180262)
+    kind = kind * (byte_load(1180263) == 0) + 8 * byte_load(1180263)
     byte_store(6553600, 78)
     byte_store(6553601, 81)
     byte_store(6553602, 65)
     byte_store(6553603, 70)
-    byte_store(6553604, (((kind * (active == 0) + 5 * active) * (byte_load(1180260) == 0) + 6 * byte_load(1180260)) * (byte_load(1180261) == 0) + 7 * byte_load(1180261)) * (byte_load(1180262) == 0) + 8 * byte_load(1180262))
+    byte_store(6553604, ((((kind * (active == 0) + 5 * active) * (byte_load(1180260) == 0) + 6 * byte_load(1180260)) * (byte_load(1180261) == 0) + 7 * byte_load(1180261)) * (byte_load(1180262) == 0) + 8 * byte_load(1180262)) * (byte_load(1180263) == 0) + 9 * byte_load(1180263))
     byte_store(6553605, 16 + 16 * active)
     byte_store(6553608, count)
     byte_store(6553609, count / 256)

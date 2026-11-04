@@ -6,6 +6,47 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
+## C0.36 Short-Circuit Qualification Contract
+
+[SHORT_CIRCUIT.md](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md) defines
+normalized i64 truth, conditional RHS effects, static validation of both
+operands, exact keyword migration, NQAF/9 dialect8, machine cost and
+SC01..SC06. All earlier checks remain required. The new scoped logical suite,
+its complete marker and an additional named actual B/C oracle are required
+proof inputs; metadata-only reads retain `short_circuit_verified=false`.
+Review, exact-source Linux CI and actual untraced Native proof must be reported
+separately. Absent/skipped/truncated tests or stale identities fail closed.
+No full-language Safety, Stable, Full Compiler or formal self-hosting promotion
+is implied. Current capacity, ABI, version and historical open incidents remain.
+
+An earlier C0.36 cohort passed all eleven Linux gates: 1,090 main PASS markers
+retained all 1,089 baseline markers; 140 MCP methods passed. Its separate Native
+probe completed in 1,681.0 seconds with TracerPid 0 at both ends. Review then
+identified two proof gaps: a shortened test source could define its own suite
+count, and logical assertions could themselves skip oracle checks. Those
+successful runs remain execution evidence, not closure of the discovered gaps.
+The corrected gate requires the exact sixteen-method inventory. The named B/C
+oracle now uses independent checks, including selected output and `1 and 0`;
+a deliberate always-skip AND mutation must fail in both profiles. The changed
+proof inputs require fresh Linux and Native qualification before integration.
+
+The component receipt records 722 stages, 275 checks, 475 artifacts and six
+comparisons, with 45 ordered named methods on each B/C pair. Each qualification
+must check all 2,641 recorded artifact/stream files and 48 source identities.
+These parent counts do not count every inner temporary oracle image separately.
+
+Five alternating samples on the retained 83,849-byte C0.35 frontend source show
+Native backend median 1.443719 to 1.589191 seconds (+10.08%); its AST and ELF
+remain byte-identical. Independent compiler review accepted this explicit
+compile-time cost for the bounded validation/emission work. This is one measured
+workload, with no runtime speedup or peak-memory claim.
+
+A separate deterministic seed0xC036 campaign compares72 truth/effect cases
+across two profiles and logical/explicit-if forms:72 raw streams and6 ELF
+pairs match across PRoot and Native. Coverage is not measured; no exhaustive
+fuzzing, applicable NolQu-L sanitizer or whole-language Safety claim is made.
+The current scope stays experimental; historical C032-SIGNAL-01 remains OPEN.
+
 ## C0.35 Bitwise Qualification Contract
 
 The experimental pair adds signed i64 `&`, `^`, `|` and unary `~` through

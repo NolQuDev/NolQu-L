@@ -4,7 +4,7 @@ Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
 below describe those historical runs; no release or bootstrap promotion occurs.
 
-The experimental C0.35 frontend/backend can be selected through the existing
+The experimental C0.36 frontend/backend can be selected through the existing
 `nqlc`, `nql`, installed commands and MCP tools. Default source behavior remains
 `nasm`/Reference Compiler R0. This connects implemented components to public
 commands; Full Compiler, self-hosting and Verified status remain false.
@@ -30,6 +30,13 @@ C0.35 adds `&`, `^`, `|` and prefix `~` over all 64 bits. These are eager
 operations; they do not introduce short-circuit logic or shifts. Bitwise source
 selects NQAF/8 dialect7 and retains checked arithmetic in its operands. See
 [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md) for precedence and examples.
+
+C0.36 adds `and`, `or`, and prefix `not` as normalized i64 expressions.
+Binary logical operands short-circuit; static checking still covers both sides.
+Exact logical names are newly reserved Core keywords. A matching /9 dialect8
+component pair is required; all earlier wire versions retain their contract.
+See [SHORT_CIRCUIT.md](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md) for
+precedence, migration and qualification. Existing commands/flags are unchanged.
 
 ## Compile, Check And Run
 

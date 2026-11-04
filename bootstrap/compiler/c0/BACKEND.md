@@ -1,5 +1,17 @@
 # C0 AST Backend
 
+## C0.36: Conditional Logical Emission
+
+NQAF/9 dialect8 adds logical kinds52/53/54 while accepting /1..8.
+Independent topology, keyword/identifier boundary, source unsafe containment
+and semantic checks precede ELF output. A bounded LHS-to-parent map in existing
+spare arena `[0x790000,0x7d0000)` schedules each guard before the entire RHS.
+The normalized parent slot and resolved rel32 join preserve conditional effects,
+liveness and complete loop-condition reevaluation. New exact keyword names
+are reserved in Core source and /9 identifier anchors; old wire keeps its rules.
+[SHORT_CIRCUIT.md](SHORT_CIRCUIT.md) defines machine bytes/cost, migration,
+SC01..SC06 and paired qualification/rollback. No capacity or ABI change.
+
 ## C0.35: Independent Bitwise Validation And Codegen
 
 The experimental backend accepts NQAF/8, wide32/dialect7, profile0/1 with zero
@@ -143,6 +155,7 @@ the generated program. Intervals are half-open.
 | `[0x600000,0x680000)` | C0.32 eight-byte per-node native ownership/source metadata |
 | `[0x680000,0x690000)` | Control stack, state and compiler diagnostics |
 | `[0x690000,0x790000)` | C0.32 u32 source-brace correspondence table |
+| `[0x790000,0x7d0000)` | C0.36 u32 logical parent by unique LHS root |
 | `[0x7ff000,0x7ff100)` | Inactive stores, never semantic state |
 | `[0x800000,0x1000000)` | ELF buffer, at most 8 MiB |
 
