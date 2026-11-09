@@ -208,8 +208,18 @@ class Result:
 class BoundedRunner:
     def __init__(self, directory, *, timeout=5.0, budget=300.0,
                  output_limit=8 * 1024 * 1024, max_input=3 * 1024 * 1024):
-        if timeout <= 0 or budget <= 0 or output_limit <= 0 or max_input < 0:
-            raise ValueError("invalid assurance limits")
+        # Validate before acquiring evidence; NaN bypasses ordinary comparisons.
+        try:
+            valid_times = all(type(value) in (int, float) and value > 0 and math.isfinite(value)
+                              for value in (timeout, budget))
+        except OverflowError:
+            valid_times = False
+        if not valid_times:
+            raise ValueError("invalid assurance limits: timeout and budget must be finite positive numbers")
+        if type(output_limit) is not int or output_limit <= 0 or \
+                type(max_input) is not int or max_input < 0:
+            raise ValueError("invalid assurance limits: output_limit must be a positive integer "
+                             "and max_input a nonnegative integer")
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=False)
         self.timeout = timeout
