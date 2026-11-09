@@ -6,6 +6,22 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
+## Host Runner Limit Contract
+
+The host-only `BoundedRunner` validates its policy before creating an evidence
+directory. `timeout` and `budget` must be finite positive builtin integers or
+floats; booleans, NaN, infinities and unrepresentable time integers are rejected.
+`output_limit` must be a positive builtin integer and `max_input` a nonnegative
+builtin integer. Invalid policies raise a domain-specific `ValueError`; they
+are not coerced, clamped or replaced with defaults. Zero permitted input and
+fractional positive seconds remain supported.
+
+The runner controls exercise invalid policy rejection without filesystem
+effects, actual binary/status behavior under valid limits, and the existing
+timeout, signal, cancellation, cleanup and retained-evidence paths. These are
+host reliability checks, not a memory sandbox, canonical compiler change or
+attribution of the historical `C032-SIGNAL-01`, which remains OPEN.
+
 ## C0.37 Checked Shift Qualification Contract
 
 [SHIFTS.md](../../bootstrap/compiler/c0/SHIFTS.md) defines SH01..SH06: eager

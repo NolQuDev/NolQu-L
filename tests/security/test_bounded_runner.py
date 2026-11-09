@@ -26,6 +26,58 @@ class BoundedRunnerTests(unittest.TestCase):
     def runner(self, **options):
         return BoundedRunner(self.directory, **options)
 
+    def test_invalid_time_limits_fail_before_evidence_creation(self):
+        # Removing finite/domain validation must admit NaN/Inf or create files.
+        invalid = (0, -1, float('nan'), float('inf'), -float('inf'),
+                   True, False, '5', None, 10 ** 400)
+        for field in ('timeout', 'budget'):
+            for index, value in enumerate(invalid):
+                with self.subTest(field=field, value=repr(value)):
+                    directory = Path(self.tmp.name) / f'time-{field}-{index}'
+                    error = None
+                    try:
+                        BoundedRunner(directory, **{field: value})
+                    except Exception as caught:
+                        error = caught
+                    self.assertIsInstance(error, ValueError)
+                    self.assertIn('timeout', str(error))
+                    self.assertIn('budget', str(error))
+                    self.assertFalse(directory.exists(), 'invalid policy created evidence')
+
+    def test_invalid_byte_limits_fail_before_evidence_creation(self):
+        # Counts cannot be fractional/NaN/bool; invalid bounds have no mkdir effect.
+        invalid = (-1, 1.5, float('nan'), float('inf'), -float('inf'),
+                   True, False, '5', None)
+        for field in ('output_limit', 'max_input'):
+            values = (0, *invalid) if field == 'output_limit' else invalid
+            for index, value in enumerate(values):
+                with self.subTest(field=field, value=repr(value)):
+                    directory = Path(self.tmp.name) / f'bytes-{field}-{index}'
+                    error = None
+                    try:
+                        BoundedRunner(directory, **{field: value})
+                    except Exception as caught:
+                        error = caught
+                    self.assertIsInstance(error, ValueError)
+                    self.assertIn('output_limit', str(error))
+                    self.assertIn('max_input', str(error))
+                    self.assertFalse(directory.exists(), 'invalid policy created evidence')
+
+    def test_valid_fractional_time_and_zero_input_preserve_streams(self):
+        # Rejecting all floats or treating a zero input bound as invalid breaks this.
+        runner = self.runner(timeout=2.5, budget=5, output_limit=4096, max_input=0)
+        result = runner.run('finite-policy', [sys.executable, '-c',
+                            "import sys;assert sys.stdin.buffer.read()==b'';"
+                            "sys.stdout.buffer.write(b'\\x00NQL\\xff');"
+                            "sys.stderr.write('limits-ok\\n');sys.exit(7)"], b'')
+        self.assertEqual((result.returncode, result.stdout, result.stderr),
+                         (7, b'\x00NQL\xff', b'limits-ok\n'))
+        record = runner.records[0]
+        self.assertTrue(record['supervisor_ok'])
+        self.assertEqual((self.directory / record['input']['path']).read_bytes(), b'')
+        self.assertEqual((self.directory / record['stdout']['path']).read_bytes(), b'\x00NQL\xff')
+        self.assertEqual((self.directory / record['stderr']['path']).read_bytes(), b'limits-ok\n')
+
     def test_nonzero_status_and_binary_streams_are_preserved(self):
         runner = self.runner()
         result = runner.run("nonzero", [sys.executable, "-c",

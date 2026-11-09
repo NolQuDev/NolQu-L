@@ -93,6 +93,13 @@
 
 ### Fixed
 
+- Reject invalid host-runner time and byte policies before creating evidence.
+  NaN/infinite budgets can no longer bypass expiry/input checks, and fractional
+  or boolean byte counts fail with a controlled domain error. Preserve valid
+  fractional seconds, zero permitted input, child lifecycle and exact streams.
+  This changes no compiler source, seed, ABI or public version and does not
+  identify the cause of the historical signal incident.
+
 - Set the machine-trace JSON evidence mode explicitly to 0644. A private host
   umask previously produced 0600 originals that the unchanged strict MCP proof
   consumer correctly rejected. Exercise the export under umask 077 and retain
