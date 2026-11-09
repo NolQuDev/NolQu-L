@@ -198,7 +198,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertFalse(result["semantic_resolution_verified"])
             self.assertFalse(result["codegen_verified"])
-            self.assertEqual(result["backend_version"], "C0.36")
+            self.assertEqual(result["backend_version"], "C0.37")
             self.assertEqual(result["source_capacity"], 262144)
             self.assertEqual(result["token_capacity"], 65536)
             self.assertEqual(result["node_capacity"], 65536)
@@ -252,7 +252,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             result = self.mcp.run_c0_frontend_probe()
         self.assertFalse(result["ok"])
         self.assertEqual(result["probe_status"], "UNEXPECTED_RESULT")
-        self.assertEqual(result["frontend_version"], "C0.36")
+        self.assertEqual(result["frontend_version"], "C0.37")
         self.assertIn("NQAF/5", result["format"])
         self.assertIn("NQAF/8", result["format"])
         self.assertIn("NQAF/9", result["format"])
@@ -298,7 +298,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
     def assert_c031_unverified(self, result):
         for field in ("capacity_verified", "compiler_profile_verified",
                       "component_generation_verified", "unsafe_blocks_verified", "process_arguments_verified",
-                      "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified", "full_compiler_verified",
+                      "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified", "shifts_verified", "full_compiler_verified",
                       "self_hosting_verified"):
             self.assertIn(field, result, field)
             self.assertIs(result[field], False, field)
@@ -309,7 +309,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             "c0_frontend": "PASS c0-frontend\n",
             "c0_backend": ("PASS c0-control-flow\nPASS c0-functions\nPASS c0-return-flow\nPASS c0-unary-negation\nPASS c0-bitwise\nPASS c0-short-circuit\nPASS c0-runtime-io\n"
                            "PASS c0-capacity-backend\nPASS c0-native-os\nPASS c0-backend\n"),
-            "c0_capacity": "PASS c0-capacity\nPASS c0-component-generations\n",
+            "c0_capacity": "PASS c0-shifts\nPASS c0-capacity\nPASS c0-component-generations\n",
         }
         name = pathlib.Path(command[-1]).stem
         directory.mkdir()
@@ -321,7 +321,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
                          if isinstance(node, ast.ClassDef) and node.name == "ShortCircuitTests")
             methods = [node.name for node in suite.body
                        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")]
-        stderr = ("".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (18, 29, 20, 6))
+        stderr = ("".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (18, 29, 20, 18, 6))
                   if name == "c0_capacity" else "".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (16,13,17,9,11,12,len(methods),13,29,23)) if name == "c0_backend" else "")
         (directory / "stdout").write_text(stdout)
         (directory / "stderr").write_text(stderr)
@@ -2092,15 +2092,15 @@ class ShortCircuitProofTests(unittest.TestCase):
             (directory / (component + ".nql")).write_text("# source presence only\n")
         with mock.patch.object(self.mcp, "_c031_proof", side_effect=AssertionError("metadata ran proof")):
             status = self.mcp.canonical_bootstrap_status()
-            self.assertEqual((status["current_frontend"], status["current_backend"]), ("C0.36", "C0.36"))
+            self.assertEqual((status["current_frontend"], status["current_backend"]), ("C0.37", "C0.37"))
             for result in (status, self.mcp.run_c0_frontend_probe(), self.mcp.run_c0_backend_probe()):
                 self.assertIs(result.get("short_circuit_verified"), False)
                 self.assertFalse(result["full_compiler_verified"])
                 self.assertFalse(result["self_hosting_verified"])
             frontend = self.mcp.run_c0_frontend_probe()
             backend = self.mcp.run_c0_backend_probe()
-            self.assertEqual(frontend["frontend_version"], "C0.36")
-            self.assertEqual(backend["backend_version"], "C0.36")
+            self.assertEqual(frontend["frontend_version"], "C0.37")
+            self.assertEqual(backend["backend_version"], "C0.37")
             self.assertIn("NQAF/9", frontend["format"])
             self.assertIn("NQAF/9", backend["input_format"])
             for meaning in ("short-circuit", "and evaluates right iff left is nonzero",
@@ -2272,6 +2272,327 @@ class ShortCircuitProofTests(unittest.TestCase):
                         self.mcp._c031_validate(self.receipt_path.parent.parent, self.before)
 
 
+class ShiftProofTests(unittest.TestCase):
+    """C0.37 consumer controls; synthetic receipts never qualify compilers."""
+
+    REVIEWED_METHODS = (
+        "test_independent_wire_and_version",
+        "test_precedence_and_associativity",
+        "test_all_bits_against_independent_integer_oracle",
+        "test_eager_left_to_right_effects_once",
+        "test_loop_condition_and_nested_calls",
+        "test_invalid_counts_full_i64_and_diagnostic",
+        "test_fault_order_and_unselected_paths",
+        "test_static_validation_in_skipped_shifts",
+        "test_minimum_literal_permission_is_negate_only",
+        "test_malformed_source_and_maximal_munch",
+        "test_malformed_wire_anchors_and_fields",
+        "test_malformed_wire_topology_and_truncation",
+        "test_version_dialect_profile_and_logical_compatibility",
+        "test_legacy_c036_bytes",
+        "test_exact_machine_bytes_and_sensitivity",
+        "test_generation_shift_contract",
+        "test_generation_wrongcode_sensitivity",
+        "test_located_diagnostic_and_write_failure",
+    )
+    SHIFT_SELECTOR = "test_c0_shifts.ShiftTests.test_generation_shift_contract"
+    # Independently frozen old45, not inferred from the producer's current AST.
+    OLD_SELECTORS = (
+        "test_c0_return_flow.ReturnFlowTests.test_generation_return_flow_contract",
+        "test_c0_unary_negation.UnaryNegationTests.test_generation_unary_contract",
+        "test_c0_bitwise.BitwiseTests.test_generation_bitwise_contract",
+        "test_c0_short_circuit.ShortCircuitTests.test_generation_short_circuit_contract",
+        "test_c0_capacity_backend.CapacityBackendTests.test_wide_header_and_graph_mutations",
+        "test_c0_capacity_backend.CapacityBackendTests.test_legacy_byte_parity_and_limits",
+        "test_c0_capacity_backend.CapacityBackendTests.test_high_global_ids_use_local_frames",
+        "test_c0_capacity_backend.CapacityBackendTests.test_intrinsic_ids_do_not_alias_user_nodes",
+        "test_c0_capacity_backend.CapacityBackendTests.test_wide_name_resolution_and_scope",
+        "test_c0_capacity_backend.CapacityBackendTests.test_fragmented_stream_waits_for_eof",
+        "test_c0_capacity_frontend.CapacityFrontendTests.test_frozen_predecessor_limits_and_legacy_bytes",
+        "test_c0_capacity_frontend.CapacityFrontendTests.test_long_binding_and_callee_lengths",
+        "test_c0_capacity_frontend.CapacityFrontendTests.test_fragmented_profile_header_keeps_source_offsets",
+        "test_c0_capacity_frontend.CapacityFrontendTests.test_waits_for_eof_after_valid_prefix",
+        "test_c0_backend.BackendTests.test_invalid_headers_and_framing",
+        "test_c0_backend.BackendTests.test_invalid_nodes_and_graphs",
+        "test_c0_backend.BackendTests.test_statement_local_postorder_is_required",
+        "test_c0_runtime_io.RuntimeTests.test_stdio_and_eof",
+        "test_c0_runtime_io.RuntimeTests.test_descriptor_errors",
+        "test_c0_compiler_profile.CompilerProfileTests.test_live_pipe_read_preserves_short_count_without_eof",
+        "test_c0_compiler_profile.CompilerProfileTests.test_real_closed_descriptors",
+        "test_c0_compiler_profile.CompilerProfileTests.test_empty_end_ranges_do_not_touch_descriptors",
+        "test_c0_native_frontend.NativeFrontendTests.test_unsafe_scope_and_header",
+        "test_c0_native_frontend.NativeFrontendTests.test_native_transport_and_shadows",
+        "test_c0_native_frontend.NativeFrontendTests.test_raw_calls_need_owning_unsafe_scope",
+        "test_c0_native_frontend.NativeFrontendTests.test_nested_scope_limits",
+        "test_c0_native_frontend.NativeFrontendTests.test_legacy_output_unchanged",
+        "test_c0_native_frontend.NativeFrontendTests.test_frontend_errors_and_offsets",
+        "test_c0_native_backend.NativeBackendTests.test_frozen_c031_baseline_is_independent",
+        "test_c0_native_backend.NativeBackendTests.test_frozen_c031_byte_parity",
+        "test_c0_native_backend.NativeBackendTests.test_wire_scope_ownership_mutations",
+        "test_c0_native_backend.NativeBackendTests.test_legacy_versions_cannot_enable_native_ops",
+        "test_c0_native_backend.NativeBackendTests.test_source_header_is_independently_validated",
+        "test_c0_native_backend.NativeBackendTests.test_shadow_resolution_and_arity",
+        "test_c0_native_runtime.NativeRuntimeTests.test_argv_exact_bytes_and_bounds",
+        "test_c0_native_runtime.NativeRuntimeTests.test_raw_errors_and_frame_range",
+        "test_c0_native_runtime.NativeRuntimeTests.test_six_register_file_mmap",
+        "test_c0_native_runtime.NativeRuntimeTests.test_callee_saved_and_alignment",
+        "test_c0_native_runtime.NativeRuntimeTests.test_arena_profiles_and_cleanup",
+        "test_c0_native_runtime.NativeRuntimeTests.test_raw_io_progress",
+        "test_c0_native_program.NativeProgramTests.test_stdin_and_literal_binary_files",
+        "test_c0_native_program.NativeProgramTests.test_missing_read_and_write_errors_stop",
+        "test_c0_native_program.NativeProgramTests.test_acquired_descriptor_zero_is_closed",
+        "test_c0_native_program.NativeProgramTests.test_caller_retries_io_but_never_retries_close",
+        "test_c0_native_program.NativeProgramTests.test_argument_copy_limit_is_explicit",
+    )
+
+    setUp = NolQuMcpCoreTests.setUp
+    tearDown = NolQuMcpCoreTests.tearDown
+    c031_probe_fixture = NolQuMcpCoreTests.c031_probe_fixture
+    machine_fixture = ShortCircuitProofTests.machine_fixture
+    unit_validation = ShortCircuitProofTests.short_circuit_unit_validation
+
+    def shift_fixture(self):
+        self.c031_probe_fixture()
+        (self.root / "tests/bootstrap/test_c0_shifts.py").write_text(
+            "class ShiftTests:\n" + "".join(
+                f"    def {name}(self): pass\n" for name in self.REVIEWED_METHODS))
+
+    def shift_gate_result(self, argv, directory, timeout, env=None, *, marker=True,
+                          suite=True, suite_count=18, skip=False):
+        result = NolQuMcpCoreTests.c031_gate_result(self, argv, directory, timeout, env)
+        if pathlib.Path(argv[-1]).stem == "c0_capacity":
+            result["stdout"] = "PASS c0-capacity\nPASS c0-component-generations\n"
+            if marker:
+                result["stdout"] = "PASS c0-shifts\n" + result["stdout"]
+            counts = [18, 29, 20] + ([suite_count] if suite else []) + [6]
+            result["stderr"] = "".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in counts)
+            if skip:
+                result["stderr"] += "test_hidden (test_c0_shifts.ShiftTests.test_hidden) ... skipped 'synthetic'\n"
+            (directory / "stdout").write_text(result["stdout"])
+            (directory / "stderr").write_text(result["stderr"])
+        return result
+
+    def probe_synthetic(self, command=None):
+        with mock.patch.object(self.mcp, "_c031_command", side_effect=command or self.shift_gate_result), mock.patch.object(
+                self.mcp, "_c031_validate", side_effect=self.unit_validation) as validate:
+            result = self.mcp.run_c0_backend_probe()
+        return result, validate
+
+    def assert_unverified(self, result):
+        self.assertFalse(result["ok"])
+        for field in (*self.mcp._C031_FLAGS, "shifts_verified", "full_compiler_verified", "self_hosting_verified"):
+            self.assertIs(result.get(field), False, field)
+
+    def test_shift_metadata_does_not_execute_or_claim_proof(self):
+        directory = self.root / "bootstrap/compiler/c0"
+        directory.mkdir(parents=True)
+        for component in ("frontend", "backend"):
+            (directory / (component + ".nql")).write_text("# source presence only\n")
+        with mock.patch.object(self.mcp, "_c031_proof", side_effect=AssertionError("metadata ran proof")):
+            metadata = self.mcp.canonical_bootstrap_status()
+            frontend = self.mcp.run_c0_frontend_probe()
+            backend = self.mcp.run_c0_backend_probe()
+        for result in (metadata, frontend, backend):
+            self.assertIs(result.get("shifts_verified"), False)
+            self.assertFalse(result["full_compiler_verified"])
+            self.assertFalse(result["self_hosting_verified"])
+        self.assertEqual((metadata["current_frontend"], metadata["current_backend"]), ("C0.37", "C0.37"))
+        self.assertEqual(frontend["frontend_version"], "C0.37")
+        self.assertEqual(backend["backend_version"], "C0.37")
+        self.assertIn("NQAF/10", frontend["format"])
+        self.assertIn("NQAF/10", backend["input_format"])
+        for meaning in ("checked i64 shifts", "0..63", "C0R-010", "sign-extends", "left-to-right"):
+            self.assertIn(meaning, backend["semantics"])
+
+    def test_shift_gate_rejects_legacy_capacity_evidence(self):
+        self.shift_fixture()
+        def legacy(*args, **kwargs):
+            return self.shift_gate_result(*args, **kwargs, marker=False, suite=False)
+        result, validate = self.probe_synthetic(legacy)
+        self.assertFalse(result["ok"], "C036 evidence qualified checked shifts without executing their gate")
+        self.assertIn("missing required gate markers", result["blocker"])
+        validate.assert_not_called()
+
+    def test_shift_gate_complete_synthetic_control_reaches_validator(self):
+        self.shift_fixture()
+        result, validate = self.probe_synthetic()
+        self.assertTrue(result["ok"], result.get("blocker"))
+        self.assertTrue(result["shifts_verified"])
+        self.assertTrue(result["evidence"]["unit_only_validation_control"])
+        self.assertFalse(result["full_compiler_verified"])
+        self.assertFalse(result["self_hosting_verified"])
+        validate.assert_called_once()
+
+    def test_shift_capacity_script_executes_suite_and_propagates_failure(self):
+        # Execute the real shell gate with a controlled interpreter boundary.
+        # These command logs test orchestration, never compiler correctness.
+        binary_dir = self.root / "gate-bin"
+        binary_dir.mkdir()
+        runner = binary_dir / "python3"
+        runner.write_text("#!/bin/sh\nfor arg do\n"
+                          "  case \"$arg\" in *.py)\n"
+                          "    printf '%s\\n' \"$arg\" >> \"$MCP_GATE_COMMANDS\"\n"
+                          "    case \"$arg\" in */test_c0_shifts.py)\n"
+                          "      [ \"$MCP_GATE_SHIFT_STATUS\" = 0 ] || exit \"$MCP_GATE_SHIFT_STATUS\";;\n"
+                          "    esac;;\n  esac\ndone\n")
+        runner.chmod(0o755)
+        commands = self.root / "gate-commands"
+        expected = ["test_c0_capacity_frontend.py", "test_c0_capacity_backend.py",
+                    "test_c0_compiler_profile.py", "test_c0_shifts.py", "test_c0_component_generations.py"]
+        for status in (0, 73):
+            commands.write_text("")
+            env = {**os.environ, "ROOT_DIR": str(REPO_ROOT),
+                   "PATH": str(binary_dir) + os.pathsep + os.environ.get("PATH", ""),
+                   "MCP_GATE_COMMANDS": str(commands), "MCP_GATE_SHIFT_STATUS": str(status)}
+            env.pop("TMP_DIR", None)
+            with self.subTest(shift_status=status):
+                result = subprocess.run(["bash", str(REPO_ROOT / "tests/bootstrap/c0_capacity.sh")],
+                                        cwd=self.root, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+                self.assertEqual(result.returncode, status, result.stderr)
+                self.assertEqual([pathlib.Path(line).name for line in commands.read_text().splitlines()],
+                                 expected if status == 0 else expected[:4])
+                self.assertEqual(result.stdout.count(b"PASS c0-shifts\n"), int(status == 0))
+                self.assertEqual(result.stdout.count(b"PASS c0-component-generations\n"), int(status == 0))
+
+    def test_shift_gate_requires_marker_complete_suite_and_no_skips(self):
+        self.shift_fixture()
+        for failure, options in (("marker", {"marker": False}), ("suite", {"suite": False}),
+                                 ("truncated", {"suite_count": 17}), ("skip", {"skip": True})):
+            def command(*args, **kwargs):
+                return self.shift_gate_result(*args, **kwargs, **options)
+            with self.subTest(failure=failure):
+                result, validate = self.probe_synthetic(command)
+                self.assert_unverified(result)
+                self.assertIn("missing required gate markers" if failure == "marker" else
+                              "skipped required tests" if failure == "skip" else
+                              "complete required unittest suites", result["blocker"])
+                validate.assert_not_called()
+
+    def test_shift_gate_rejects_missing_source(self):
+        self.shift_fixture()
+        (self.root / "tests/bootstrap/test_c0_shifts.py").unlink()
+        result, validate = self.probe_synthetic()
+        self.assert_unverified(result)
+        self.assertIn("test_c0_shifts.py", result["blocker"])
+        validate.assert_not_called()
+
+    def test_shift_gate_rejects_missing_renamed_extra_async_and_duplicate_methods(self):
+        self.shift_fixture()
+        suite = self.root / "tests/bootstrap/test_c0_shifts.py"
+        original = suite.read_text()
+        machine = "test_exact_machine_bytes_and_sensitivity"
+        mutations = {
+            "missing": original.replace(f"    def {machine}(self): pass\n", ""),
+            "renamed": original.replace(machine, "test_machine_renamed"),
+            "extra": original + "    def test_extra(self): pass\n",
+            "async": original.replace(f"def {machine}", f"async def {machine}"),
+            "duplicate": original + f"    def {machine}(self): pass\n",
+            "assigned": original + "    test_extra = lambda self: None\n",
+            "duplicate-class": original + "class ShiftTests: pass\n",
+        }
+        for failure, source in mutations.items():
+            with self.subTest(failure=failure):
+                suite.write_text(source)
+                result, validate = self.probe_synthetic()
+                self.assert_unverified(result)
+                self.assertIn("shift", result["blocker"])
+                validate.assert_not_called()
+
+    def test_shift_gate_rejects_consistent_source_and_log_truncation(self):
+        self.shift_fixture()
+        suite = self.root / "tests/bootstrap/test_c0_shifts.py"
+        methods = [name for name in self.REVIEWED_METHODS if name != "test_exact_machine_bytes_and_sensitivity"]
+        for names, count in ((methods, 17), (["test_generation_shift_contract"], 1)):
+            suite.write_text("class ShiftTests:\n" + "".join(f"    def {name}(self): pass\n" for name in names))
+            for claimed in (count, 18):
+                def command(*args, **kwargs):
+                    return self.shift_gate_result(*args, **kwargs, suite_count=claimed)
+                with self.subTest(source_count=count, log_count=claimed):
+                    result, validate = self.probe_synthetic(command)
+                    self.assert_unverified(result)
+                    self.assertIn("reviewed inventory of 18 synchronous methods", result["blocker"])
+                    validate.assert_not_called()
+
+    def test_shift_cached_proof_invalidates_changed_suite_decoder_source_or_pair(self):
+        self.shift_fixture()
+        paths = ("tests/bootstrap/test_c0_shifts.py", "tests/bootstrap/c031_support.py",
+                 "bootstrap/compiler/c0/frontend.nql", "bootstrap/compiler/c0/backend.nql",
+                 "bootstrap/compiler/c0/x86_64-linux/c0-backend.seed")
+        for relative in paths:
+            path = self.root / relative
+            original = path.read_bytes()
+            with self.subTest(path=relative), mock.patch.object(
+                    self.mcp, "_c031_command", side_effect=self.shift_gate_result) as command, mock.patch.object(
+                    self.mcp, "_c031_validate", side_effect=self.unit_validation):
+                with self.mcp._c031_scope():
+                    first = self.mcp.run_c0_frontend_probe()
+                    self.assertTrue(first["ok"], first.get("blocker"))
+                    path.write_bytes(original + b"\n")
+                    changed = self.mcp.run_c0_frontend_probe()
+                    self.assert_unverified(changed)
+                    self.assertIn("identity changed" if not relative.endswith(".seed") else "pinned executable", changed["blocker"])
+                    self.assertEqual(command.call_count, 3)
+                path.write_bytes(original)
+
+    def rewrite_generation_inventory(self, receipt, selectors):
+        source = self.root / "tests/bootstrap/test_c0_component_generations.py"
+        source.write_text("GENERATION_ORACLES = " + repr(tuple(selectors)) + "\n")
+        self.before["tests/bootstrap/test_c0_component_generations.py"].update(self.mcp._c031_fingerprint(source))
+        receipt["identities"][str(source.resolve())] = self.mcp._c031_fingerprint(source)
+        for oracle in receipt["oracles"]:
+            oracle["selectors"] = list(selectors)
+        for stage in receipt["stages"]:
+            if stage["label"].endswith("-named-oracles"):
+                stage["command"] = stage["command"][:7] + list(selectors)
+                stream = pathlib.Path(stage["prefix"] + ".stderr")
+                stream.write_text(f"\nRan {len(selectors)} tests in 1.0s\n\nOK\n")
+                stage["stderr"] = self.mcp._c031_fingerprint(stream)
+        self.receipt_path.write_text(json.dumps(receipt))
+
+    def test_shift_generation_rejects_absent_named_oracle(self):
+        receipt = NativeProofTests.generation_fixture(self)
+        # Consistent source, receipt selectors, commands and raw summary. Only
+        # the reviewed named shift oracle is missing; hash checks are isolated.
+        self.rewrite_generation_inventory(receipt, self.OLD_SELECTORS)
+        with mock.patch.object(self.mcp, "_c031_inputs", return_value=self.before):
+            with self.assertRaisesRegex(ValueError, "oracle"):
+                self.mcp._c031_validate(self.receipt_path.parent.parent, self.before)
+
+    def test_shift_generation_rejects_same_size_replacements_of_shift_and_old_oracles(self):
+        import copy
+        receipt = NativeProofTests.generation_fixture(self)
+        reviewed = [*self.OLD_SELECTORS, self.SHIFT_SELECTOR]
+        for removed in (self.SHIFT_SELECTOR, self.OLD_SELECTORS[4]):
+            changed = copy.deepcopy(receipt)
+            selectors = [item for item in reviewed if item != removed]
+            selectors.append("test_c0_shifts.ShiftTests.test_all_bits_against_independent_integer_oracle")
+            self.rewrite_generation_inventory(changed, selectors)
+            with self.subTest(removed=removed), mock.patch.object(self.mcp, "_c031_inputs", return_value=self.before):
+                with self.assertRaisesRegex(ValueError, "oracle"):
+                    self.mcp._c031_validate(self.receipt_path.parent.parent, self.before)
+
+    def test_shift_generation_rejects_stale_oracle_component_pair(self):
+        import copy
+        receipt = NativeProofTests.generation_fixture(self)
+        # Positive control consumes the real validator, not a validation stub.
+        accepted = self.mcp._c031_validate(self.receipt_path.parent.parent, self.before)
+        self.assertEqual(accepted["oracles"], 2)
+        for failure in ("wrong-generation", "selected-seed", "stale-hash"):
+            changed = copy.deepcopy(receipt)
+            oracle = changed["oracles"][0]
+            item = oracle["components"]["backend"]
+            if failure == "stale-hash":
+                item["sha256"] = "0" * 64
+            else:
+                item["path"] = (changed["oracles"][1]["components"]["backend"]["path"] if failure == "wrong-generation"
+                                else str(self.root / "bootstrap/compiler/c0/x86_64-linux/c0-backend.seed"))
+                oracle["environment"]["C0_BACKEND"] = item["path"]
+            with self.subTest(failure=failure):
+                self.receipt_path.write_text(json.dumps(changed))
+                with self.assertRaisesRegex(ValueError, "oracle"):
+                    self.mcp._c031_validate(self.receipt_path.parent.parent, self.before)
+
+
 class NativeProofTests(unittest.TestCase):
     """Synthetic receipt mutations test the consumer, never compiler capability."""
 
@@ -2381,7 +2702,7 @@ class NativeProofTests(unittest.TestCase):
             elif label.endswith("-named-oracles"):
                 binary = pathlib.Path(sys.executable)
                 command = [sys.executable, "-B", "-W", "error::ResourceWarning", "-m", "unittest", "-v", *selectors]
-                error = b"\nRan 45 tests in 1.0s\n\nOK\n"
+                error = b"\nRan 46 tests in 1.0s\n\nOK\n"
             else:
                 generation = label.split("-", 1)[0]
                 if label.endswith("-frontend"):

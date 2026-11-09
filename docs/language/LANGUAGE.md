@@ -96,15 +96,22 @@ Supported integer bitwise operators:
 Shift counts follow x86-64 integer shift behavior: only the low 6 bits of the
 count are used, equivalent to `count & 63`.
 
-That shift rule belongs to R0. The C0.35 extension adds only `&`, `^`, `|` and
+That masked-count rule belongs to R0. Canonical C0.37 instead checks the full
+i64 count in0..63 and diagnoses an executed invalid count with C0R-010/70.
+`<<` discards high bits; `>>` sign-extends. Both operands evaluate eagerly,
+left to right exactly once. See [SHIFTS.md](../../bootstrap/compiler/c0/SHIFTS.md)
+for NQAF/10 and qualification.
+
+ The C0.35 extension adds only `&`, `^`, `|` and
 prefix `~`, acting on all 64 bits with signed i64 results and no bitwise
 overflow fault. Binary operands evaluate eagerly, left to right, once each;
 NOT evaluates once. Checked arithmetic inside operands retains its fault order.
 Only a directly owning NEGATE permits the INT64_MIN literal magnitude; NOT
 does not enlarge the literal range.
 
-Experimental C0 precedence, highest first, is calls/grouping, right-associative
-prefix `-`/`~`, `*`/`/`, `+`/`-`, relational, equality, `&`, `^`, `|`; binary
+Experimental C0.37 precedence, highest first, is calls/grouping, right-associative
+prefix `-`/`~`/`not`, `*`/`/`, `+`/`-`, `<<`/`>>`, relational, equality,
+`&`, `^`, `|`, `and`, `or`; binary
 operators associate left. Thus `6&3==2` means `6&(3==2)`. R0 keeps its shared
 bitwise/additive level. Mixed unparenthesized expressions are not a valid
 differential oracle; overlap comparisons require fully parenthesized expressions

@@ -40,6 +40,11 @@ implements a smaller experimental subset whose qualification is separate.
 - logical condition operators: `and`, `or`, `not`
 - function call expressions
 
+The experimental C0.37 subset adds eager `<<` and arithmetic `>>`, with full
+i64 counts checked in0..63 and C0R-010 on executed invalid counts. Shifts bind
+between additive and relational expressions. See
+[SHIFTS.md](../../bootstrap/compiler/c0/SHIFTS.md) for NQAF/10 and qualification.
+
 The experimental C0.36 subset adds normalized i64 short-circuit `and`/`or`
 and prefix `not`, with static checking of both operands. Exact logical words
 become reserved Core identifiers; prefix names retain their meaning. NQAF/9

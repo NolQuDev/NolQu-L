@@ -6,6 +6,18 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
+## C0.37 Checked Shift Qualification Contract
+
+[SHIFTS.md](../../bootstrap/compiler/c0/SHIFTS.md) defines SH01..SH06: eager
+full64-bit values, checked count0..63, signed right shift, independent /10
+validation and prior-source byte compatibility. The18-method scoped shift
+suite, actual B/C named shift oracle and exact source/permission inventories
+are required on the matched pair. Deliberately incorrect shift/count variants
+must fail independent assertions. Metadata alone cannot qualify shifts.
+Fresh Native receipts, full Linux gates and independent HIGH-risk review are
+required; earlier C0.36 counts below remain historical. This contract records
+requirements, not unexecuted test results or a stable/security qualification.
+
 ## C0.36 Short-Circuit Qualification Contract
 
 [SHORT_CIRCUIT.md](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md) defines
