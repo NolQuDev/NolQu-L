@@ -28,6 +28,7 @@ GENERATION_ORACLES = (
     "test_c0_unary_negation.UnaryNegationTests.test_generation_unary_contract",
     "test_c0_bitwise.BitwiseTests.test_generation_bitwise_contract",
     "test_c0_short_circuit.ShortCircuitTests.test_generation_short_circuit_contract",
+    "test_c0_shifts.ShiftTests.test_generation_shift_contract",
     "test_c0_capacity_backend.CapacityBackendTests.test_wide_header_and_graph_mutations",
     "test_c0_capacity_backend.CapacityBackendTests.test_legacy_byte_parity_and_limits",
     "test_c0_capacity_backend.CapacityBackendTests.test_high_global_ids_use_local_frames",

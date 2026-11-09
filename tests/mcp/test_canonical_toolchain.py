@@ -759,10 +759,10 @@ class CanonicalSdkTests(unittest.TestCase):
             self.assertEqual((actual.returncode, actual.stdout, actual.stderr), (0, payload, b""))
             self.assertEqual((literal.read_bytes(), literal.stat().st_mode), before)
             status = await self.call(client, "canonical_bootstrap_status")
-            self.assertEqual((status["current_frontend"], status["current_backend"]), ("C0.36", "C0.36"))
+            self.assertEqual((status["current_frontend"], status["current_backend"]), ("C0.37", "C0.37"))
             self.assertEqual(status["current_c0"], "C0.25")
             for flag in ("capacity_verified", "compiler_profile_verified", "component_generation_verified",
-                         "unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified"):
+                         "unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified", "shifts_verified"):
                 self.assertIs(status[flag], False, flag)
             for stage in ("full_compiler", "self_hosting", "verified"):
                 self.assertEqual(status["stages"][stage]["status"], "NOT_IMPLEMENTED")

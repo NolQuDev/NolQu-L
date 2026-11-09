@@ -4,7 +4,7 @@ Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
 below describe those historical runs; no release or bootstrap promotion occurs.
 
-The experimental C0.36 frontend/backend can be selected through the existing
+The experimental C0.37 frontend/backend can be selected through the existing
 `nqlc`, `nql`, installed commands and MCP tools. Default source behavior remains
 `nasm`/Reference Compiler R0. This connects implemented components to public
 commands; Full Compiler, self-hosting and Verified status remain false.
@@ -37,6 +37,11 @@ Exact logical names are newly reserved Core keywords. A matching /9 dialect8
 component pair is required; all earlier wire versions retain their contract.
 See [SHORT_CIRCUIT.md](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md) for
 precedence, migration and qualification. Existing commands/flags are unchanged.
+
+C0.37 adds eager signed i64 `<<` and arithmetic `>>`. Counts must be0..63
+without x86 masking; executed invalid counts fault with located C0R-010/70.
+Actual shift syntax selects /10 dialect9 and requires the matched pair.
+[SHIFTS.md](../../bootstrap/compiler/c0/SHIFTS.md) defines semantics and gates.
 
 ## Compile, Check And Run
 

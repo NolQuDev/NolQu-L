@@ -178,9 +178,14 @@ class BitwiseTests(unittest.TestCase):
         self.assertEqual((p.returncode,p.stdout),(70,b''));self.assertIn(b'[C0R-004]',p.stderr)
 
     def test_malformed_source_and_wire(self):
-        for expression in (b'~',b'&7',b'7|',b'7^^2',b'7&&2',b'7||2',b'7~2',b'~*7',b'7<<1',b'7>>1'):
+        for expression in (b'~',b'&7',b'7|',b'7^^2',b'7&&2',b'7||2',b'7~2',b'~*7'):
             p=run_native(self.frontend,b'fn main(){return '+expression+b'}')
             self.assertEqual((p.returncode,p.stdout),(1,b''));self.assertIn(b'[C0P-',p.stderr)
+        # C0.37 deliberately adds these former unsupported inputs. Preserve
+        # their cases as real runtime assertions rather than deleting coverage.
+        for expression, expected in ((b'7<<1', 14), (b'7>>1', 3)):
+            result = self.execute(self.image(self.ast(b'fn main(){return '+expression+b'}')[0]))
+            self.assertEqual((result.returncode, result.stdout, result.stderr), (expected, b'', b''))
         for operator in (b'&',b'^',b'|',b'~'):
             wire=independent_wire(operator);base=32+struct.unpack_from('<I',wire,8)[0]
             node=2 if operator==b'~' else 3;offset=base+node*32

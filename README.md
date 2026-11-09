@@ -36,19 +36,23 @@ implemented capabilities include:
 
 The Machine-Level Foundation, Stage 0, Bootstrap Compiler B0, and Core
 Compiler emitter through C0.25 are implemented and hash-verified for x86_64 Linux.
-The B0-built C0.36 frontend/backend additionally compile structured i64 programs
+The B0-built C0.37 frontend/backend additionally compile structured i64 programs
 with lexical scopes, loops, named functions, mutable parameters and bounded
 native recursion directly to ELF, with checked byte memory and Linux stream I/O.
 Their installed capacity is 262144 source bytes and 65536 tokens/nodes, with
 versioned NQAF/5 storage, NQAF/6 dialect5 for native operations, and additive
 NQAF/7 dialect6 for checked prefix negation, plus NQAF/8 dialect7 for bitwise operations
-and NQAF/9 dialect8 for short-circuit logic.
+and NQAF/9 dialect8 for short-circuit logic, plus NQAF/10 dialect9 for checked shifts.
 Both complete compiler sources build through
 B0 -> A -> B -> C, with byte-identical B/C component pairs. Default program
 byte storage remains 65536 bytes; the explicit compiler profile maps 16 MiB RW/NX.
 See [CAPACITY.md](bootstrap/compiler/c0/CAPACITY.md) for source/artifact identities,
 evidence and the completed pre/postinstallation checks, and
 [RUNTIME_IO.md](bootstrap/compiler/c0/RUNTIME_IO.md) for the runtime contract.
+C0.37 adds eager `<<` and arithmetic `>>` with full i64 counts checked in
+`0..63`, located C0R-010 faults and independent NQAF/10 validation. See
+[SHIFTS.md](bootstrap/compiler/c0/SHIFTS.md) for precedence and qualification.
+
 C0.36 adds short-circuit `and`/`or` and prefix `not` with normalized i64
 truth values and independent NQAF/9 validation. Both operands are statically
 checked; skipped operands execute no runtime effects. See
@@ -87,7 +91,7 @@ and the historical signal, whose cause remains OPEN. Detailed session records
 remain internal.
 The Full Compiler and self-hosting generations are not implemented. Reference
 Compiler R0 remains the default `nasm` compatibility backend. Public `nqlc`
-and `nql` also expose the experimental C0.36 subset through explicit
+and `nql` also expose the experimental C0.37 subset through explicit
 `--backend canonical`; this access does not promote Full Compiler, self-hosting
 or Verified status. See the [canonical toolchain guide](docs/compiler/CANONICAL_TOOLCHAIN.md)
 for supported syntax, project/install/MCP workflows and remaining integration gates.

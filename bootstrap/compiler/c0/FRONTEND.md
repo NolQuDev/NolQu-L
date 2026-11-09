@@ -1,5 +1,12 @@
 # C0 Source Frontend
 
+## C0.37: Checked Shifts
+
+Contiguous `<<` and `>>` add a left-associative precedence level between
+additive and relational expressions. Actual shift syntax selects NQAF/10
+dialect9, kinds55/56, retaining all prior bounds and prior-source AST bytes.
+[SHIFTS.md](SHIFTS.md) defines full i64 count checking and qualification.
+
 ## C0.36: Logical Expressions
 
 Exact `and`, `or`, `not` keywords add short-circuit logical expressions under
@@ -13,7 +20,7 @@ bounded stacks and existing source/token/node arena limits apply.
 
 
 The sections below retain the original scalar/NQAF/1 and later checkpoint
-contracts. The experimental source contract is **C0.36**;
+contracts. The experimental source contract is **C0.37**;
 [BITWISE.md](BITWISE.md) defines its bitwise extension and required independent
 review and qualification gates. [UNARY_NEGATION.md](UNARY_NEGATION.md) defines
 checked prefix negation and NQAF/7. [RETURN_FLOW.md](RETURN_FLOW.md) defines the

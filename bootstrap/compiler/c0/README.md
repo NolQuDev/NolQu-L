@@ -5,7 +5,7 @@ compiler. Its canonical source is NolQu-L Core-0 and its canonical executable
 is built by B0, not by a host compiler or assembler.
 
 The emitter described by `compiler.nq`/`c0.seed` remains C0.25. The separate
-frontend/backend source contract is experimental C0.36; see
+frontend/backend source contract is experimental C0.37; see
 [SHORT_CIRCUIT.md](SHORT_CIRCUIT.md). Bitwise behavior remains in
 [BITWISE.md](BITWISE.md). Checked negation remains defined in
 [UNARY_NEGATION.md](UNARY_NEGATION.md). The C0.33 return contract remains in
@@ -13,6 +13,10 @@ frontend/backend source contract is experimental C0.36; see
 [NATIVE_OS.md](NATIVE_OS.md). Scoped syntax/ABI/utility tests and complete-source
 component generations have passed. These are bounded component proofs, not
 Full Compiler, formal self-hosting or complete NolQu-L Safety.
+
+C0.37 adds eager signed i64 shifts with checked counts0..63, arithmetic right
+shift and NQAF/10 dialect9 kinds55/56. No new reserved names or capacity
+changes; see [SHIFTS.md](SHIFTS.md) for exact semantics and qualification.
 
 C0.36 adds short-circuit `and`/`or` and prefix `not`, normalized to i64 0/1,
 with independently validated NQAF/9 dialect8. Both operands remain statically
@@ -117,7 +121,7 @@ versioned AST, grammar, memory layout and provenance defined in
 builds `c0-frontend.seed` using B0. The compiler emitter remains the exact
 C0.25 `c0.seed`; component success is not Full Compiler/self-hosting success.
 
-[`backend.nql`](backend.nql) consumes NQAF/1..7, validates graph
+[`backend.nql`](backend.nql) consumes NQAF/1..10, validates graph
 ownership, function/block nesting and lexical anchors, resolves mutable i64 locals
 and parameters, and
 emits standalone ELF for `+ - * /`, checked prefix `-`, signed comparisons and nested `if/else`

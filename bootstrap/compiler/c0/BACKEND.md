@@ -1,5 +1,14 @@
 # C0 AST Backend
 
+## C0.37: Checked Shift Emission
+
+NQAF/10 dialect9 adds independently validated kinds55/56 and accepts /1..9.
+Eager full-width operands pass unsigned `cmp rcx,63; ja fault` before SHL/SAR.
+Each node emits46bytes excluding operands and retains indexed slots, loop
+code-start, checked literal ownership and native unsafe containment. Invalid
+counts produce located C0R-010/70; diagnostic failure remains74.
+[SHIFTS.md](SHIFTS.md) defines exact bytes, spare helper offsets and tests.
+
 ## C0.36: Conditional Logical Emission
 
 NQAF/9 dialect8 adds logical kinds52/53/54 while accepting /1..8.

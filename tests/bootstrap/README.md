@@ -61,6 +61,9 @@ Current coverage:
   output gate accepts the highest fixture-representable artifact at 589,808
   bytes and rejects the next 18-byte step; the patch gate accepts exactly
   5,376 accesses and rejects 5,377, with no B0 grammar growth
+- C0.37 shift gate: full64-bit count/value/effect oracles, independent /10
+  graph mutations, old /1..9 bytes, located010 failures and wrong-code-sensitive
+  genuine B/C method; see [SHIFTS.md](../../bootstrap/compiler/c0/SHIFTS.md).
 - C0.36 logical gate: independent NQAF/9 packets, normalized full-width truth,
   skipped/selected effects and faults, static validation of both operands,
   exact conditional branch bodies, prior byte parity and a named actual B/C

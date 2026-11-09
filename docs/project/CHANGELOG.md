@@ -31,6 +31,17 @@
 
 ### Added
 
+- Add experimental C0.37 eager signed i64 `<<` and arithmetic `>>`, with full
+  count checking in0..63 and located C0R-010/70 on executed invalid counts.
+  Left shift discards high bits without arithmetic overflow; right shift
+  sign-extends. NQAF/10 dialect9 independently validates kinds55/56. No names
+  become reserved; prior syntax/wire/ELF, bounds, B0, ABI and public version
+  remain unchanged. Require actual B/C shift oracles, independent wrong-code
+  sensitivity, exact proof inventories and separate Native/Linux receipts.
+  [SHIFTS.md](../../bootstrap/compiler/c0/SHIFTS.md) defines precedence,
+  46-byte emission, paired upgrade/rollback and qualification requirements.
+  No release or Full Compiler/self-hosting promotion is implied.
+
 - Add experimental C0.36 short-circuit `and`/`or` and prefix `not`, normalized
   to i64 0/1, with independent NQAF/9 validation. Skipped operands execute no
   effects; both operands still undergo static name, arity, literal and unsafe
