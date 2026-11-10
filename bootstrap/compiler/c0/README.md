@@ -5,14 +5,24 @@ compiler. Its canonical source is NolQu-L Core-0 and its canonical executable
 is built by B0, not by a host compiler or assembler.
 
 The emitter described by `compiler.nq`/`c0.seed` remains C0.25. The separate
-frontend/backend source contract is experimental C0.37; see
+frontend/backend source contract is experimental C0.38; see
+[REMAINDER.md](REMAINDER.md) and
 [SHORT_CIRCUIT.md](SHORT_CIRCUIT.md). Bitwise behavior remains in
 [BITWISE.md](BITWISE.md). Checked negation remains defined in
 [UNARY_NEGATION.md](UNARY_NEGATION.md). The C0.33 return contract remains in
 [RETURN_FLOW.md](RETURN_FLOW.md). C0.32 native behavior remains defined in
 [NATIVE_OS.md](NATIVE_OS.md). Scoped syntax/ABI/utility tests and complete-source
-component generations have passed. These are bounded component proofs, not
+component generations passed for the qualified C0.37 pair. C0.38 requires fresh
+exact-pair and platform qualification; those prior receipts do not qualify it.
+These are bounded component proofs, not
 Full Compiler, formal self-hosting or complete NolQu-L Safety.
+
+C0.38 adds eager checked signed i64 `%`, with dividend-signed remainder and
+the same precedence as `*`/`/`. Zero divisors and INT64_MIN%-1 produce located
+C0R-001 faults. NQAF/11 dialect10 adds kind57 without changing bounds, ABI,
+earlier successful program bytes or public release version. Its independent
+fourteen-method suite and named actual B/C oracle are required proof inputs.
+See [REMAINDER.md](REMAINDER.md) for compatibility and qualification limits.
 
 C0.37 adds eager signed i64 shifts with checked counts0..63, arithmetic right
 shift and NQAF/10 dialect9 kinds55/56. No new reserved names or capacity

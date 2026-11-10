@@ -1,5 +1,16 @@
 # C0 AST Backend
 
+## C0.38: Checked Signed Remainder Emission
+
+NQAF/11 dialect10 independently validates binary kind57 with an exact `%`
+anchor and contiguous, uniquely owned left/right subtrees. It accepts /1..10;
+earlier formats reject the new kind. Evaluation is eager left to right, once.
+The checked IDIV path rejects zero divisors and INT64_MIN/-1 through the
+existing located C0R-001 handler, then transfers full RDX to the result slot.
+Each remainder node emits68bytes excluding operands. Division remains65bytes.
+Slot liveness, whole-subtree loop restart, minimum-literal ownership and raw
+call containment remain required. See [REMAINDER.md](REMAINDER.md).
+
 ## C0.37: Checked Shift Emission
 
 NQAF/10 dialect9 adds independently validated kinds55/56 and accepts /1..9.

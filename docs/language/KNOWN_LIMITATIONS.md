@@ -22,16 +22,21 @@ line. Older version strings describe historical checkpoints, not current maturit
 ## Backend Limitations
 
 - the canonical Machine/Stage0/B0 and C0.25 emitter are implemented; separate
-  C0.37 source frontend/direct-ELF backend extend the completed C0.31 foundation
+  C0.38 source frontend/direct-ELF backend extend the completed C0.31 foundation
 - current C0 supports one compilation unit and signed i64, not the full R0
   language, general types/modules/FFI or inline assembly
-- complete compiler-source A/B/C generations pass, but Full Compiler,
-  full-language Self-Hosting and the later Verified compiler remain unimplemented
+- complete compiler-source A/B/C generations passed at the qualified C0.37
+  checkpoint; C0.38 requires fresh exact-pair and platform qualification.
+  Prior receipts do not qualify a changed pair. Full Compiler, full-language
+  Self-Hosting and the later Verified compiler remain unimplemented
 - historical C0.34 Linux qualification retains all 1,087 C0.33 baseline markers
   and adds one unary marker (1,088 total); this supersedes the old post-formatter
   full-main gap. See the [validation status](../project/VALIDATION.md)
 - canonical shifts are experimental in /10 and require full i64 counts0..63;
   arithmetic right shift sign-extends. R0 retains its masked-count contract.
+- canonical signed remainder is experimental in /11; zero divisors and
+  INT64_MIN%-1 fault under its checked-quotient policy. It requires a matched
+  component pair and does not expand the existing Safety guarantees.
   Logical expressions remain available in /9+ with reserved and/or/not words;
   Core bitwise precedence differs from R0 as documented in
   [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md)

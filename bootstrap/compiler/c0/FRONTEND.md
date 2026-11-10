@@ -1,5 +1,14 @@
 # C0 Source Frontend
 
+## C0.38: Checked Signed Remainder
+
+ASCII `%` is a left-associative binary operator at the same precedence as
+`*` and `/`. Actual remainder syntax selects wide NQAF/11 dialect10, kind57;
+percent bytes in comments do not change the earlier format selection. All
+previous source/token/node bounds, prefix rules and function envelopes remain.
+[REMAINDER.md](REMAINDER.md) defines signed results, checked quotient faults,
+independent wire validation, machine cost and paired qualification.
+
 ## C0.37: Checked Shifts
 
 Contiguous `<<` and `>>` add a left-associative precedence level between
@@ -20,7 +29,7 @@ bounded stacks and existing source/token/node arena limits apply.
 
 
 The sections below retain the original scalar/NQAF/1 and later checkpoint
-contracts. The experimental source contract is **C0.37**;
+contracts. The experimental source contract is **C0.38**;
 [BITWISE.md](BITWISE.md) defines its bitwise extension and required independent
 review and qualification gates. [UNARY_NEGATION.md](UNARY_NEGATION.md) defines
 checked prefix negation and NQAF/7. [RETURN_FLOW.md](RETURN_FLOW.md) defines the

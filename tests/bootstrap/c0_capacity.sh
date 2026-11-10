@@ -9,6 +9,8 @@ python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_capacity
 python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_compiler_profile.py" -v
 python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_shifts.py" -v
 printf 'PASS c0-shifts\n'
+python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_remainder.py" -v
+printf 'PASS c0-remainder\n'
 printf 'PASS c0-capacity\n'
 
 python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_component_generations.py" -v

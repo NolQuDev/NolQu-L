@@ -198,7 +198,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertFalse(result["semantic_resolution_verified"])
             self.assertFalse(result["codegen_verified"])
-            self.assertEqual(result["backend_version"], "C0.37")
+            self.assertEqual(result["backend_version"], "C0.38")
             self.assertEqual(result["source_capacity"], 262144)
             self.assertEqual(result["token_capacity"], 65536)
             self.assertEqual(result["node_capacity"], 65536)
@@ -252,7 +252,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             result = self.mcp.run_c0_frontend_probe()
         self.assertFalse(result["ok"])
         self.assertEqual(result["probe_status"], "UNEXPECTED_RESULT")
-        self.assertEqual(result["frontend_version"], "C0.37")
+        self.assertEqual(result["frontend_version"], "C0.38")
         self.assertIn("NQAF/5", result["format"])
         self.assertIn("NQAF/8", result["format"])
         self.assertIn("NQAF/9", result["format"])
@@ -298,7 +298,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
     def assert_c031_unverified(self, result):
         for field in ("capacity_verified", "compiler_profile_verified",
                       "component_generation_verified", "unsafe_blocks_verified", "process_arguments_verified",
-                      "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified", "shifts_verified", "full_compiler_verified",
+                      "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified", "shifts_verified", "remainder_verified", "full_compiler_verified",
                       "self_hosting_verified"):
             self.assertIn(field, result, field)
             self.assertIs(result[field], False, field)
@@ -309,7 +309,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             "c0_frontend": "PASS c0-frontend\n",
             "c0_backend": ("PASS c0-control-flow\nPASS c0-functions\nPASS c0-return-flow\nPASS c0-unary-negation\nPASS c0-bitwise\nPASS c0-short-circuit\nPASS c0-runtime-io\n"
                            "PASS c0-capacity-backend\nPASS c0-native-os\nPASS c0-backend\n"),
-            "c0_capacity": "PASS c0-shifts\nPASS c0-capacity\nPASS c0-component-generations\n",
+            "c0_capacity": "PASS c0-shifts\nPASS c0-remainder\nPASS c0-capacity\nPASS c0-component-generations\n",
         }
         name = pathlib.Path(command[-1]).stem
         directory.mkdir()
@@ -321,7 +321,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
                          if isinstance(node, ast.ClassDef) and node.name == "ShortCircuitTests")
             methods = [node.name for node in suite.body
                        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")]
-        stderr = ("".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (18, 29, 20, 18, 6))
+        stderr = ("".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (18, 29, 20, 18, 14, 6))
                   if name == "c0_capacity" else "".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in (16,13,17,9,11,12,len(methods),13,29,23)) if name == "c0_backend" else "")
         (directory / "stdout").write_text(stdout)
         (directory / "stderr").write_text(stderr)
@@ -2092,15 +2092,15 @@ class ShortCircuitProofTests(unittest.TestCase):
             (directory / (component + ".nql")).write_text("# source presence only\n")
         with mock.patch.object(self.mcp, "_c031_proof", side_effect=AssertionError("metadata ran proof")):
             status = self.mcp.canonical_bootstrap_status()
-            self.assertEqual((status["current_frontend"], status["current_backend"]), ("C0.37", "C0.37"))
+            self.assertEqual((status["current_frontend"], status["current_backend"]), ("C0.38", "C0.38"))
             for result in (status, self.mcp.run_c0_frontend_probe(), self.mcp.run_c0_backend_probe()):
                 self.assertIs(result.get("short_circuit_verified"), False)
                 self.assertFalse(result["full_compiler_verified"])
                 self.assertFalse(result["self_hosting_verified"])
             frontend = self.mcp.run_c0_frontend_probe()
             backend = self.mcp.run_c0_backend_probe()
-            self.assertEqual(frontend["frontend_version"], "C0.37")
-            self.assertEqual(backend["backend_version"], "C0.37")
+            self.assertEqual(frontend["frontend_version"], "C0.38")
+            self.assertEqual(backend["backend_version"], "C0.38")
             self.assertIn("NQAF/9", frontend["format"])
             self.assertIn("NQAF/9", backend["input_format"])
             for meaning in ("short-circuit", "and evaluates right iff left is nonzero",
@@ -2361,10 +2361,10 @@ class ShiftProofTests(unittest.TestCase):
                           suite=True, suite_count=18, skip=False):
         result = NolQuMcpCoreTests.c031_gate_result(self, argv, directory, timeout, env)
         if pathlib.Path(argv[-1]).stem == "c0_capacity":
-            result["stdout"] = "PASS c0-capacity\nPASS c0-component-generations\n"
+            result["stdout"] = "PASS c0-remainder\nPASS c0-capacity\nPASS c0-component-generations\n"
             if marker:
                 result["stdout"] = "PASS c0-shifts\n" + result["stdout"]
-            counts = [18, 29, 20] + ([suite_count] if suite else []) + [6]
+            counts = [18, 29, 20] + ([suite_count] if suite else []) + [14, 6]
             result["stderr"] = "".join(f"\nRan {count} tests in 1.0s\n\nOK\n" for count in counts)
             if skip:
                 result["stderr"] += "test_hidden (test_c0_shifts.ShiftTests.test_hidden) ... skipped 'synthetic'\n"
@@ -2396,9 +2396,9 @@ class ShiftProofTests(unittest.TestCase):
             self.assertIs(result.get("shifts_verified"), False)
             self.assertFalse(result["full_compiler_verified"])
             self.assertFalse(result["self_hosting_verified"])
-        self.assertEqual((metadata["current_frontend"], metadata["current_backend"]), ("C0.37", "C0.37"))
-        self.assertEqual(frontend["frontend_version"], "C0.37")
-        self.assertEqual(backend["backend_version"], "C0.37")
+        self.assertEqual((metadata["current_frontend"], metadata["current_backend"]), ("C0.38", "C0.38"))
+        self.assertEqual(frontend["frontend_version"], "C0.38")
+        self.assertEqual(backend["backend_version"], "C0.38")
         self.assertIn("NQAF/10", frontend["format"])
         self.assertIn("NQAF/10", backend["input_format"])
         for meaning in ("checked i64 shifts", "0..63", "C0R-010", "sign-extends", "left-to-right"):
@@ -2438,7 +2438,7 @@ class ShiftProofTests(unittest.TestCase):
         runner.chmod(0o755)
         commands = self.root / "gate-commands"
         expected = ["test_c0_capacity_frontend.py", "test_c0_capacity_backend.py",
-                    "test_c0_compiler_profile.py", "test_c0_shifts.py", "test_c0_component_generations.py"]
+                    "test_c0_compiler_profile.py", "test_c0_shifts.py", "test_c0_remainder.py", "test_c0_component_generations.py"]
         for status in (0, 73):
             commands.write_text("")
             env = {**os.environ, "ROOT_DIR": str(REPO_ROOT),
@@ -2702,7 +2702,7 @@ class NativeProofTests(unittest.TestCase):
             elif label.endswith("-named-oracles"):
                 binary = pathlib.Path(sys.executable)
                 command = [sys.executable, "-B", "-W", "error::ResourceWarning", "-m", "unittest", "-v", *selectors]
-                error = b"\nRan 46 tests in 1.0s\n\nOK\n"
+                error = b"\nRan 47 tests in 1.0s\n\nOK\n"
             else:
                 generation = label.split("-", 1)[0]
                 if label.endswith("-frontend"):
@@ -3048,6 +3048,311 @@ class NativeProofTests(unittest.TestCase):
                 path.chmod(0o644)
                 (directory / "B-native-machine/mmap-profile0.json").write_bytes(original)
                 receipt["artifacts"][label].update(bytes=len(original), sha256=hashlib.sha256(original).hexdigest())
+
+
+
+class RemainderProofTests(unittest.TestCase):
+    """C0.38 consumer controls; synthetic fixtures never qualify compilers."""
+
+    # Literal independent inventory, never inferred from the bound producer.
+    REVIEWED_METHODS = (
+        "test_signed_full_width_values",
+        "test_precedence_and_left_associativity",
+        "test_eager_effects_and_fault_order",
+        "test_loop_conditions_nested_calls_and_live_arguments",
+        "test_checked_fault_locations_and_failed_stderr",
+        "test_skipped_runtime_and_static_validation",
+        "test_minimum_literal_ownership_and_native_ranges",
+        "test_percent_lexer_and_format_selection",
+        "test_handwritten_wire_versions_profiles_and_mixed_ops",
+        "test_wire_framing_anchors_fields_and_ownership",
+        "test_high_u32_spans_and_nested_ownership",
+        "test_legacy_c037_ast_and_elf_bytes",
+        "test_exact_machine_bytes_and_wrongcode_sensitivity",
+        "test_generation_remainder_contract",
+    )
+    REMAINDER_SELECTOR = "test_c0_remainder.RemainderTests.test_generation_remainder_contract"
+    # These are the independently frozen old test constants, not production AST.
+    OLD_SELECTORS = (*ShiftProofTests.OLD_SELECTORS[:4], ShiftProofTests.SHIFT_SELECTOR,
+                     *ShiftProofTests.OLD_SELECTORS[4:])
+    REVIEWED_SELECTORS = (*OLD_SELECTORS[:5], REMAINDER_SELECTOR, *OLD_SELECTORS[5:])
+
+    setUp = NolQuMcpCoreTests.setUp
+    tearDown = NolQuMcpCoreTests.tearDown
+    machine_fixture = ShortCircuitProofTests.machine_fixture
+    unit_validation = ShortCircuitProofTests.short_circuit_unit_validation
+    rewrite_generation_inventory = ShiftProofTests.rewrite_generation_inventory
+
+    def remainder_fixture(self):
+        if not (self.root / "bootstrap").exists():
+            NolQuMcpCoreTests.c031_probe_fixture(self)
+        (self.root / "tests/bootstrap/test_c0_remainder.py").write_text(
+            "class RemainderTests:\n" + "".join(
+                f"    def {name}(self): pass\n" for name in self.REVIEWED_METHODS))
+        (self.root / "tests/bootstrap/test_c0_component_generations.py").write_text(
+            "GENERATION_ORACLES = " + repr(self.REVIEWED_SELECTORS) + "\n")
+        # Our independently specified synthetic source differs from the real
+        # generation suite. Rebind only this fixture's outer digest; leave all
+        # method/selector/receipt validators real. No production file changes.
+        self.mcp._C031_TEST_SHA256 = self.mcp._sha256(
+            self.root / "tests/bootstrap/test_c0_component_generations.py")
+
+    # generation_fixture calls this hook itself. Enrich only our fresh root,
+    # and leave its existing builder and every older fixture/class untouched.
+    c031_probe_fixture = remainder_fixture
+
+    def observe(self, label, value, **streams):
+        evidence = os.environ.get("C038_MCP_EVIDENCE_DIR")
+        if evidence is None:
+            return
+        parent = pathlib.Path(evidence)
+        parent.mkdir(parents=True, exist_ok=True)
+        directory = pathlib.Path(tempfile.mkdtemp(
+            prefix=self._testMethodName + "-" + label + "-", dir=parent))
+        (directory / "observation.json").write_text(json.dumps(value, indent=2, default=str) + "\n")
+        for name, payload in streams.items():
+            (directory / name).write_bytes(payload if isinstance(payload, bytes) else str(payload).encode())
+
+    def remainder_gate_result(self, argv, directory, timeout, env=None, *, marker=True,
+                              suite=True, suite_count=14, skip=False, truncate=False):
+        result = NolQuMcpCoreTests.c031_gate_result(self, argv, directory, timeout, env)
+        if pathlib.Path(argv[-1]).stem == "c0_capacity":
+            result["stdout"] = "PASS c0-shifts\n"
+            if marker:
+                result["stdout"] += "PASS c0-remainder\n"
+            result["stdout"] += "PASS c0-capacity\nPASS c0-component-generations\n"
+            counts = [18, 29, 20, 18] + ([suite_count] if suite else []) + [6]
+            summaries = [f"\nRan {count} tests in 1.0s\n\nOK\n" for count in counts]
+            if truncate and suite:
+                summaries[4] = f"\nRan {suite_count} tests in 1.0s\n\nO"
+            result["stderr"] = "".join(summaries)
+            if skip:
+                result["stderr"] += "test_hidden (test_c0_remainder.RemainderTests.test_hidden) ... skipped 'synthetic'\n"
+            for name in ("stdout", "stderr"):
+                (directory / name).write_text(result[name])
+        return result
+
+    def remainder_probe(self, command=None):
+        with mock.patch.object(self.mcp, "_c031_command", side_effect=command or self.remainder_gate_result), \
+                mock.patch.object(self.mcp, "_c031_validate", side_effect=self.unit_validation) as validate:
+            result = self.mcp.run_c0_backend_probe()
+        self.observe("probe", result)
+        return result, validate
+
+    def assert_remainder_unverified(self, result):
+        self.assertFalse(result["ok"], result)
+        for field in (*self.mcp._C031_FLAGS, "remainder_verified",
+                      "full_compiler_verified", "self_hosting_verified"):
+            self.assertIs(result.get(field), False, field)
+
+    def test_remainder_metadata_and_incomplete_gates_stay_unverified(self):
+        # Missing feature metadata or acceptance of old/partial logs must fail.
+        metadata_root = self.root / "metadata-only"
+        source = metadata_root / "bootstrap/compiler/c0"
+        source.mkdir(parents=True)
+        for component in ("frontend", "backend"):
+            (source / (component + ".nql")).write_text("# source presence only\n")
+        metadata_mcp = load_mcp(metadata_root)
+        with mock.patch.object(metadata_mcp, "_c031_proof", side_effect=AssertionError("metadata ran proof")):
+            metadata = metadata_mcp.canonical_bootstrap_status()
+            frontend = metadata_mcp.run_c0_frontend_probe()
+            backend = metadata_mcp.run_c0_backend_probe()
+        self.observe("metadata", dict(status=metadata, frontend=frontend, backend=backend))
+        for name, result in (("status", metadata), ("frontend", frontend), ("backend", backend)):
+            with self.subTest(metadata=name):
+                self.assertIs(result.get("remainder_verified"), False)
+                self.assertFalse(result["full_compiler_verified"])
+                self.assertFalse(result["self_hosting_verified"])
+        for name, actual, want in (
+                ("component-status", (metadata["current_frontend"], metadata["current_backend"]), ("C0.38", "C0.38")),
+                ("frontend-version", frontend["frontend_version"], "C0.38"),
+                ("backend-version", backend["backend_version"], "C0.38")):
+            with self.subTest(contract=name):
+                self.assertEqual(actual, want)
+        with self.subTest(contract="wire-reporting"):
+            self.assertIn("NQAF/11", frontend["format"])
+            self.assertIn("NQAF/11", backend["input_format"])
+
+        self.remainder_fixture()
+        with self.subTest(contract="complete-unit-positive-control"):
+            accepted, validate = self.remainder_probe()
+            self.assertTrue(accepted["ok"], accepted.get("blocker"))
+            self.assertIs(accepted.get("remainder_verified"), True)
+            self.assertTrue(accepted["evidence"]["unit_only_validation_control"])
+            self.assertFalse(accepted["full_compiler_verified"])
+            self.assertFalse(accepted["self_hosting_verified"])
+            validate.assert_called_once()
+        variants = (("legacy-C037", dict(marker=False, suite=False)),
+                    ("missing-marker", dict(marker=False)),
+                    ("missing-suite", dict(suite=False)),
+                    ("short-suite", dict(suite_count=13)),
+                    ("long-suite", dict(suite_count=15)),
+                    ("skipped-suite", dict(skip=True)),
+                    ("truncated-summary", dict(truncate=True)))
+        for name, options in variants:
+            with self.subTest(incomplete=name):
+                def command(*args, **kwargs):
+                    return self.remainder_gate_result(*args, **kwargs, **options)
+                rejected, validate = self.remainder_probe(command)
+                self.assert_remainder_unverified(rejected)
+                validate.assert_not_called()
+        suite = self.root / "tests/bootstrap/test_c0_remainder.py"
+        original = suite.read_bytes()
+        with self.subTest(incomplete="missing-source"):
+            suite.unlink()
+            rejected, validate = self.remainder_probe()
+            self.assert_remainder_unverified(rejected)
+            self.assertIn("test_c0_remainder.py", rejected["blocker"])
+            validate.assert_not_called()
+        suite.write_bytes(original)
+        # Same source path with changed bytes invalidates an otherwise complete
+        # in-flight proof even when its synthetic output still claims success.
+        with self.subTest(incomplete="stale-source-during-gate"):
+            def stale(*args, **kwargs):
+                result = self.remainder_gate_result(*args, **kwargs)
+                suite.write_bytes(original + b"\n# changed during proof\n")
+                return result
+            rejected, validate = self.remainder_probe(stale)
+            self.assert_remainder_unverified(rejected)
+            self.assertIn("identity changed", rejected["blocker"])
+            validate.assert_not_called()
+        suite.write_bytes(original)
+
+    def test_remainder_inventory_and_generation_selector_are_fixed(self):
+        # A shortened/renamed suite or consistent selector substitution must
+        # never redefine the proof contract through its own source or receipt.
+        import copy
+        self.remainder_fixture()
+        suite = self.root / "tests/bootstrap/test_c0_remainder.py"
+        original = suite.read_text()
+        consumer = getattr(self.mcp, "_c038_remainder_methods", None)
+        with self.subTest(contract="reviewed-method-consumer"):
+            self.assertTrue(callable(consumer), "the consumer must validate the literal 14-method remainder inventory")
+        if callable(consumer):
+            with self.subTest(contract="complete-inventory"):
+                self.assertEqual(consumer(), self.REVIEWED_METHODS)
+                self.assertIsInstance(consumer(), tuple)
+            machine = "test_exact_machine_bytes_and_wrongcode_sensitivity"
+            mutations = {
+                "deleted-method": original.replace(f"    def {machine}(self): pass\n", ""),
+                "renamed-method": original.replace(machine, "test_machine_renamed"),
+                "extra-method": original + "    def test_extra(self): pass\n",
+                "async-required": original.replace(f"def {machine}", f"async def {machine}"),
+                "duplicate-method": original + f"    def {machine}(self): pass\n",
+                "assignment": original + "    test_extra = lambda self: None\n",
+                "annotated-assignment": original + "    test_extra: object = None\n",
+                "augmented-assignment": original + "    test_signed_full_width_values += ()\n",
+                "rebound-required": original + f"    {machine} = lambda self: None\n",
+                "duplicate-class": original + "class RemainderTests: pass\n",
+                "renamed-class": original.replace("class RemainderTests:", "class OtherTests:"),
+            }
+            for name, text in mutations.items():
+                with self.subTest(inventory=name):
+                    suite.write_text(text)
+                    with self.assertRaises(ValueError):
+                        consumer()
+                    rejected, validate = self.remainder_probe()
+                    self.assert_remainder_unverified(rejected)
+                    self.assertIn("remainder", rejected["blocker"].lower())
+                    validate.assert_not_called()
+            with self.subTest(inventory="deleted-source"):
+                suite.unlink()
+                with self.assertRaises((OSError, ValueError)):
+                    consumer()
+            suite.write_text(original)
+
+        generation = self.root / "tests/bootstrap/test_c0_component_generations.py"
+        with self.subTest(contract="complete-47-ordered-selectors"):
+            try:
+                actual = self.mcp._c037_generation_oracles()
+            except ValueError as error:
+                self.fail("complete old46 plus named remainder selector was rejected: " + str(error))
+            self.assertEqual(actual, self.REVIEWED_SELECTORS)
+            self.assertEqual(len(actual), 47)
+            self.assertEqual(actual[5], self.REMAINDER_SELECTOR)
+            self.assertEqual(tuple(x for x in actual if x != self.REMAINDER_SELECTOR), self.OLD_SELECTORS)
+        wrong_order = list(self.REVIEWED_SELECTORS)
+        wrong_order[4], wrong_order[5] = wrong_order[5], wrong_order[4]
+        old_order = list(self.REVIEWED_SELECTORS)
+        old_order[6], old_order[7] = old_order[7], old_order[6]
+        replacement = list(self.REVIEWED_SELECTORS)
+        replacement[5] = "test_c0_remainder.RemainderTests.test_signed_full_width_values"
+        lost_old = list(self.REVIEWED_SELECTORS)
+        lost_old[6] = "test_c0_remainder.RemainderTests.test_signed_full_width_values"
+        duplicate = list(self.REVIEWED_SELECTORS)
+        duplicate[6] = self.REMAINDER_SELECTOR
+        variants = {"missing-remainder": self.OLD_SELECTORS,
+                    "remainder-before-shift": tuple(wrong_order),
+                    "reordered-old": tuple(old_order),
+                    "same-size-remainder-replacement": tuple(replacement),
+                    "same-size-old-replacement": tuple(lost_old),
+                    "duplicate-remainder": tuple(duplicate)}
+        for name, selectors in variants.items():
+            with self.subTest(selectors=name):
+                generation.write_text("GENERATION_ORACLES = " + repr(selectors) + "\n")
+                with self.assertRaises(ValueError):
+                    self.mcp._c037_generation_oracles()
+        generation.write_text("GENERATION_ORACLES = " + repr(self.REVIEWED_SELECTORS) + "\n")
+
+        # Reuse the old synthetic builder, then enrich only this class's local
+        # source/receipt/raw streams. No compiler or Native process runs here.
+        receipt = NativeProofTests.generation_fixture(self)
+        self.rewrite_generation_inventory(receipt, self.REVIEWED_SELECTORS)
+        with self.subTest(contract="complete-synthetic-receipt-positive-control"):
+            try:
+                accepted = self.mcp._c031_validate(self.receipt_path.parent.parent, self.before)
+            except ValueError as error:
+                self.fail("complete synthetic remainder receipt was rejected: " + str(error))
+            self.assertEqual(accepted["oracles"], 2)
+        self.observe("complete-synthetic-receipt", receipt)
+        for name, selectors in variants.items():
+            with self.subTest(receipt=name):
+                changed = copy.deepcopy(receipt)
+                self.rewrite_generation_inventory(changed, selectors)
+                self.observe("mutated-synthetic-receipt-" + name, changed)
+                # Source, stream summary, receipt and input fingerprints agree;
+                # only the independently reviewed selector contract is wrong.
+                with mock.patch.object(self.mcp, "_c031_inputs", return_value=self.before):
+                    with self.assertRaisesRegex(ValueError, "oracle"):
+                        self.mcp._c031_validate(self.receipt_path.parent.parent, self.before)
+
+    def test_remainder_gate_executes_suite_and_propagates_failure(self):
+        # The actual shell must run remainder before generation and preserve73.
+        # This controlled interpreter tests orchestration, never compiler proof.
+        binary_dir = self.root / "remainder-gate-bin"
+        binary_dir.mkdir()
+        runner = binary_dir / "python3"
+        runner.write_text("#!/bin/sh\nfor arg do\n"
+                          "  case \"$arg\" in *.py)\n"
+                          "    printf '%s\\n' \"$arg\" >> \"$MCP_GATE_COMMANDS\"\n"
+                          "    case \"$arg\" in */test_c0_remainder.py)\n"
+                          "      [ \"$MCP_GATE_REMAINDER_STATUS\" = 0 ] || exit \"$MCP_GATE_REMAINDER_STATUS\";;\n"
+                          "    esac;;\n  esac\ndone\n")
+        runner.chmod(0o755)
+        commands = self.root / "remainder-gate-commands"
+        expected = ["test_c0_capacity_frontend.py", "test_c0_capacity_backend.py",
+                    "test_c0_compiler_profile.py", "test_c0_shifts.py",
+                    "test_c0_remainder.py", "test_c0_component_generations.py"]
+        for status in (0, 73):
+            commands.write_text("")
+            environment = {**os.environ, "ROOT_DIR": str(REPO_ROOT),
+                           "PATH": str(binary_dir) + os.pathsep + os.environ.get("PATH", ""),
+                           "MCP_GATE_COMMANDS": str(commands), "MCP_GATE_REMAINDER_STATUS": str(status)}
+            environment.pop("TMP_DIR", None)
+            with self.subTest(remainder_status=status):
+                result = subprocess.run(["bash", str(REPO_ROOT / "tests/bootstrap/c0_capacity.sh")],
+                                        cwd=self.root, env=environment, stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE, timeout=10)
+                observed = [pathlib.Path(line).name for line in commands.read_text().splitlines()]
+                self.observe("actual-shell-" + str(status),
+                             dict(status=result.returncode, expected_status=status,
+                                  commands=observed, expected_commands=expected if status == 0 else expected[:5]),
+                             stdout=result.stdout, stderr=result.stderr, commands=commands.read_bytes())
+                self.assertEqual(result.returncode, status, result.stderr)
+                self.assertEqual(observed, expected if status == 0 else expected[:5])
+                self.assertEqual(result.stdout.count(b"PASS c0-remainder\n"), int(status == 0))
+                self.assertEqual(result.stdout.count(b"PASS c0-capacity\n"), int(status == 0))
+                self.assertEqual(result.stdout.count(b"PASS c0-component-generations\n"), int(status == 0))
 
 
 if __name__ == "__main__":
