@@ -104,6 +104,11 @@
 
 ### Fixed
 
+- Correct the backend guide's obsolete Stage 0-only status, public LLVM option
+  claim and unrestricted R0 oracle rule. Document the current Core component
+  path and distinguish programming paths from compiler implementations and
+  Safety modes. Compiler bytes, CLI behavior and release maturity are unchanged.
+
 - Reject invalid host-runner time and byte policies before creating evidence.
   NaN/infinite budgets can no longer bypass expiry/input checks, and fractional
   or boolean byte counts fail with a controlled domain error. Preserve valid
