@@ -4,7 +4,7 @@ Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
 below describe those historical runs; no release or bootstrap promotion occurs.
 
-The experimental C0.37 frontend/backend can be selected through the existing
+The experimental C0.38 frontend/backend can be selected through the existing
 `nqlc`, `nql`, installed commands and MCP tools. Default source behavior remains
 `nasm`/Reference Compiler R0. This connects implemented components to public
 commands; Full Compiler, self-hosting and Verified status remain false.
@@ -42,6 +42,12 @@ C0.37 adds eager signed i64 `<<` and arithmetic `>>`. Counts must be0..63
 without x86 masking; executed invalid counts fault with located C0R-010/70.
 Actual shift syntax selects /10 dialect9 and requires the matched pair.
 [SHIFTS.md](../../bootstrap/compiler/c0/SHIFTS.md) defines semantics and gates.
+
+C0.38 adds eager signed i64 `%`, with dividend-signed remainder and the same
+precedence as `*`/`/`. Executed zero divisors and INT64_MIN%-1 produce located
+C0R-001/70; new syntax selects /11 dialect10 and needs the matching component
+pair. See [REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md). Earlier
+successful source/wire/ELF bytes, commands, bounds and native ABI are preserved.
 
 ## Compile, Check And Run
 

@@ -36,19 +36,26 @@ implemented capabilities include:
 
 The Machine-Level Foundation, Stage 0, Bootstrap Compiler B0, and Core
 Compiler emitter through C0.25 are implemented and hash-verified for x86_64 Linux.
-The B0-built C0.37 frontend/backend additionally compile structured i64 programs
+The B0-built C0.38 frontend/backend additionally compile structured i64 programs
 with lexical scopes, loops, named functions, mutable parameters and bounded
 native recursion directly to ELF, with checked byte memory and Linux stream I/O.
 Their installed capacity is 262144 source bytes and 65536 tokens/nodes, with
 versioned NQAF/5 storage, NQAF/6 dialect5 for native operations, and additive
 NQAF/7 dialect6 for checked prefix negation, plus NQAF/8 dialect7 for bitwise operations
-and NQAF/9 dialect8 for short-circuit logic, plus NQAF/10 dialect9 for checked shifts.
-Both complete compiler sources build through
-B0 -> A -> B -> C, with byte-identical B/C component pairs. Default program
+and NQAF/9 dialect8 for short-circuit logic, NQAF/10 dialect9 for checked shifts,
+and NQAF/11 dialect10 for checked signed remainder.
+At the qualified C0.37 checkpoint, both complete compiler sources rebuilt
+through B0 -> A -> B -> C with byte-identical B/C component pairs. C0.38
+requires fresh exact-pair generation and platform qualification; earlier
+receipts do not qualify the changed pair. Default program
 byte storage remains 65536 bytes; the explicit compiler profile maps 16 MiB RW/NX.
 See [CAPACITY.md](bootstrap/compiler/c0/CAPACITY.md) for source/artifact identities,
 evidence and the completed pre/postinstallation checks, and
 [RUNTIME_IO.md](bootstrap/compiler/c0/RUNTIME_IO.md) for the runtime contract.
+C0.38 adds eager signed i64 `%` at the `*`/`/` precedence level. Nonzero results
+have the dividend's sign; zero divisors and INT64_MIN%-1 produce located
+C0R-001 faults. See [REMAINDER.md](bootstrap/compiler/c0/REMAINDER.md) for the
+experimental contract, independent validation and qualification requirements.
 C0.37 adds eager `<<` and arithmetic `>>` with full i64 counts checked in
 `0..63`, located C0R-010 faults and independent NQAF/10 validation. See
 [SHIFTS.md](bootstrap/compiler/c0/SHIFTS.md) for precedence and qualification.
@@ -91,7 +98,7 @@ and the historical signal, whose cause remains OPEN. Detailed session records
 remain internal.
 The Full Compiler and self-hosting generations are not implemented. Reference
 Compiler R0 remains the default `nasm` compatibility backend. Public `nqlc`
-and `nql` also expose the experimental C0.37 subset through explicit
+and `nql` also expose the experimental C0.38 subset through explicit
 `--backend canonical`; this access does not promote Full Compiler, self-hosting
 or Verified status. See the [canonical toolchain guide](docs/compiler/CANONICAL_TOOLCHAIN.md)
 for supported syntax, project/install/MCP workflows and remaining integration gates.

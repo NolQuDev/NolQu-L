@@ -31,6 +31,17 @@
 
 ### Added
 
+- Add experimental C0.38 checked signed i64 `%` with eager left-to-right
+  operands, dividend-signed results and the same precedence as `*`/`/`.
+  Zero divisors and INT64_MIN%-1 produce located C0R-001/70; failed diagnostic
+  output remains74. NQAF/11 dialect10 independently validates kind57 and emits
+  a68-byte checked remainder node. Require the fourteen-method suite, actual
+  B/C remainder oracle, deliberate wrong-code controls, exact proof inventories,
+  independent review and separate Native/Linux qualification. Earlier successful
+  source bytes, bounds, CLI, ABI, B0, public version and bootstrap topology are
+  preserved. [REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md) defines
+  the matched upgrade/rollback boundary; no release or self-hosting promotion.
+
 - Add experimental C0.37 eager signed i64 `<<` and arithmetic `>>`, with full
   count checking in0..63 and located C0R-010/70 on executed invalid counts.
   Left shift discards high bits without arithmetic overflow; right shift

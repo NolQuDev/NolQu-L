@@ -109,8 +109,13 @@ NOT evaluates once. Checked arithmetic inside operands retains its fault order.
 Only a directly owning NEGATE permits the INT64_MIN literal magnitude; NOT
 does not enlarge the literal range.
 
-Experimental C0.37 precedence, highest first, is calls/grouping, right-associative
-prefix `-`/`~`/`not`, `*`/`/`, `+`/`-`, `<<`/`>>`, relational, equality,
+Canonical C0.38 adds eager signed `%`: the nonzero result has the dividend's
+sign, and zero divisors or INT64_MIN%-1 fault with located C0R-001/70. This
+checked-quotient policy and independent /11 validation are defined in
+[REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md); it does not change R0.
+
+Experimental C0.38 precedence, highest first, is calls/grouping, right-associative
+prefix `-`/`~`/`not`, `*`/`/`/`%`, `+`/`-`, `<<`/`>>`, relational, equality,
 `&`, `^`, `|`, `and`, `or`; binary
 operators associate left. Thus `6&3==2` means `6&(3==2)`. R0 keeps its shared
 bitwise/additive level. Mixed unparenthesized expressions are not a valid

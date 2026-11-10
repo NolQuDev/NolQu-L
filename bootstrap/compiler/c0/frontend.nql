@@ -1,7 +1,8 @@
-# C0.37 source-to-AST frontend with checked shifts, built by B0 --compiler-profile.
+# C0.38 source-to-AST frontend with checked signed remainder, built by B0 --compiler-profile.
 # Legacy NQAF/1..5 is unchanged; native scopes/operations use NQAF/6 dialect5.
 # Exact logical keywords select NQAF/9 dialect8; prefixes remain identifiers.
 # Contiguous << and >> select NQAF/10 dialect9 with exact two-byte spans.
+# Percent selects NQAF/11 dialect10, including all preceding operator kinds.
 # Flat state transitions are intentional: B0 has no nested statement blocks.
 fn main() {
     let got = input_read(1180288, 16)
@@ -76,7 +77,7 @@ fn main() {
         kind = 10 * (ch == 40) + 11 * (ch == 41)
         kind = kind + 12 * (ch == 123) + 13 * (ch == 125) + 14 * (ch == 59)
         kind = kind + 15 * (ch == 43) + 16 * (ch == 42) + 17 * (ch == 45)
-        kind = kind + 18 * (ch == 47) + 19 * (ch == 61)
+        kind = kind + 18 * (ch == 47) + 19 * (ch == 61) + 57 * (ch == 37)
         temp = byte_load(pos + 1) == 61
         kind = kind + (20 + temp) * (ch == 60) + (22 + temp) * (ch == 62)
         kind = kind + 5 * (ch == 61) * temp + 25 * (ch == 33) * temp
@@ -207,6 +208,9 @@ fn main() {
         temp = (kind == 55) + (kind == 56)
         byte_store(1180264, (byte_load(1180264) + temp) != 0)
         active = active + temp
+        temp = kind == 57
+        byte_store(1180265, (byte_load(1180265) + temp) != 0)
+        active = active + temp
         byte_store(1180161, (byte_load(1180161) + active) != 0)
         pos = pos + 1
     }
@@ -234,9 +238,10 @@ fn main() {
     # header-start offset per node, written only for a bounded kind45 allocation.
     # [0x6a0000,0x6b0000) holds one exact native-name class byte per node.
     # Both end before inactive stores at 0x7ff000 and inside the 16 MiB arena.
-    # Scratch [1180240,1180265) is within [0x120000,0x130000).
+    # Scratch [1180240,1180266) is within [0x120000,0x130000).
     # 1180263 selects logical function envelopes and NQAF/9 dialect8.
     # 1180264 selects shift function envelopes and NQAF/10 dialect9.
+    # 1180265 selects remainder function envelopes and NQAF/11 dialect10.
     # Action18 opens unsafe directly into statement state5; action9 closes it.
     while ok * (state != 13) {
         kind = byte_load(327680 + pos * 12)
@@ -310,9 +315,9 @@ fn main() {
         active = byte_load(1180202) == 8
         byte_store(1180203, active * byte_load(1179668))
         byte_store(1180204, active * (byte_load(1179668) == 0))
-        byte_store(1180205, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (kind == 52) + (kind == 53) + (kind == 55) + (kind == 56))
+        byte_store(1180205, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (kind == 52) + (kind == 53) + (kind == 55) + (kind == 56) + (kind == 57))
         byte_store(1180206, byte_load(4194312 + operators * 12))
-        temp = 9 * ((kind == 15) + (kind == 17)) + 10 * ((kind == 16) + (kind == 18))
+        temp = 9 * ((kind == 15) + (kind == 17)) + 10 * ((kind == 16) + (kind == 18) + (kind == 57))
         temp = temp + 8 * ((kind == 55) + (kind == 56))
         temp = temp + 7 * (20 <= kind) * (kind <= 23) + 6 * ((kind == 24) + (kind == 25))
         temp = temp + 5 * (kind == 48) + 4 * (kind == 49) + 3 * (kind == 50)
@@ -745,7 +750,7 @@ fn main() {
 
     # Header/body are emitted only after the complete parse. Wide nodes stay
     # in place. All legacy spans/IDs fit u16 because these three bounds hold.
-    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261) + byte_load(1180262) + byte_load(1180263) + byte_load(1180264)) != 0
+    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261) + byte_load(1180262) + byte_load(1180263) + byte_load(1180264) + byte_load(1180265)) != 0
     byte_store(1180165, active)
     kind = (1 + byte_load(1180162)) * (byte_load(1180161) == 0) + 3 * byte_load(1180161) + byte_load(1180160)
     kind = kind * (byte_load(1180260) == 0) + 5 * byte_load(1180260)
@@ -753,12 +758,14 @@ fn main() {
     kind = kind * (byte_load(1180262) == 0) + 7 * byte_load(1180262)
     kind = kind * (byte_load(1180263) == 0) + 8 * byte_load(1180263)
     kind = kind * (byte_load(1180264) == 0) + 9 * byte_load(1180264)
+    kind = kind * (byte_load(1180265) == 0) + 10 * byte_load(1180265)
     byte_store(6553600, 78)
     byte_store(6553601, 81)
     byte_store(6553602, 65)
     byte_store(6553603, 70)
     byte_store(6553604, ((((kind * (active == 0) + 5 * active) * (byte_load(1180260) == 0) + 6 * byte_load(1180260)) * (byte_load(1180261) == 0) + 7 * byte_load(1180261)) * (byte_load(1180262) == 0) + 8 * byte_load(1180262)) * (byte_load(1180263) == 0) + 9 * byte_load(1180263))
     byte_store(6553604, byte_load(6553604) * (byte_load(1180264) == 0) + 10 * byte_load(1180264))
+    byte_store(6553604, byte_load(6553604) * (byte_load(1180265) == 0) + 11 * byte_load(1180265))
     byte_store(6553605, 16 + 16 * active)
     byte_store(6553608, count)
     byte_store(6553609, count / 256)

@@ -1,4 +1,4 @@
-# C0.37 independently validated native OS and definite-return NQAF-to-ELF backend, built by B0 compiler profile.
+# C0.38 independently validated native OS and definite-return NQAF-to-ELF backend, built by B0 compiler profile.
 # Flat B0 grammar: exactly sixteen locals, all other state in the mapped arena.
 # See BACKEND.md for regions, metadata phases, legacy bytes and native lifetimes.
 fn main() {
@@ -24,7 +24,7 @@ fn main() {
         count = count + got
     }
     # Header size/field width are selected before any derived record address.
-    byte_store(6820040, (5 <= byte_load(4)) * (byte_load(4) <= 10))
+    byte_store(6820040, (5 <= byte_load(4)) * (byte_load(4) <= 11))
     byte_store(6820041, 16 + 16 * byte_load(6820040))
     byte_store(6820043, 1 + byte_load(6820040))
     byte_store(6820042, byte_load(4) * (byte_load(6820040) == 0) + byte_load(24) * byte_load(6820040))
@@ -35,7 +35,7 @@ fn main() {
     ok = ok * (0 < nodes) * (nodes <= 512 + 65024 * byte_load(6820040)) * (0 < temp) * (temp <= 512 + 65024 * byte_load(6820040))
     ok = ok * (count == byte_load(6820041) + got + byte_load(6820041) * nodes)
     ok = ok * (byte_load(0) == 78) * (byte_load(1) == 81) * (byte_load(2) == 65) * (byte_load(3) == 70)
-    ok = ok * (1 <= byte_load(4)) * (byte_load(4) <= 10) * (byte_load(5) == byte_load(6820041))
+    ok = ok * (1 <= byte_load(4)) * (byte_load(4) <= 11) * (byte_load(5) == byte_load(6820041))
     ok = ok * (byte_load(6) == 0) * (byte_load(7) == 0)
     temp = (byte_load(12) + 256 * byte_load(13)) * (byte_load(6820040) == 0) + (byte_load(16) + 256 * byte_load(16 + 1) + 65536 * byte_load(16 + 2) + 16777216 * byte_load(16 + 3)) * byte_load(6820040)
     ok = ok * (nodes == temp) * (1 <= byte_load(6820042))
@@ -81,7 +81,7 @@ fn main() {
         byte_store(6819840 + 2, (start * (start < got)) / 65536)
         byte_store(6819840 + 3, (start * (start < got)) / 16777216)
         byte_store(6819860, (kind == 4) + (kind == 5))
-        byte_store(6819862, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (52 <= kind) * (kind <= 53) + (55 <= kind) * (kind <= 56))
+        byte_store(6819862, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (52 <= kind) * (kind <= 53) + (55 <= kind) * (kind <= 56) + (kind == 57))
         byte_store(6819864, (kind == 30) + (kind == 31))
         byte_store(6819868, (kind == 35) + (kind == 37) + (kind == 38) + (kind == 46))
         byte_store(6819870, (kind == 34) + (kind == 36))
@@ -101,8 +101,9 @@ fn main() {
         temp = (52 <= kind) * (kind <= 54)
         ok = ok * ((temp == 0) + temp * (9 <= byte_load(4)))
         temp = (55 <= kind) * (kind <= 56)
-        ok = ok * ((temp == 0) + temp * (byte_load(4) == 10))
+        ok = ok * ((temp == 0) + temp * (10 <= byte_load(4)))
         byte_store(6820086, (byte_load(6820086) + temp * ok) != 0)
+        ok = ok * ((kind != 57) + (kind == 57) * (byte_load(4) == 11))
         active = byte_load(6819860) + byte_load(6819862) + (kind == 42) + (kind == 43) + (kind == 47) + (kind == 51) + (kind == 54)
         ok = ok * (active + byte_load(6819872) + (kind == 33))
         ok = ok * (byte_load(index + 1) == 0)
@@ -130,7 +131,7 @@ fn main() {
         # Absent IDs read designated zero scratch, never an adjacent table.
         index = (byte_load(6820041) + got + (left - 1) * byte_load(6820041)) * ok * (left != 0) + 8384640 * (ok * (left != 0) == 0)
         temp = byte_load(index)
-        active = (temp == 4) + (temp == 5) + (temp == 15) + (temp == 16) + (temp == 17) + (temp == 18) + (20 <= temp) * (temp <= 25) + (temp == 42) + (temp == 47) + (48 <= temp) * (temp <= 56)
+        active = (temp == 4) + (temp == 5) + (temp == 15) + (temp == 16) + (temp == 17) + (temp == 18) + (20 <= temp) * (temp <= 25) + (temp == 42) + (temp == 47) + (48 <= temp) * (temp <= 57)
         ch = byte_load(6819862) + (kind == 32) + byte_load(6819870) + (kind == 47) + (kind == 51) + (kind == 54)
         ok = ok * ((ch == 0) + ch * active)
         ok = ok * ((kind != 44) + (kind == 44) * (temp == 42))
@@ -142,7 +143,7 @@ fn main() {
         ok = ok * ((kind != 33) + (kind == 33) * active)
         index = (byte_load(6820041) + got + (right - 1) * byte_load(6820041)) * ok * (right != 0) + 8384640 * (ok * (right != 0) == 0)
         temp = byte_load(index)
-        active = (temp == 4) + (temp == 5) + (temp == 15) + (temp == 16) + (temp == 17) + (temp == 18) + (20 <= temp) * (temp <= 25) + (temp == 42) + (temp == 47) + (48 <= temp) * (temp <= 56)
+        active = (temp == 4) + (temp == 5) + (temp == 15) + (temp == 16) + (temp == 17) + (temp == 18) + (20 <= temp) * (temp <= 25) + (temp == 42) + (temp == 47) + (48 <= temp) * (temp <= 57)
         ch = byte_load(6819862) + byte_load(6819864) + (kind == 43)
         ok = ok * ((ch == 0) + ch * active)
         index = (byte_load(6820041) + got + (next - 1) * byte_load(6820041)) * ok * (next != 0) + 8384640 * (ok * (next != 0) == 0)
@@ -383,9 +384,9 @@ fn main() {
         ok = ok * ((kind != 30) + (kind == 30) * right)
         ok = ok * ((kind != 32) + (kind == 32) * next)
         ok = ok * ((kind != 33) + (kind == 33) * left)
-        active = (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (kind == 47) + (48 <= kind) * (kind <= 51)
+        active = (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (kind == 47) + (48 <= kind) * (kind <= 51) + (kind == 57)
         temp = 45 * (kind == 47) + 43 * (kind == 15) + 42 * (kind == 16) + 45 * (kind == 17) + 47 * (kind == 18)
-        temp = temp + 38 * (kind == 48) + 94 * (kind == 49) + 124 * (kind == 50) + 126 * (kind == 51)
+        temp = temp + 38 * (kind == 48) + 94 * (kind == 49) + 124 * (kind == 50) + 126 * (kind == 51) + 37 * (kind == 57)
         ok = ok * ((active == 0) + active * (length == 1) * (byte_load(byte_load(6820041) + start) == temp))
         # /9 reserves the complete logical words; historical dialects retain
         # their already-emitted identifier graphs.
@@ -975,7 +976,7 @@ fn main() {
         index = 6160384 + (next - 1) * 2
         length = (byte_load(index) + 256 * byte_load(index + 1))
         active = (kind == 5) + (kind == 4) * (byte_load(2363391 + pos) == 0) + (kind == 42) + (kind == 47) + (kind == 51) + (kind == 54)
-        temp = (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (52 <= kind) * (kind <= 53) + (55 <= kind) * (kind <= 56)
+        temp = (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (52 <= kind) * (kind <= 53) + (55 <= kind) * (kind <= 56) + (kind == 57)
         right = (kind == 42) * byte_load(3805183 + pos) + 2 * temp + (kind == 47) + (kind == 51) + (kind == 54)
         ok = ok * (right <= count)
         count = count - right + active + temp
@@ -1003,7 +1004,7 @@ fn main() {
         byte_store(6819840 + 1, (start) / 256)
         byte_store(6819840 + 2, (start) / 65536)
         byte_store(6819840 + 3, (start) / 16777216)
-        active = (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (kind == 42) + (kind == 47) + (55 <= kind) * (kind <= 56)
+        active = (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (kind == 42) + (kind == 47) + (55 <= kind) * (kind <= 56) + (kind == 57)
         ok = ok * ((active == 0) + active * (count + 21 <= 8421376 + 8355840 * byte_load(6820040)))
         active = active * ok
         byte_store(6819860, active)
@@ -1121,7 +1122,7 @@ fn main() {
         left = (byte_load(index + 6 * byte_load(6820043)) + 256 * byte_load(index + 6 * byte_load(6820043) + 1) + (65536 * byte_load(index + 6 * byte_load(6820043) + 2) + 16777216 * byte_load(index + 6 * byte_load(6820043) + 3)) * byte_load(6820040))
         right = (byte_load(index + 8 * byte_load(6820043)) + 256 * byte_load(index + 8 * byte_load(6820043) + 1) + (65536 * byte_load(index + 8 * byte_load(6820043) + 2) + 16777216 * byte_load(index + 8 * byte_load(6820043) + 3)) * byte_load(6820040))
         byte_store(6819860, (kind == 4) * (byte_load(2363391 + pos) == 0))
-        byte_store(6819862, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (52 <= kind) * (kind <= 53) + (55 <= kind) * (kind <= 56))
+        byte_store(6819862, (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (52 <= kind) * (kind <= 53) + (55 <= kind) * (kind <= 56) + (kind == 57))
         byte_store(6819864, (kind == 30) + (kind == 31))
         byte_store(6819868, (kind == 34) + (kind == 36))
         byte_store(6819866, (kind == 5) + byte_load(6819860) + byte_load(6819862) + byte_load(6819864) + (kind == 42) + (kind == 47) + (kind == 51) + (kind == 54))
@@ -1131,7 +1132,7 @@ fn main() {
         # Arity2 on a call is not the literal-only MIN tag2.
         byte_store(6820082, (kind == 47) * active * (byte_load(index) == 2))
         length = 17 * (kind == 5) + 14 * byte_load(6819860) + 14 * byte_load(6819864) + (17 - 5 * (3 <= byte_load(6820042))) * (kind == 32)
-        length = length + 42 * ((kind == 15) + (kind == 17)) + 43 * (kind == 16) + 65 * (kind == 18)
+        length = length + 42 * ((kind == 15) + (kind == 17)) + 43 * (kind == 16) + 65 * (kind == 18) + 68 * (kind == 57)
         length = length + 31 * (20 <= kind) * (kind <= 25) + 16 * byte_load(6819868) + 5 * ((kind == 35) + (kind == 37))
         length = length + 14 * (kind == 39) + 7 * (kind == 40) + (35 + 7 * byte_load(3805183 + pos)) * (kind == 42)
         length = length + 35 * (kind == 47) - 21 * byte_load(6820082)
@@ -1299,7 +1300,7 @@ fn main() {
         byte_store(index + 8, byte_load(2756608 + (pos - 1) * 16 + 6))
         byte_store(index + 9, byte_load(2756608 + (pos - 1) * 16 + 7))
         # Error-prefix address/length in r8d/r9d survive arithmetic and idiv.
-        active = ((kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (55 <= kind) * (kind <= 56)) * ok
+        active = ((kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (55 <= kind) * (kind <= 56) + (kind == 57)) * ok
         next = byte_load(4141056 + (pos - 1) * 8) + 256 * byte_load(4141056 + (pos - 1) * 8 + 1) + 65536 * byte_load(4141056 + (pos - 1) * 8 + 2) + 16777216 * byte_load(4141056 + (pos - 1) * 8 + 3)
         index = (8388608 + count + 14) * active + 8384512 * (active == 0)
         byte_store(index, 65)
@@ -1403,9 +1404,10 @@ fn main() {
         byte_store(index + 2 + 2, temp)
         temp = temp / 256
         byte_store(index + 2 + 3, temp)
-        # Division: cmp rcx,-1; jne safe; mov rdx,rax; neg rdx; jo fault.
+        # Checked quotient shared by division/remainder: cmp rcx,-1; jne safe;
+        # mov rdx,rax; neg rdx; jo fault.
         # safe: test rcx,rcx; je fault; cqo; idiv rcx.
-        active = (kind == 18) * ok
+        active = ((kind == 18) + (kind == 57)) * ok
         index = (8388608 + count + 26) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 131)
@@ -1447,6 +1449,12 @@ fn main() {
         byte_store(index + 27 + 2, 72)
         byte_store(index + 27 + 3, 247)
         byte_store(index + 27 + 4, 249)
+        # Remainder selects full RDX after checked idiv; division keeps RAX.
+        active = (kind == 57) * ok
+        index = (8388608 + count + 58) * active + 8384512 * (active == 0)
+        byte_store(index, 72)
+        byte_store(index + 1, 137)
+        byte_store(index + 2, 208)
         # cmp rax,rcx; set<signed-condition> al; movzx rax,al. No overflow path.
         active = (20 <= kind) * (kind <= 25) * ok
         index = (8388608 + count + 14) * active + 8384512 * (active == 0)

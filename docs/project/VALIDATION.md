@@ -6,6 +6,23 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
+## C0.38 Checked Signed Remainder Qualification Contract
+
+[REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md) defines RM01..RM06:
+full-width dividend-signed results, checked quotient faults, eager effects,
+independent NQAF/11 validation, unchanged successful earlier source bytes and
+exact-pair proof binding. The fourteen-method scoped suite and named remainder
+oracle on both actual B/C component pairs are required in addition to every
+earlier gate. Wrong-result and missing-guard variants must be detected.
+
+Metadata alone leaves `remainder_verified=false`. Missing, skipped, shortened
+or renamed suites, stale source/seed/mode identities and changed ordered oracle
+inventories cannot qualify this capability. Independent HIGH-risk review,
+actual untraced Native evidence and full Linux gates remain required. This
+section states requirements; qualification results must be recorded separately.
+It does not close C032-SIGNAL-01 or promote Stable, full Safety, Full Compiler,
+formal self-hosting or Verified `nqlc`.
+
 ## Host Runner Limit Contract
 
 The host-only `BoundedRunner` validates its policy before creating an evidence

@@ -40,6 +40,11 @@ implements a smaller experimental subset whose qualification is separate.
 - logical condition operators: `and`, `or`, `not`
 - function call expressions
 
+The experimental C0.38 subset adds eager signed `%` at the `*`/`/` level, with
+dividend-signed results. Executed zero divisors and INT64_MIN%-1 fault with
+located C0R-001/70 under the checked-quotient policy. See
+[REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md) for NQAF/11 and gates.
+
 The experimental C0.37 subset adds eager `<<` and arithmetic `>>`, with full
 i64 counts checked in0..63 and C0R-010 on executed invalid counts. Shifts bind
 between additive and relational expressions. See
