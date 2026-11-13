@@ -6,6 +6,38 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
+## C0.39 Static Byte Qualification Contract
+
+[STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md) defines SB01..SB06:
+independent literal/type/source validation, immutable RX payloads, exact output,
+old-source byte parity and fail-closed generation evidence. The 17-method source
+suite and 17-method backend suite are required alongside all older gates. Each
+actual B/C pair must execute the complete ordered 48-method oracle inventory.
+Missing, skipped, stale or substituted evidence leaves both static-byte and
+finite-Core-type flags false. Metadata cannot qualify the feature.
+
+The scoped genuine Native component proof passes 722 stages, 275 checks, 475
+artifacts and six equal comparisons, with 52 generation inputs and 48 named
+methods on each B/C pair. TracerPid is 0 before/after. Independent audits verify
+2,641 raw artifact/stream files; their preserved bytes remain private. These
+counts overlap scoped suites and are not a total of unique tests. The separate
+host MCP suite passes 163 methods. Full Linux integration qualification remains
+required through the existing eleven-gate workflow; these Native/Core results
+do not substitute for it or qualify full Native MCP/real-hardlink support.
+
+Three balanced measured samples per version, after warmup, retain identical
+AST/ELF bytes on three unchanged C0.38 workloads. On the 86,212-byte frontend
+source, Native/QEMU median supervised pipeline time changes 2.724 -> 2.820 s;
+waited CPU changes 2.367 -> 2.501 s and peak QEMU RSS 16,916 -> 17,052 KiB. The added
+verification has a measured cost; no speedup or release threshold is claimed.
+Wall time includes the existing supervisor startup. The shared stream-runtime
+size limitation is recorded in the static-byte contract.
+
+Full Compiler, formal full-language self-hosting and Verified nqlc remain
+unimplemented. Historical C032-SIGNAL-01 stays OPEN, with full Safety and broader
+platform/security qualification incomplete. This experimental milestone changes
+neither the public version/channel nor release/tag/Stable status.
+
 ## C0.38 Checked Signed Remainder Qualification Contract
 
 [REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md) defines RM01..RM06:

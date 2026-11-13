@@ -1,5 +1,16 @@
 # C0 Source Frontend
 
+## C0.39: Static Byte Literals
+
+Quoted immutable byte literals and resolved unshadowed write calls select
+NQAF/12 dialect11. Kind58 is a full-span leaf. Printable ASCII plus explicit
+byte escapes preserve all256 byte values; quote contents are opaque to operator,
+comment and native-permission recognition. C0P-015 locates malformed literals
+at their opening quote. Existing source retains its earlier AST bytes and user
+write functions resolve first. See [STATIC_BYTES.md](STATIC_BYTES.md) for the
+finite type/value/lifetime contract and matched qualification requirements.
+
+
 ## C0.38: Checked Signed Remainder
 
 ASCII `%` is a left-associative binary operator at the same precedence as
@@ -29,7 +40,7 @@ bounded stacks and existing source/token/node arena limits apply.
 
 
 The sections below retain the original scalar/NQAF/1 and later checkpoint
-contracts. The experimental source contract is **C0.38**;
+contracts. The experimental source contract is **C0.39**;
 [BITWISE.md](BITWISE.md) defines its bitwise extension and required independent
 review and qualification gates. [UNARY_NEGATION.md](UNARY_NEGATION.md) defines
 checked prefix negation and NQAF/7. [RETURN_FLOW.md](RETURN_FLOW.md) defines the

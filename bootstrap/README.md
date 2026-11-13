@@ -17,7 +17,7 @@ Machine-Level Foundation
 ```
 
 The Machine-Level Foundation, Stage 0, B0 Bootstrap Compiler, and C0 Core
-Compiler through C0.25 plus the experimental C0.32 frontend/backend are implemented. A stage
+Compiler through C0.25 plus the experimental C0.39 frontend/backend are implemented. A stage
 is not marked implemented
 until its artifacts and reproducible tests exist. C0.20 adds indirect byte
 loading for terminating, byte-exact source traversal; C0.21 adds the matching
@@ -54,7 +54,7 @@ The C0.31 reviewed seeds were installed and passed all final postinstallation ch
 self-hosting. R0/NASM remains the public default; `--backend canonical` selects
 the experimental components through existing public commands.
 
-C0.32 adds lexical `unsafe` invariants, native argc/argv, checked arena addresses
+The retained C0.32 checkpoint added lexical `unsafe` invariants, native argc/argv, checked arena addresses
 and raw Linux x86_64 syscalls, with independently checked NQAF/6 source/AST
 permission. The actual native file-reader source and complete-source A/B/C
 generations pass; new B/C artifacts are byte-identical. Final main/MCP/probe
@@ -63,11 +63,19 @@ so these results do not qualify stable/security promotion.
 See [NATIVE_OS.md](compiler/c0/NATIVE_OS.md). The machine/Stage0/B0 trust root,
 C0.25 emitter and existing capacity bounds remain unchanged. This is not full
 Safety, full-language self-hosting or completed Python/LLVM toolchain migration;
-public VERSION1.0.2a1/CHANNELdev are unchanged.
+its historical VERSION1.0.2a1/CHANNELdev were unchanged at that checkpoint.
 The full-main1079 result predates the four-immediate diagnostic formatter fix.
-Current post-fix component/proof/MCP/public/assurance results and the unrun
-post-fix full main are distinguished in the
-[session report](../docs/project/VALIDATION.md).
+That checkpoint's post-fix component/proof/MCP/public/assurance results and
+then-unrun full main remain distinguished from later qualified results in the
+[validation history](../docs/project/VALIDATION.md).
+
+Current C0.39 components add immutable static byte values with inferred local
+types and complete stdout writing through independently validated NQAF/12.
+The [static byte contract](compiler/c0/STATIC_BYTES.md) defines the bounded
+grammar, RX representation, exact type rules, machine cost and required fresh
+generation/platform gates. C0.25 and the Machine/Stage0/B0 trust chain are
+preserved. Public metadata remains `1.0.0-alpha.1`/`dev`; Full Compiler, formal
+full-language self-hosting and Verified nqlc remain unimplemented.
 
 The older 49-byte token-table helper is retained only
 as a bounded proof, not as an untrusted-stream framing validator.

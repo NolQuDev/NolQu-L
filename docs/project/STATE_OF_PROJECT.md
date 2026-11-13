@@ -26,8 +26,10 @@ outside the canonical compiler stages.
 - Bootstrap Compiler B0: `PASS`
 - Core Compiler C0.25 source-driven bounded expression parser: `PASS`
 - C0.31 capacity/access foundation: completed and verified within its original scope
-- C0.38 source frontend (B0-built, NQAF/1..11): checked remainder/shifts, short-circuit logic, eager i64 bitwise, checked unary negation and structural returns, experimental
-- C0.38 AST backend (checked ELF/native argv/syscalls/unary/bitwise/logical/shifts/remainder): exact-pair scoped/generation qualification required, experimental
+- C0.39 source frontend (B0-built, NQAF/1..12): static byte literals plus checked remainder/shifts, short-circuit logic, eager i64 bitwise, checked unary negation and structural returns, experimental
+- C0.39 AST backend: independently validated finite i64/static-byte types, RX descriptors and complete stdout writing; exact-pair scoped/generation qualification required, experimental
+- Static values support local alias/assignment and program lifetime. Ordinary
+  function parameters/returns remain i64; see [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md).
 - C0.38 signed remainder, checked quotient faults, wire ownership, 68-byte
   emission and required paired qualification are defined in
   [REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md).
@@ -136,7 +138,7 @@ implementation now exposes these same components through public `nqlc`, project
 remains `nasm`/R0. This access work has its own final integration gates; the
 historical capacity results above are not a claim that those gates have run.
 
-## Current Native Capability — C0.32
+## Native Capability Introduced In C0.32
 
 C0.32 adds lexical `unsafe` blocks with a required nonempty invariant, native
 `arg_count`/`arg_copy`, unsafe checked `byte_address` and raw `syscall6` to the
@@ -188,9 +190,9 @@ the exact current contract and its safety/verification limits.
 
 ## Main Architectural Debt
 
-- The active AST backend has one scalar type and one compilation unit. Modules
+- The active AST backend has i64 and immutable static bytes in one compilation unit. Modules
   and the Full Compiler remain missing; public CLI/project/MCP access to the
-  experimental C0.32 subset is implemented, with capacity and explicit byte/stream/native
+  experimental C0.39 subset is implemented, with capacity and explicit byte/stream/native
   profiles bounded as above
 - C0.25's older 49-byte token-table helper assumes complete tokenizer output;
   it does not validate short input framing and is not the new source frontend
@@ -200,15 +202,15 @@ the exact current contract and its safety/verification limits.
 ## Current Direction
 
 Use the tested [canonical toolchain access](../compiler/CANONICAL_TOOLCHAIN.md)
-as the foundation for full NolQu-L toolchain migration. The coherent C0.32
-source/seed/pin/proof set is already installed in the isolated worktree. Preserve
-that set while resolving the unexplained comparison-backend SIGKILL and the
-remaining stable/security qualification gaps. The former 8192-byte/u16 blocker
-was resolved by C0.31; current frontend/backend sources measure80300/199908 bytes
-and17900/47114 tokens,
-producing 15739/40939 nodes through u32 NQAF/5. Both fit the unchanged
-262144-byte, 65536-token/node bounds and have byte-identical B/C component
-generations. Default programs keep
+as the foundation for full NolQu-L toolchain migration. Preserve each qualified
+matched source/seed/pin/proof set and failed evidence while resolving the
+historical comparison-backend SIGKILL and remaining stable/security gaps.
+The former 8192-byte/u16 blocker was resolved by C0.31. C0.39 frontend/backend
+sources measure91370/237431 bytes and20329/56093 tokens, producing17679/48428
+nodes through u32 NQAF/5. Both fit the unchanged262144-byte,
+65536-token/node bounds; changed component pairs require fresh complete-source
+generation/platform qualification. Static bytes cannot yet cross ordinary i64
+parameter/return boundaries. Default programs keep
 64 KiB byte storage; the explicit compiler profile maps 16 MiB RW/NX. These
 component facts do not establish a general-purpose type/module system or Full
 Compiler. Preserve the B0-built boundary and existing C0.25 emitter gates. R0

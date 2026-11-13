@@ -2,12 +2,15 @@
 
 ## Current Experimental Core Direction
 
-The active public version/channel is `1.0.0-alpha.1`/`dev`. The matched C0.38
-frontend/backend extend the C0.25 emitter with checked signed remainder; see
-[REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md). Complete-source
+The active public version/channel is `1.0.0-alpha.1`/`dev`. The matched C0.39
+frontend/backend add immutable static byte values, finite local inference and
+complete stdout writing; see [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md).
+Checked signed remainder remains available. Complete-source
 component generations remain bounded evidence, not Full Compiler or formal
 self-hosting. Next work must follow measured source coverage and correctness
 gaps, with unchanged canonical trust roots and explicit Safety boundaries.
+Static bytes cannot yet cross ordinary i64 parameter/return boundaries;
+typed signatures and general string/resource semantics need a separate design.
 The older release-line sketches below are historical planning context, not
 announcements of a supported stable line or a new release/version decision.
 

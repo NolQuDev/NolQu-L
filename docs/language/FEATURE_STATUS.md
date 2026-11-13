@@ -12,9 +12,12 @@ The Core/Experimental lists below describe the Reference Compiler R0
 compatibility language. Canonical C0 has its own bounded experimental subset;
 parser recognition and concept-document targets do not imply support in both.
 
-### Canonical C0.38 Experimental Subset
+### Canonical C0.39 Experimental Subset
 
 - checked signed i64, lexical bindings, comparisons, if/else and while
+- immutable byte literals, inferred i64/static-byte local types and complete
+  write(value); exact global user shadows retain priority, user parameters/
+  returns stay i64. General strings/types/ownership are not implemented
 - checked signed `%`, with dividend-signed remainder and zero/MIN%-1 faults
 - eager 64-bit bitwise `&`, `^`, `|` and unary `~`
 - eager `<<` and arithmetic `>>`, with full i64 counts checked in0..63
@@ -26,7 +29,7 @@ parser recognition and concept-document targets do not imply support in both.
 - native `arg_count` and byte-preserving `arg_copy`
 - contextual lexical `unsafe` blocks with a required nonempty invariant comment
 - unsafe checked `byte_address` and raw Linux x86_64 `syscall6`
-- direct standalone ELF, NQAF/1..10 compatibility and additive /11 dialect10
+- direct standalone ELF, NQAF/1..11 compatibility and additive /12 dialect11
 - actual native file-reader source and verified scoped/generation execution
 
 The C0.32 baseline exact-source Linux qualification of `Testing` at `75b2309f` passes eleven gates,
@@ -44,6 +47,8 @@ lifetime checker, full Safety modes, Full Compiler or full self-hosting. Unsafe
 source containment is checked independently by the backend; it is not proof of
 every later kernel effect. C0.33 return-flow evidence and minimum component
 compatibility are defined in [RETURN_FLOW.md](../../bootstrap/compiler/c0/RETURN_FLOW.md).
+C0.39 byte syntax, lifetime/representation, finite type checks and matched
+qualification are defined in [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md).
 C0.38 remainder semantics, checked quotient faults, independent wire validation
 and68-byte emission are defined in [REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md).
 C0.37 shift semantics, count diagnostics, wire validation and46-byte emission

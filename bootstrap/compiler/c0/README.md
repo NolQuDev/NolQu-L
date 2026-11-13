@@ -5,17 +5,24 @@ compiler. Its canonical source is NolQu-L Core-0 and its canonical executable
 is built by B0, not by a host compiler or assembler.
 
 The emitter described by `compiler.nq`/`c0.seed` remains C0.25. The separate
-frontend/backend source contract is experimental C0.38; see
-[REMAINDER.md](REMAINDER.md) and
+frontend/backend source contract is experimental C0.39; see
+[STATIC_BYTES.md](STATIC_BYTES.md) and [REMAINDER.md](REMAINDER.md) and
 [SHORT_CIRCUIT.md](SHORT_CIRCUIT.md). Bitwise behavior remains in
 [BITWISE.md](BITWISE.md). Checked negation remains defined in
 [UNARY_NEGATION.md](UNARY_NEGATION.md). The C0.33 return contract remains in
 [RETURN_FLOW.md](RETURN_FLOW.md). C0.32 native behavior remains defined in
 [NATIVE_OS.md](NATIVE_OS.md). Scoped syntax/ABI/utility tests and complete-source
-component generations passed for the qualified C0.37 pair. C0.38 requires fresh
+component generations passed for the qualified C0.37 pair. Each changed pair, including C0.39, requires fresh
 exact-pair and platform qualification; those prior receipts do not qualify it.
 These are bounded component proofs, not
 Full Compiler, formal self-hosting or complete NolQu-L Safety.
+
+C0.39 adds immutable byte literals, inferred i64/static-byte local types and
+a complete-write fallback with exact user-function shadowing. NQAF/12 dialect11
+independently checks literal framing/spans/types; descriptors and payload live
+in RX for the program lifetime, with no dynamic allocation. User parameters/
+returns remain i64. Required tests cover all256 bytes, bounds, failures, old
+bytes and actual B/C typed-output oracles; see [STATIC_BYTES.md](STATIC_BYTES.md).
 
 C0.38 adds eager checked signed i64 `%`, with dividend-signed remainder and
 the same precedence as `*`/`/`. Zero divisors and INT64_MIN%-1 produce located
