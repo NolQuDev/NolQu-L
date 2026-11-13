@@ -11,6 +11,9 @@ python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_shifts.p
 printf 'PASS c0-shifts\n'
 python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_remainder.py" -v
 printf 'PASS c0-remainder\n'
+python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_static_bytes_frontend.py" -v
+python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_static_bytes.py" -v
+printf 'PASS c0-static-bytes\n'
 printf 'PASS c0-capacity\n'
 
 python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_component_generations.py" -v

@@ -22,11 +22,12 @@ line. Older version strings describe historical checkpoints, not current maturit
 ## Backend Limitations
 
 - the canonical Machine/Stage0/B0 and C0.25 emitter are implemented; separate
-  C0.38 source frontend/direct-ELF backend extend the completed C0.31 foundation
-- current C0 supports one compilation unit and signed i64, not the full R0
-  language, general types/modules/FFI or inline assembly
+  C0.39 source frontend/direct-ELF backend extend the completed C0.31 foundation
+- current C0 supports one compilation unit, signed i64 and immutable static byte
+  values. It does not implement dynamic/general strings, string parameters/
+  returns, the full R0 language, general types/modules/FFI or inline assembly
 - complete compiler-source A/B/C generations passed at the qualified C0.37
-  checkpoint; C0.38 requires fresh exact-pair and platform qualification.
+  checkpoint; C0.39 requires fresh exact-pair and platform qualification.
   Prior receipts do not qualify a changed pair. Full Compiler, full-language
   Self-Hosting and the later Verified compiler remain unimplemented
 - historical C0.34 Linux qualification retains all 1,087 C0.33 baseline markers
@@ -40,6 +41,12 @@ line. Older version strings describe historical checkpoints, not current maturit
   Logical expressions remain available in /9+ with reserved and/or/not words;
   Core bitwise precedence differs from R0 as documented in
   [BITWISE.md](../../bootstrap/compiler/c0/BITWISE.md)
+- static bytes in /12 have program lifetime and an RX descriptor; assignment
+  preserves inferred type. No string allocator, ownership checker or raw-pointer
+  conversion is added; see [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md)
+- the existing shared stream-runtime layout makes even a small canonical write
+  program roughly 6 MiB. Static byte storage is bounded; compact runtime/helper
+  placement has not been implemented.
 - native unsafe blocks check permission/headers/source containment, not general
   ownership, lifetimes, syscall-specific kernel effects or full Safety modes
 - `byte_address` exposes raw bits after checking a span; later pointer use is

@@ -59,11 +59,11 @@ prove deterministic instruction emission, memory and control-flow patches,
 symbol resolution, runnable ELF generation, diagnostics, and resource cleanup.
 
 Bootstrap Compiler B0 is implemented and built by Stage 0. It builds the C0.25
-bounded emitter and the separate C0.38 source frontend and AST backend. These
+bounded emitter and the separate C0.39 source frontend and AST backend. These
 components compile checked i64 functions, lexical control flow, byte/stream
 operations, structural return analysis, checked unary negation, eager i64 bitwise operations and explicitly
 scoped native operations, short-circuit logic, checked shifts and checked signed
-remainder directly to ELF64. NQAF/1..11 is the versioned
+remainder and immutable static byte values directly to ELF64. NQAF/1..12 is the versioned
 frontend/backend boundary; the backend validates the stream independently before code generation.
 The runtime contract and gates are in
 [RUNTIME_IO.md](../../bootstrap/compiler/c0/RUNTIME_IO.md),
@@ -73,7 +73,11 @@ The runtime contract and gates are in
 [UNARY_NEGATION.md](../../bootstrap/compiler/c0/UNARY_NEGATION.md),
 [SHORT_CIRCUIT.md](../../bootstrap/compiler/c0/SHORT_CIRCUIT.md) and
 [SHIFTS.md](../../bootstrap/compiler/c0/SHIFTS.md) and
-[REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md).
+[REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md) and
+[STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md).
+The finite type pass distinguishes i64 and static bytes; ordinary function
+parameters/returns remain i64. RX descriptors have program lifetime and use
+the existing stream writer without a string heap or an additional Safety mode.
 
 Full Compiler, self-hosting and Verified nqlc remain `NOT_IMPLEMENTED`. The C0
 components have bounded full-source generation comparisons; this remains a

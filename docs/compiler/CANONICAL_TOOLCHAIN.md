@@ -4,7 +4,7 @@ Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
 below describe those historical runs; no release or bootstrap promotion occurs.
 
-The experimental C0.38 frontend/backend can be selected through the existing
+The experimental C0.39 frontend/backend can be selected through the existing
 `nqlc`, `nql`, installed commands and MCP tools. Default source behavior remains
 `nasm`/Reference Compiler R0. This connects implemented components to public
 commands; Full Compiler, self-hosting and Verified status remain false.
@@ -48,6 +48,14 @@ precedence as `*`/`/`. Executed zero divisors and INT64_MIN%-1 produce located
 C0R-001/70; new syntax selects /11 dialect10 and needs the matching component
 pair. See [REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md). Earlier
 successful source/wire/ELF bytes, commands, bounds and native ABI are preserved.
+
+C0.39 adds quoted immutable byte literals, inferred i64/static-byte locals and
+write(value), which writes the complete byte span to fd1 and returns its length.
+Exact global user functions retain priority. New /12 dialect11 source requires a
+matched pair; string handles never implicitly become integers or raw pointers.
+Parameters/returns remain i64. See
+[STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md) for syntax,
+representation, diagnostics and qualification.
 
 ## Compile, Check And Run
 
@@ -111,7 +119,7 @@ comment and checked arena pointer do not establish later kernel/lifetime safety.
 ## Supported Subset And Host Requirements
 
 Canonical input is one `.nql` compilation unit targeting `x86_64-linux`.
-It supports signed i64 values, checked arithmetic, comparisons, lexical bindings,
+It supports signed i64 and immutable static byte values, checked arithmetic, comparisons, lexical bindings,
 assignment, branches/loops, named functions with at most six arguments, bounded
 recursion and `byte_load`, `byte_store`, `input_read`, `output_write`, `error_write`.
 It also supports `arg_count()` and checked `arg_copy(index,offset,capacity)`.
@@ -123,7 +131,7 @@ The existing R0 `func`/print/module language has broader compatibility coverage;
 selecting canonical does not translate that language or fall back to R0.
 
 Current bounds are 262144 source bytes, 65536 tokens and 65536 AST nodes, 64
-nested control bodies, 64 active function frames and 4096 bytes/512 i64 slots per
+nested control bodies, 64 active function frames and 4096 bytes/512 eight-byte value slots per
 frame. The ELF cap is 8388608 bytes. Default byte storage is 65536 bytes.
 `--compiler-profile` explicitly selects the existing 16777216-byte RW/NX arena;
 it is never inferred from source length. This mapped bound is not measured RSS.

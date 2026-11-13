@@ -31,6 +31,15 @@
 
 ### Added
 
+- Add experimental C0.39 immutable byte literals, inferred i64/static-byte local
+  types and complete write(value) with exact global user-function priority.
+  NQAF/12 validates quoted spans and value types independently; RX descriptors
+  need no dynamic allocation. Preserve older source/ELF bytes, i64 user ABI,
+  capacities, B0 and public version. Require paired artifact qualification,
+  independent review and actual B/C static-byte oracles; no Full/Safety or
+  self-hosting promotion. [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md)
+  defines escapes, lifetime, diagnostics, machine cost and rollback.
+
 - Add experimental C0.38 checked signed i64 `%` with eager left-to-right
   operands, dividend-signed results and the same precedence as `*`/`/`.
   Zero divisors and INT64_MIN%-1 produce located C0R-001/70; failed diagnostic

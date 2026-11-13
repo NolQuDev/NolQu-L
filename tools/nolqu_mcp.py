@@ -1803,7 +1803,7 @@ def compile_nql(
     Compile a canonical .nql source with nqlc. A .nq source is accepted only
     as a legacy compatibility input. Ordinary compilation supplies an output
     and never implicitly runs. Explicit --run remains supported. Backend is
-    nasm by default; canonical selects the experimental C0.38 subset.
+    nasm by default; canonical selects the experimental C0.39 subset.
     """
     return _compile_result(source_file, flags, output_file, emit_asm, backend,
                            compiler_profile, compiler=NQLC, require_extension=True)
@@ -3584,11 +3584,11 @@ def canonical_bootstrap_status() -> dict[str, Any]:
         "architecture": "x86_64-linux",
         "current_c0": _current_c0_version(),
         "current_frontend": (
-            "C0.38" if (ROOT / "bootstrap/compiler/c0/frontend.nql").is_file()
+            "C0.39" if (ROOT / "bootstrap/compiler/c0/frontend.nql").is_file()
             else "NOT_IMPLEMENTED"
         ),
         "current_backend": (
-            "C0.38" if (ROOT / "bootstrap/compiler/c0/backend.nql").is_file()
+            "C0.39" if (ROOT / "bootstrap/compiler/c0/backend.nql").is_file()
             else "NOT_IMPLEMENTED"
         ),
         "stages": stages,
@@ -3605,6 +3605,8 @@ def canonical_bootstrap_status() -> dict[str, Any]:
         "short_circuit_verified": False,
         "shifts_verified": False,
         "remainder_verified": False,
+        "static_bytes_verified": False,
+        "core_value_types_verified": False,
         "full_compiler_verified": False,
         "self_hosting_verified": False,
         "canonical_chain": [
@@ -3853,11 +3855,11 @@ def bootstrap_diff(stage_a: str, stage_b: str) -> dict[str, Any]:
 
 _C031_SCOPE: ContextVar[dict[str, Any] | None] = ContextVar("c031_probe", default=None)
 _C031_PROBE_SECONDS = 2400.0
-_C031_TEST_SHA256 = "3b7b48eada18fe6d7938d8d48e571e34b1d4be4716376d2002fa658e3173500e"
-_C031_GATE_SHA256 = "56174e303c6dda79d775bf4e56266d8a217cdca164143860b83dfbe4f6084c80"
+_C031_TEST_SHA256 = "dbe6f6f275c24c0179eba2dd31cc805988a193766e232664a354163906f62360"
+_C031_GATE_SHA256 = "6ccc7ed0fb43c02c2b67335563eec68b6191159ee8272fb491f31a6cbcc1b275"
 _C031_LOADED_SHA256 = _sha256(pathlib.Path(__file__))
 _C031_FLAGS = ("capacity_verified", "compiler_profile_verified", "component_generation_verified",
-               "unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified", "shifts_verified", "remainder_verified")
+               "unsafe_blocks_verified", "process_arguments_verified", "syscall_abi_verified", "return_flow_verified", "unary_negation_verified", "bitwise_verified", "short_circuit_verified", "shifts_verified", "remainder_verified", "static_bytes_verified", "core_value_types_verified")
 _C031_UNMEASURED = "next compiler workload not measured; Full Compiler remains NOT_IMPLEMENTED"
 _C036_SHORT_CIRCUIT_SELECTOR = "test_c0_short_circuit.ShortCircuitTests.test_generation_short_circuit_contract"
 _C036_SHORT_CIRCUIT_METHODS = (
@@ -3916,6 +3918,10 @@ _C038_REMAINDER_METHODS = (
     "test_exact_machine_bytes_and_wrongcode_sensitivity",
     "test_generation_remainder_contract",
 )
+_C039_STATIC_BYTES_SELECTOR = "test_c0_static_bytes.StaticBytesTests.test_generation_static_bytes_contract"
+_C039_STATIC_FRONTEND_METHODS = ('test_minimal_literal_is_full_span_leaf_and_v12', 'test_empty_printable_and_supported_escapes', 'test_all_256_bytes_in_both_hex_cases', 'test_invalid_raw_controls_and_nonascii_locate_opening_quote', 'test_invalid_escape_introducers', 'test_hex_requires_two_ascii_digits_and_terminated_quote', 'test_quoted_comment_brace_keyword_and_native_text_is_opaque', 'test_comments_and_unsafe_header_quotes_do_not_open_literals', 'test_literals_do_not_grant_native_permission', 'test_unshadowed_write_selects_v12_without_literal_or_arity_check', 'test_exact_global_write_shadow_in_both_orders_even_wrong_arity', 'test_grouping_calls_operators_and_statement_boundaries', 'test_wide_literal_span_offset_and_high_node_ids', 'test_source_boundaries_and_eof_failure_publish_no_prefix', 'test_literal_truncations_and_bounded_deterministic_mutations', 'test_frozen_old_source_transport_bytes', 'test_short_reads_and_waiting_for_real_eof')
+_C039_STATIC_BACKEND_METHODS = ('test_independent_static_binding_and_write', 'test_all_bytes_and_both_hex_cases', 'test_empty_large_and_escaped_literals', 'test_inferred_alias_assignment_scope_and_loop', 'test_scalar_contexts_reject_strings_even_when_skipped', 'test_intrinsic_argument_types_and_write_shadowing', 'test_literal_contents_do_not_change_native_permission', 'test_wire_versions_and_leaf_validation', 'test_independent_type_validation_before_output', 'test_literal_spans_cannot_alias_or_run_backwards', 'test_high_spans_and_high_node_ids', 'test_maximum_source_literal_keeps_full_byte_count', 'test_exact_machine_descriptor_and_rx_layout', 'test_output_and_diagnostic_failures', 'test_static_handle_survives_calls_and_mapped_arena_io', 'test_bounded_wire_mutation_is_controlled', 'test_generation_static_bytes_contract')
+
 # Reviewed C036 inventory, retained verbatim: a count plus one named selector
 # would permit a different 45-method oracle set to replace the old coverage.
 _C036_GENERATION_ORACLES = (
@@ -4033,6 +4039,34 @@ def _c038_remainder_methods() -> tuple[str, ...]:
     return _C038_REMAINDER_METHODS
 
 
+def _c039_static_bytes_methods() -> dict[str, tuple[str, ...]]:
+    reviewed = (
+        ("frontend", "test_c0_static_bytes_frontend.py", "StaticBytesFrontendTests", _C039_STATIC_FRONTEND_METHODS),
+        ("backend", "test_c0_static_bytes.py", "StaticBytesTests", _C039_STATIC_BACKEND_METHODS),
+    )
+    result = {}
+    for part, filename, class_name, expected in reviewed:
+        module = ast.parse((ROOT / "tests/bootstrap" / filename).read_text())
+        classes = [node for node in module.body
+                   if isinstance(node, ast.ClassDef) and node.name == class_name]
+        if len(classes) != 1:
+            raise ValueError("missing or duplicate static byte test class")
+        methods = [node for node in classes[0].body
+                   if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test_")]
+        names = tuple(node.name for node in methods)
+        if (any(isinstance(node, ast.AsyncFunctionDef) for node in methods)
+                or len(names) != len(expected) or set(names) != set(expected)):
+            raise ValueError("static byte suite does not match its reviewed synchronous method inventory")
+        for node in classes[0].body:
+            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                if any(isinstance(target, ast.Name) and target.id.startswith("test_")
+                       for binding in targets for target in ast.walk(binding)):
+                    raise ValueError("static byte suite has an unexpected test method assignment")
+        result[part] = expected
+    return result
+
+
 def _c037_generation_oracles() -> tuple[str, ...]:
     module = ast.parse((ROOT / "tests/bootstrap/test_c0_component_generations.py").read_text())
     assignments = []
@@ -4048,9 +4082,9 @@ def _c037_generation_oracles() -> tuple[str, ...]:
         raise ValueError("invalid reviewed oracle declaration")
     selectors = ast.literal_eval(assignments[0].value)
     expected = (*_C036_GENERATION_ORACLES[:4], _C037_SHIFT_SELECTOR,
-                _C038_REMAINDER_SELECTOR, *_C036_GENERATION_ORACLES[4:])
+                _C038_REMAINDER_SELECTOR, _C039_STATIC_BYTES_SELECTOR, *_C036_GENERATION_ORACLES[4:])
     if not isinstance(selectors, tuple) or selectors != expected:
-        raise ValueError("invalid reviewed oracle set: require the ordered old46 plus the named remainder oracle")
+        raise ValueError("invalid reviewed oracle set: require the ordered old47 plus the named static byte oracle")
     return selectors
 
 
@@ -4610,7 +4644,7 @@ def _c031_validate(directory: pathlib.Path, before: dict[str, Any]) -> dict[str,
             require(stage["binary"] == str(ROOT / "bootstrap/compiler/b0/x86_64-linux/b0.seed"), "B0 producer mismatch")
         elif label.endswith("-named-oracles"):
             require(stage["command"][1:] == ["-B", "-W", "error::ResourceWarning", "-m", "unittest", "-v", *selectors], "oracle command mismatch")
-            require(stage["stdout"] == empty and re.search(rb"\nRan 47 tests in [0-9.]+s\n\nOK\n$", streams["stderr"].read_bytes())
+            require(stage["stdout"] == empty and re.search(rb"\nRan 48 tests in [0-9.]+s\n\nOK\n$", streams["stderr"].read_bytes())
                     and not re.search(rb"(?im)^SKIP\b|\bskipped=|\.\.\. skipped ", streams["stderr"].read_bytes()),
                     "incomplete or skipped oracle output")
         elif label.endswith(("-frontend", "-backend")):
@@ -4703,12 +4737,12 @@ def _c031_proof() -> dict[str, Any]:
                         ("c0_frontend", {"PASS c0-frontend"}),
                         ("c0_backend", {"PASS c0-control-flow", "PASS c0-functions", "PASS c0-return-flow", "PASS c0-unary-negation", "PASS c0-bitwise", "PASS c0-short-circuit", "PASS c0-runtime-io",
                                         "PASS c0-capacity-backend", "PASS c0-native-os", "PASS c0-backend"}),
-                        ("c0_capacity", {"PASS c0-capacity", "PASS c0-shifts", "PASS c0-remainder", "PASS c0-component-generations"}),
+                        ("c0_capacity", {"PASS c0-capacity", "PASS c0-shifts", "PASS c0-remainder", "PASS c0-static-bytes", "PASS c0-component-generations"}),
                     ):
                         remaining = scope["deadline"] - time.monotonic()
                         if remaining <= 0:
                             proof["timed_out"] = True
-                            raise ValueError("C0.38 aggregate gate budget exhausted")
+                            raise ValueError("C0.39 aggregate gate budget exhausted")
                         command_directory = directory / name
                         result = _c031_command(["bash", str(ROOT / f"tests/bootstrap/{name}.sh")],
                                                command_directory, remaining, environment)
@@ -4729,8 +4763,9 @@ def _c031_proof() -> dict[str, Any]:
                         if name == "c0_capacity":
                             _c037_shift_methods()
                             _c038_remainder_methods()
+                            _c039_static_bytes_methods()
                             summaries = re.findall(rb"\nRan ([0-9]+) tests? in [0-9.]+s\n\nOK\n", error_output)
-                            if summaries != [b"18", b"29", b"20", b"18", b"14", b"6"]:
+                            if summaries != [b"18", b"29", b"20", b"18", b"14", b"17", b"17", b"6"]:
                                 raise ValueError("capacity gate is missing complete required unittest suites")
                         if name == "c0_backend":
                             short_circuit_methods = _c036_short_circuit_methods()
@@ -4767,7 +4802,7 @@ def _c031_proof() -> dict[str, Any]:
 def _c031_component_probe(component: str) -> dict[str, Any]:
     state = _bootstrap_stage_state("c0_" + component)
     result: dict[str, Any] = {
-        "ok": False, component + "_version": "C0.38", "built_by": "B0",
+        "ok": False, component + "_version": "C0.39", "built_by": "B0",
         "artifact": state["artifact"], "probe_status": state["status"],
         "full_compiler_verified": False, "self_hosting_verified": False,
         **dict.fromkeys(_C031_FLAGS, False), "call_statements_verified": False,
@@ -4776,11 +4811,11 @@ def _c031_component_probe(component: str) -> dict[str, Any]:
         "byte_memory_capacity": 65536, "compiler_profile_byte_capacity": 16777216,
     }
     if component == "frontend":
-        result["format"] = "NQAF/1, NQAF/2, NQAF/3, NQAF/4, NQAF/5, NQAF/6, NQAF/7, NQAF/8, NQAF/9, NQAF/10 and NQAF/11"
+        result["format"] = "NQAF/1, NQAF/2, NQAF/3, NQAF/4, NQAF/5, NQAF/6, NQAF/7, NQAF/8, NQAF/9, NQAF/10, NQAF/11 and NQAF/12"
     else:
-        result.update(input_format="NQAF/1, NQAF/2, NQAF/3, NQAF/4, NQAF/5, NQAF/6, NQAF/7, NQAF/8, NQAF/9, NQAF/10 and NQAF/11",
+        result.update(input_format="NQAF/1, NQAF/2, NQAF/3, NQAF/4, NQAF/5, NQAF/6, NQAF/7, NQAF/8, NQAF/9, NQAF/10, NQAF/11 and NQAF/12",
                       output_format="ELF64 x86_64-linux", call_depth_capacity=64,
-                      semantics="lexical mutable i64 locals/parameters; checked arithmetic and unary negation; eager i64 bitwise operations; checked signed i64 remainder (left-to-right exactly-once operands; dividend-signed result; zero divisor and INT64_MIN%-1 fault with C0R-001); checked i64 shifts (left-to-right exactly-once operands; full signed count 0..63; invalid executed count C0R-010; left discards high bits and zero-fills; right sign-extends); short-circuit and/or (zero is false, any nonzero i64 is true; and evaluates right iff left is nonzero; or evaluates right iff left is zero; left evaluated once, selected right evaluated once; normalized 0/1); logical not (operand evaluated once, 1 iff zero); both logical operands statically checked; comparisons; structured control flow and definite return; native calls/statements; explicit bounded byte/stream profiles; contextual unsafe scopes; argv and raw six-register Linux syscalls",
+                      semantics="inferred local i64/static byte values; immutable program-lifetime byte literals and complete write(value) with exact global user shadows; user parameters/returns remain i64; lexical mutable i64 locals/parameters; checked arithmetic and unary negation; eager i64 bitwise operations; checked signed i64 remainder (left-to-right exactly-once operands; dividend-signed result; zero divisor and INT64_MIN%-1 fault with C0R-001); checked i64 shifts (left-to-right exactly-once operands; full signed count 0..63; invalid executed count C0R-010; left discards high bits and zero-fills; right sign-extends); short-circuit and/or (zero is false, any nonzero i64 is true; and evaluates right iff left is nonzero; or evaluates right iff left is zero; left evaluated once, selected right evaluated once; normalized 0/1); logical not (operand evaluated once, 1 iff zero); both logical operands statically checked; comparisons; structured control flow and definite return; native calls/statements; explicit bounded byte/stream profiles; contextual unsafe scopes; argv and raw six-register Linux syscalls",
                       **dict.fromkeys(("semantic_resolution_verified", "codegen_verified", "control_flow_verified",
                                       "lexical_scope_verified", "function_calls_verified", "parameter_scope_verified",
                                       "byte_memory_verified", "stream_io_verified"), False))
@@ -4791,7 +4826,7 @@ def _c031_component_probe(component: str) -> dict[str, Any]:
     verified = proof["ok"]
     result.update(ok=verified, artifact_sha256=state["actual_sha256"], evidence=proof,
                   exit_code=proof["exit_code"], timed_out=proof["timed_out"],
-                  blocker=_C031_UNMEASURED if verified else proof.get("error", "C0.38 evidence unavailable"),
+                  blocker=_C031_UNMEASURED if verified else proof.get("error", "C0.39 evidence unavailable"),
                   probe_status=("SOURCE_AST_FRONTEND_VERIFIED" if component == "frontend" else "SOURCE_AST_TO_ELF_VERIFIED")
                   if verified else "TIMED_OUT" if proof["timed_out"] else "UNEXPECTED_RESULT")
     for key in tuple(result):
@@ -4839,7 +4874,7 @@ def run_c0_probe() -> dict[str, Any]:
         if scope["proof"] is not None:
             proof = _c031_proof()
             if not proof["ok"]:
-                error = proof.get("error", "C0.38 evidence unavailable")
+                error = proof.get("error", "C0.39 evidence unavailable")
                 for item in (result, *components):
                     for field in tuple(item):
                         if field.endswith(("_verified", "_complete", "_identical")) or field == "source_expectation_matches":

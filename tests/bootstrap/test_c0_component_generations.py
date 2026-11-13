@@ -30,6 +30,7 @@ GENERATION_ORACLES = (
     "test_c0_short_circuit.ShortCircuitTests.test_generation_short_circuit_contract",
     "test_c0_shifts.ShiftTests.test_generation_shift_contract",
     "test_c0_remainder.RemainderTests.test_generation_remainder_contract",
+    "test_c0_static_bytes.StaticBytesTests.test_generation_static_bytes_contract",
     "test_c0_capacity_backend.CapacityBackendTests.test_wide_header_and_graph_mutations",
     "test_c0_capacity_backend.CapacityBackendTests.test_legacy_byte_parity_and_limits",
     "test_c0_capacity_backend.CapacityBackendTests.test_high_global_ids_use_local_frames",

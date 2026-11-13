@@ -1,8 +1,9 @@
-# C0.38 source-to-AST frontend with checked signed remainder, built by B0 --compiler-profile.
+# C0.39 source-to-AST frontend with bounded static bytes, built by B0 --compiler-profile.
 # Legacy NQAF/1..5 is unchanged; native scopes/operations use NQAF/6 dialect5.
 # Exact logical keywords select NQAF/9 dialect8; prefixes remain identifiers.
 # Contiguous << and >> select NQAF/10 dialect9 with exact two-byte spans.
 # Percent selects NQAF/11 dialect10, including all preceding operator kinds.
+# Quoted leaves or unshadowed write calls select NQAF/12 dialect11.
 # Flat state transitions are intentional: B0 has no nested statement blocks.
 fn main() {
     let got = input_read(1180288, 16)
@@ -57,7 +58,9 @@ fn main() {
 
     # Tokens at 327680: kind/reserved u32, offset u32, length u32; stride 12.
     # EOF has kind/length zero. Source has at least six zero lookahead bytes.
-    # Lexer states: start=0, identifier=1, decimal=2, line comment=3.
+    # Lexer states: start=0, identifier=1, decimal=2, line comment=3,
+    # quoted bytes=4, escape=5, first/second hex digit=6/7.
+    # Quote flags at 1180216..1180219 reuse idle parser scratch.
     while active * ok {
         ch = byte_load(pos)
         byte_store(1180200, state == 0)
@@ -73,6 +76,8 @@ fn main() {
         byte_store(1180209, byte_load(1180202) * (byte_load(1180205) == 0))
         temp = (ch == 35) + (ch == 47) * (byte_load(pos + 1) == 47)
         byte_store(1180211, byte_load(1180200) * (temp != 0) * (pos < count))
+        byte_store(1180216, byte_load(1180200) * (ch == 34) * (pos < count))
+        byte_store(1180217, (state == 4) * (ch == 34) * (pos < count))
 
         kind = 10 * (ch == 40) + 11 * (ch == 41)
         kind = kind + 12 * (ch == 123) + 13 * (ch == 125) + 14 * (ch == 59)
@@ -112,27 +117,39 @@ fn main() {
         index = index + 49 * (temp == 2) * (byte_load(start) == 111) * (byte_load(start + 1) == 114)
         ch = (temp == 3) * (byte_load(start) == 110) * (byte_load(start + 1) == 111)
         index = index + 50 * ch * (byte_load(start + 2) == 116)
-        kind = kind + index * byte_load(1180208) + 5 * byte_load(1180209)
+        kind = kind + index * byte_load(1180208) + 5 * byte_load(1180209) + 58 * byte_load(1180217)
         ch = byte_load(pos)
 
         error = pos
         byte_store(1180163, 1)
         temp = byte_load(1180203) + byte_load(1180204) + byte_load(1180205)
-        temp = temp + byte_load(1180210) + byte_load(1180211) + byte_load(1180207)
+        temp = temp + byte_load(1180210) + byte_load(1180211) + byte_load(1180207) + byte_load(1180216)
         ok = ok * ((byte_load(1180200) == 0) + byte_load(1180200) * (temp != 0))
         ok = ok * ((byte_load(1180209) * byte_load(1180204)) == 0)
         ok = ok * ((ch != 13) + (ch == 13) * (byte_load(pos + 1) == 10))
         # Comments are text too: reject NUL/non-ASCII instead of hiding corruption.
         ok = ok * ((pos == count) + (pos < count) * (ch != 0) * (ch < 128))
 
+        # A literal always advances one byte or fails at its opening quote.
+        # Printable contents are opaque; escape x consumes exactly two hex digits.
+        temp = (32 <= ch) * (ch <= 126)
+        index = (ch == 48) + (ch == 110) + (ch == 114) + (ch == 116) + (ch == 34) + (ch == 92) + (ch == 120)
+        temp = (state == 4) * temp + (state == 5) * (index != 0)
+        index = (48 <= ch) * (ch <= 57) + (65 <= ch) * (ch <= 70) + (97 <= ch) * (ch <= 102)
+        temp = temp + ((state == 6) + (state == 7)) * index
+        byte_store(1180218, (4 <= state) * (((temp != 0) * (pos < count)) == 0))
+        error = start * byte_load(1180218) + error * (byte_load(1180218) == 0)
+        byte_store(1180163, 16 * byte_load(1180218) + byte_load(1180163) * (byte_load(1180218) == 0))
+        ok = ok * (byte_load(1180218) == 0)
+
         active = (kind != 0) * ok
-        temp = byte_load(1180208) + byte_load(1180209)
+        temp = byte_load(1180208) + byte_load(1180209) + byte_load(1180217)
         index = start * temp + pos * (temp == 0)
         error = index * active + error * (active == 0)
         byte_store(1180163, 3 * active + byte_load(1180163) * (active == 0))
         ok = ok * ((active == 0) + active * (tokens < 65536))
         active = active * ok
-        temp = (pos - start) * temp + byte_load(1180210) + byte_load(1180215)
+        temp = (pos - start) * temp + byte_load(1180210) + byte_load(1180215) + byte_load(1180217)
         ch = 327680 + tokens * 12
         ch = ch * active + 8384512 * (active == 0)
         byte_store(ch, kind)
@@ -147,14 +164,18 @@ fn main() {
         tokens = tokens + active
 
         ch = byte_load(pos)
-        temp = byte_load(1180200) * (byte_load(1180204) + byte_load(1180205)) * (pos < count)
+        temp = byte_load(1180200) * (byte_load(1180204) + byte_load(1180205)) * (pos < count) + byte_load(1180216)
         start = pos * temp + start * (temp == 0)
         temp = byte_load(1180200) * byte_load(1180204) + byte_load(1180201) * byte_load(1180206)
         temp = temp + 2 * (byte_load(1180200) * byte_load(1180205) + byte_load(1180202) * byte_load(1180205))
         temp = temp + 3 * (byte_load(1180211) + (state == 3) * (ch != 10) * (pos < count))
+        temp = temp + 4 * (byte_load(1180216) + (state == 4) * (ch != 34) * (ch != 92))
+        temp = temp + 5 * (state == 4) * (ch == 92) + 4 * (state == 5) * (ch != 120)
+        temp = temp + 6 * (state == 5) * (ch == 120) + 7 * (state == 6) + 4 * (state == 7)
         index = byte_load(1180200) * (byte_load(1180203) + byte_load(1180204) + byte_load(1180205) + byte_load(1180210) + byte_load(1180211))
         index = index + byte_load(1180201) * byte_load(1180206) + byte_load(1180202) * byte_load(1180205)
         index = index + (state == 3) * (pos < count)
+        index = index + byte_load(1180216) + (4 <= state) * (pos < count)
         active = ((pos == count) * ((state == 0) + (state == 3))) == 0
         pos = pos + ((index != 0) + byte_load(1180215)) * (pos < count)
         state = temp
@@ -196,7 +217,7 @@ fn main() {
         # On valid source it follows an operand-introducing token, never an
         # identifier, decimal or completed parenthesized expression.
         index = byte_load(327680 + (pos - (pos != 0)) * 12)
-        temp = (kind == 17) * (index != 4) * (index != 5) * (index != 11)
+        temp = (kind == 17) * (index != 4) * (index != 5) * (index != 11) * (index != 58)
         byte_store(1180261, (byte_load(1180261) + temp) != 0)
         active = active + temp
         temp = (48 <= kind) * (kind <= 51)
@@ -210,6 +231,9 @@ fn main() {
         active = active + temp
         temp = kind == 57
         byte_store(1180265, (byte_load(1180265) + temp) != 0)
+        active = active + temp
+        temp = kind == 58
+        byte_store(1180266, (byte_load(1180266) + temp) != 0)
         active = active + temp
         byte_store(1180161, (byte_load(1180161) + active) != 0)
         pos = pos + 1
@@ -236,12 +260,14 @@ fn main() {
     # Scratch 1180200: action, 1180201: consume, 1180202: state snapshot.
     # Native metadata uses previously free [0x660000,0x6a0000): one u32
     # header-start offset per node, written only for a bounded kind45 allocation.
-    # [0x6a0000,0x6b0000) holds one exact native-name class byte per node.
+    # [0x6a0000,0x6b0000) holds one exact native/write name class byte per node.
     # Both end before inactive stores at 0x7ff000 and inside the 16 MiB arena.
-    # Scratch [1180240,1180266) is within [0x120000,0x130000).
+    # Scratch [1180240,1180268) is within [0x120000,0x130000).
     # 1180263 selects logical function envelopes and NQAF/9 dialect8.
     # 1180264 selects shift function envelopes and NQAF/10 dialect9.
     # 1180265 selects remainder function envelopes and NQAF/11 dialect10.
+    # 1180266 selects static bytes NQAF/12 dialect11; 1180267 is write's
+    # exact global user shadow, separate from native permission/class flags.
     # Action18 opens unsafe directly into statement state5; action9 closes it.
     while ok * (state != 13) {
         kind = byte_load(327680 + pos * 12)
@@ -331,7 +357,7 @@ fn main() {
 
         index = (kind == 4) * (byte_load(327680 + (pos + (pos < tokens)) * 12) == 10)
         byte_store(1180221, index)
-        temp = byte_load(1180203) * ((kind == 4) * (index == 0) + (kind == 5))
+        temp = byte_load(1180203) * ((kind == 4) * (index == 0) + (kind == 5) + (kind == 58))
         temp = temp + 2 * byte_load(1180203) * (kind == 10)
         temp = temp + 14 * byte_load(1180203) * index
         byte_store(1180200, byte_load(1180200) + temp)
@@ -624,7 +650,7 @@ fn main() {
         pos = pos + ((temp != 0) + 2 * (active == 14) + 2 * (active == 18)) * ok
     }
 
-    # Resolve all four exact global user shadows before classifying any call.
+    # Resolve exact global user shadows before classifying any call.
     # Class bytes describe names only; they never carry permission or scope.
     pos = 0
     while ok * (pos < nodes) {
@@ -645,12 +671,16 @@ fn main() {
         temp = (ch == 8) * (byte_load(start) == 115) * (byte_load(start + 1) == 121) * (byte_load(start + 2) == 115)
         temp = temp * (byte_load(start + 3) == 99) * (byte_load(start + 4) == 97) * (byte_load(start + 5) == 108)
         active = active + 4 * temp * (byte_load(start + 6) == 108) * (byte_load(start + 7) == 54)
+        temp = (ch == 5) * (byte_load(start) == 119) * (byte_load(start + 1) == 114)
+        temp = temp * (byte_load(start + 2) == 105) * (byte_load(start + 3) == 116)
+        active = active + 5 * temp * (byte_load(start + 4) == 101)
         active = active * ((kind == 39) + (kind == 42))
         byte_store(6946816 + pos, active)
         byte_store(1180256, (byte_load(1180256) + (kind == 39) * (active == 1)) != 0)
         byte_store(1180257, (byte_load(1180257) + (kind == 39) * (active == 2)) != 0)
         byte_store(1180258, (byte_load(1180258) + (kind == 39) * (active == 3)) != 0)
         byte_store(1180259, (byte_load(1180259) + (kind == 39) * (active == 4)) != 0)
+        byte_store(1180267, (byte_load(1180267) + (kind == 39) * (active == 5)) != 0)
         pos = pos + 1
     }
 
@@ -718,7 +748,9 @@ fn main() {
         kind = byte_load(index)
         state = state + (kind == 45) - (kind == 46)
         active = byte_load(6946816 + pos - 1)
-        temp = (kind == 42) * (active != 0) * (byte_load(1180255 + active) == 0)
+        temp = (kind == 42) * (active == 5) * (byte_load(1180267) == 0)
+        byte_store(1180266, (byte_load(1180266) + temp) != 0)
+        temp = (kind == 42) * (active != 0) * (active < 5) * (byte_load(1180255 + active) == 0)
         byte_store(1180260, (byte_load(1180260) + (kind == 45) + temp) != 0)
         temp = temp * (3 <= active) * (state == 0)
         start = byte_load(index + 4) + 256 * byte_load(index + 5) + 65536 * byte_load(index + 6) + 16777216 * byte_load(index + 7)
@@ -750,7 +782,7 @@ fn main() {
 
     # Header/body are emitted only after the complete parse. Wide nodes stay
     # in place. All legacy spans/IDs fit u16 because these three bounds hold.
-    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261) + byte_load(1180262) + byte_load(1180263) + byte_load(1180264) + byte_load(1180265)) != 0
+    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261) + byte_load(1180262) + byte_load(1180263) + byte_load(1180264) + byte_load(1180265) + byte_load(1180266)) != 0
     byte_store(1180165, active)
     kind = (1 + byte_load(1180162)) * (byte_load(1180161) == 0) + 3 * byte_load(1180161) + byte_load(1180160)
     kind = kind * (byte_load(1180260) == 0) + 5 * byte_load(1180260)
@@ -759,6 +791,7 @@ fn main() {
     kind = kind * (byte_load(1180263) == 0) + 8 * byte_load(1180263)
     kind = kind * (byte_load(1180264) == 0) + 9 * byte_load(1180264)
     kind = kind * (byte_load(1180265) == 0) + 10 * byte_load(1180265)
+    kind = kind * (byte_load(1180266) == 0) + 11 * byte_load(1180266)
     byte_store(6553600, 78)
     byte_store(6553601, 81)
     byte_store(6553602, 65)
@@ -766,6 +799,7 @@ fn main() {
     byte_store(6553604, ((((kind * (active == 0) + 5 * active) * (byte_load(1180260) == 0) + 6 * byte_load(1180260)) * (byte_load(1180261) == 0) + 7 * byte_load(1180261)) * (byte_load(1180262) == 0) + 8 * byte_load(1180262)) * (byte_load(1180263) == 0) + 9 * byte_load(1180263))
     byte_store(6553604, byte_load(6553604) * (byte_load(1180264) == 0) + 10 * byte_load(1180264))
     byte_store(6553604, byte_load(6553604) * (byte_load(1180265) == 0) + 11 * byte_load(1180265))
+    byte_store(6553604, byte_load(6553604) * (byte_load(1180266) == 0) + 12 * byte_load(1180266))
     byte_store(6553605, 16 + 16 * active)
     byte_store(6553608, count)
     byte_store(6553609, count / 256)
@@ -1990,6 +2024,94 @@ fn main() {
     byte_store(6560577, 102)
     byte_store(6560578, 101)
     byte_store(6560579, 10)
+    # : error[C0P-015]: invalid byte string literal; close quotes and use supported escapes
+    byte_store(6558612, 86)
+    byte_store(6560616, 58)
+    byte_store(6560617, 32)
+    byte_store(6560618, 101)
+    byte_store(6560619, 114)
+    byte_store(6560620, 114)
+    byte_store(6560621, 111)
+    byte_store(6560622, 114)
+    byte_store(6560623, 91)
+    byte_store(6560624, 67)
+    byte_store(6560625, 48)
+    byte_store(6560626, 80)
+    byte_store(6560627, 45)
+    byte_store(6560628, 48)
+    byte_store(6560629, 49)
+    byte_store(6560630, 53)
+    byte_store(6560631, 93)
+    byte_store(6560632, 58)
+    byte_store(6560633, 32)
+    byte_store(6560634, 105)
+    byte_store(6560635, 110)
+    byte_store(6560636, 118)
+    byte_store(6560637, 97)
+    byte_store(6560638, 108)
+    byte_store(6560639, 105)
+    byte_store(6560640, 100)
+    byte_store(6560641, 32)
+    byte_store(6560642, 98)
+    byte_store(6560643, 121)
+    byte_store(6560644, 116)
+    byte_store(6560645, 101)
+    byte_store(6560646, 32)
+    byte_store(6560647, 115)
+    byte_store(6560648, 116)
+    byte_store(6560649, 114)
+    byte_store(6560650, 105)
+    byte_store(6560651, 110)
+    byte_store(6560652, 103)
+    byte_store(6560653, 32)
+    byte_store(6560654, 108)
+    byte_store(6560655, 105)
+    byte_store(6560656, 116)
+    byte_store(6560657, 101)
+    byte_store(6560658, 114)
+    byte_store(6560659, 97)
+    byte_store(6560660, 108)
+    byte_store(6560661, 59)
+    byte_store(6560662, 32)
+    byte_store(6560663, 99)
+    byte_store(6560664, 108)
+    byte_store(6560665, 111)
+    byte_store(6560666, 115)
+    byte_store(6560667, 101)
+    byte_store(6560668, 32)
+    byte_store(6560669, 113)
+    byte_store(6560670, 117)
+    byte_store(6560671, 111)
+    byte_store(6560672, 116)
+    byte_store(6560673, 101)
+    byte_store(6560674, 115)
+    byte_store(6560675, 32)
+    byte_store(6560676, 97)
+    byte_store(6560677, 110)
+    byte_store(6560678, 100)
+    byte_store(6560679, 32)
+    byte_store(6560680, 117)
+    byte_store(6560681, 115)
+    byte_store(6560682, 101)
+    byte_store(6560683, 32)
+    byte_store(6560684, 115)
+    byte_store(6560685, 117)
+    byte_store(6560686, 112)
+    byte_store(6560687, 112)
+    byte_store(6560688, 111)
+    byte_store(6560689, 114)
+    byte_store(6560690, 116)
+    byte_store(6560691, 101)
+    byte_store(6560692, 100)
+    byte_store(6560693, 32)
+    byte_store(6560694, 101)
+    byte_store(6560695, 115)
+    byte_store(6560696, 99)
+    byte_store(6560697, 97)
+    byte_store(6560698, 112)
+    byte_store(6560699, 101)
+    byte_store(6560700, 115)
+    byte_store(6560701, 10)
     while pos < error {
         temp = byte_load(pos) == 10
         index = index + temp

@@ -25,7 +25,18 @@ Historical C0.29 8 KiB source failures and C0.30 capacity blockers were resolved
 by the completed capacity milestone; do not restart that work. See
 [CAPACITY.md](../../bootstrap/compiler/c0/CAPACITY.md) for preserved evidence.
 
-## Current Substantial Milestone: Native OS Access
+## Current Experimental Core: Static Byte Values
+
+C0.39 adds immutable quoted bytes, inferred local i64/static-byte types and
+complete stdout writing through NQAF/12. Descriptors/payloads reside in RX for
+program lifetime; ordinary function parameters/returns remain i64. The shared
+stream-runtime layout currently costs roughly 6 MiB for a small write executable.
+The [contract](../../bootstrap/compiler/c0/STATIC_BYTES.md) requires fresh
+matched-pair generations, both48-method B/C oracles and platform qualification.
+Earlier receipts do not qualify changed bytes. General string/typed-signature
+semantics and full Safety remain incomplete.
+
+## Retained Native OS Checkpoint
 
 Experimental C0.32 implements contextual unsafe blocks with invariant comments,
 native argc/argv copying, checked raw arena addresses and a 48-byte six-argument

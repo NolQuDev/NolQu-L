@@ -1,5 +1,23 @@
 # C0 AST Backend
 
+## C0.39: Independently Typed Static Byte Values
+
+NQAF/12 dialect11 adds kind58 with independently checked quoted syntax and
+ascending disjoint source spans, bounding total decoding by source size.
+A finite type pass distinguishes i64 from immutable program-lifetime byte
+handles; let infers and assignment preserves type. Parameters, returns,
+conditions and integer operators require i64, including skipped/unsafe paths.
+An unshadowed write fallback accepts one string and returns its byte length.
+Exact user functions named write resolve first.
+
+A17-byte literal node loads an RX descriptor handle; each aligned descriptor
+stores an address/length pair followed by payload bytes. A26-byte adapter
+tail-calls existing complete-write machinery without acquiring an arena.
+C0B-011/012 reject invalid literals/types before ELF output. Old /1..11
+successful bytes remain preserved. [STATIC_BYTES.md](STATIC_BYTES.md) defines
+representation, diagnostics, machine cost, bounds, tests and qualification.
+
+
 ## C0.38: Checked Signed Remainder Emission
 
 NQAF/11 dialect10 independently validates binary kind57 with an exact `%`
@@ -176,6 +194,7 @@ the generated program. Intervals are half-open.
 | `[0x680000,0x690000)` | Control stack, state and compiler diagnostics |
 | `[0x690000,0x790000)` | C0.32 u32 source-brace correspondence table |
 | `[0x790000,0x7d0000)` | C0.36 u32 logical parent by unique LHS root |
+| `[0x7d0000,0x7e0000)` | C0.39 u8 inferred value type by node |
 | `[0x7ff000,0x7ff100)` | Inactive stores, never semantic state |
 | `[0x800000,0x1000000)` | ELF buffer, at most 8 MiB |
 
@@ -186,7 +205,9 @@ neither adjacent tables nor reserved gaps serve as accidental zero sentinels.
 The native protected-page regression makes these boundaries observable.
 
 Graph validation finishes before subtree starts become resolved binding IDs.
-Kind-data bytes 0..7 hold a parsed i64 only for integer nodes. Function entries
+Kind-data bytes 0..7 hold a parsed i64 for integer nodes or an RX descriptor
+address for static-byte leaves; those leaves retain decoded length at8..11.
+Callee tag stores apply only to function/call kinds. Function entries
 later use bytes 0..3 for code offsets. Calls use bytes 0..3 for displacement
 locations, 4..7 for callee IDs and byte 8 for the user/intrinsic tag. Those node
 kinds are disjoint: no live literal is overwritten by a fixup. User node IDs

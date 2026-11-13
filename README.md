@@ -36,22 +36,29 @@ implemented capabilities include:
 
 The Machine-Level Foundation, Stage 0, Bootstrap Compiler B0, and Core
 Compiler emitter through C0.25 are implemented and hash-verified for x86_64 Linux.
-The B0-built C0.38 frontend/backend additionally compile structured i64 programs
+The B0-built C0.39 frontend/backend additionally compile structured i64 programs
 with lexical scopes, loops, named functions, mutable parameters and bounded
 native recursion directly to ELF, with checked byte memory and Linux stream I/O.
 Their installed capacity is 262144 source bytes and 65536 tokens/nodes, with
 versioned NQAF/5 storage, NQAF/6 dialect5 for native operations, and additive
 NQAF/7 dialect6 for checked prefix negation, plus NQAF/8 dialect7 for bitwise operations
 and NQAF/9 dialect8 for short-circuit logic, NQAF/10 dialect9 for checked shifts,
-and NQAF/11 dialect10 for checked signed remainder.
-At the qualified C0.37 checkpoint, both complete compiler sources rebuilt
-through B0 -> A -> B -> C with byte-identical B/C component pairs. C0.38
+and NQAF/11 dialect10 for checked signed remainder, plus NQAF/12 dialect11 for
+immutable static byte values.
+At earlier qualified checkpoints, both complete compiler sources rebuilt
+through B0 -> A -> B -> C with byte-identical B/C component pairs. C0.39
 requires fresh exact-pair generation and platform qualification; earlier
 receipts do not qualify the changed pair. Default program
 byte storage remains 65536 bytes; the explicit compiler profile maps 16 MiB RW/NX.
 See [CAPACITY.md](bootstrap/compiler/c0/CAPACITY.md) for source/artifact identities,
 evidence and the completed pre/postinstallation checks, and
 [RUNTIME_IO.md](bootstrap/compiler/c0/RUNTIME_IO.md) for the runtime contract.
+C0.39 adds quoted bytes, inferred local value types and complete `write(value)`
+output with a full i64 byte count. Values use immutable RX descriptors and
+program lifetime; ordinary function parameters/returns remain i64. The shared
+stream runtime currently makes a small write executable roughly 6 MiB. See
+[STATIC_BYTES.md](bootstrap/compiler/c0/STATIC_BYTES.md) for the experimental
+grammar, independent type validation, cost and qualification requirements.
 C0.38 adds eager signed i64 `%` at the `*`/`/` precedence level. Nonzero results
 have the dividend's sign; zero divisors and INT64_MIN%-1 produce located
 C0R-001 faults. See [REMAINDER.md](bootstrap/compiler/c0/REMAINDER.md) for the
@@ -87,7 +94,7 @@ Scoped tests, complete-source generations and final main/MCP/probe execution
 gates pass. An earlier unexplained comparison-backend SIGKILL remains OPEN;
 stable/security readiness is PARTIAL. See
 [NATIVE_OS.md](bootstrap/compiler/c0/NATIVE_OS.md) for the exact current boundary.
-The reliability continuation closes the post-formatter full-main gap: the
+The historical reliability continuation closed the post-formatter full-main gap: the
 unchanged baseline passed 1079 markers, then the observed host-helper revision
 passed 1080, retaining every baseline label. MCP 124, fresh combined proof,
 594 assurance invocations and 9 release checks pass on the new bound inputs.
@@ -98,7 +105,7 @@ and the historical signal, whose cause remains OPEN. Detailed session records
 remain internal.
 The Full Compiler and self-hosting generations are not implemented. Reference
 Compiler R0 remains the default `nasm` compatibility backend. Public `nqlc`
-and `nql` also expose the experimental C0.38 subset through explicit
+and `nql` also expose the experimental C0.39 subset through explicit
 `--backend canonical`; this access does not promote Full Compiler, self-hosting
 or Verified status. See the [canonical toolchain guide](docs/compiler/CANONICAL_TOOLCHAIN.md)
 for supported syntax, project/install/MCP workflows and remaining integration gates.
@@ -157,7 +164,8 @@ printf abc | /tmp/nql-checksum       # prints 43
 ```
 
 The emitted ELF targets x86_64 Linux; use `qemu-x86_64 /tmp/nql-checksum` on
-ARM Linux. The subset currently supports one `.nql` unit and signed i64 values,
+ARM Linux. The subset supports one `.nql` unit, signed i64 and immutable static
+byte values; ordinary function parameters and returns remain i64,
 with 262144 source bytes and 65536 tokens/nodes. Default byte storage is 64 KiB;
 `--compiler-profile` explicitly selects 16 MiB. For a canonical project use
 `./nql init app --backend canonical`, then `nql build/run/test/check` from the
