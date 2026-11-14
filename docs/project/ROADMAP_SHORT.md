@@ -25,7 +25,13 @@ Historical C0.29 8 KiB source failures and C0.30 capacity blockers were resolved
 by the completed capacity milestone; do not restart that work. See
 [CAPACITY.md](../../bootstrap/compiler/c0/CAPACITY.md) for preserved evidence.
 
-## Current Experimental Core: Static Byte Values
+## Current Experimental Core: Bottom Contracts And Static Bytes
+
+C0.40 adds logical bang and explicit nonreturning function results through
+NQAF/13. The [bottom contract](../../bootstrap/compiler/c0/NEVER.md) defines
+independent type/flow checks, absence of a value payload, defined return guards
+and fresh qualification with every prior oracle plus the named Never check.
+Capacities, B0, public version and explicit Safety boundaries remain unchanged.
 
 C0.39 adds immutable quoted bytes, inferred local i64/static-byte types and
 complete stdout writing through NQAF/12. Descriptors/payloads reside in RX for

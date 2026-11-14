@@ -17,7 +17,7 @@ Machine-Level Foundation
 ```
 
 The Machine-Level Foundation, Stage 0, B0 Bootstrap Compiler, and C0 Core
-Compiler through C0.25 plus the experimental C0.39 frontend/backend are implemented. A stage
+Compiler through C0.25 plus the experimental C0.40 frontend/backend are implemented. A stage
 is not marked implemented
 until its artifacts and reproducible tests exist. C0.20 adds indirect byte
 loading for terminating, byte-exact source traversal; C0.21 adds the matching
@@ -69,7 +69,10 @@ That checkpoint's post-fix component/proof/MCP/public/assurance results and
 then-unrun full main remain distinguished from later qualified results in the
 [validation history](../docs/project/VALIDATION.md).
 
-Current C0.39 components add immutable static byte values with inferred local
+Current C0.40 components add logical bang and verified bottom-result contracts
+with independently validated NQAF/13 types/flow and defensive return guards.
+The [bottom contract](compiler/c0/NEVER.md) defines no-value emission, bounded
+storage and required matched qualification. C0.39 adds immutable static byte values with inferred local
 types and complete stdout writing through independently validated NQAF/12.
 The [static byte contract](compiler/c0/STATIC_BYTES.md) defines the bounded
 grammar, RX representation, exact type rules, machine cost and required fresh

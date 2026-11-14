@@ -26,10 +26,12 @@ outside the canonical compiler stages.
 - Bootstrap Compiler B0: `PASS`
 - Core Compiler C0.25 source-driven bounded expression parser: `PASS`
 - C0.31 capacity/access foundation: completed and verified within its original scope
-- C0.39 source frontend (B0-built, NQAF/1..12): static byte literals plus checked remainder/shifts, short-circuit logic, eager i64 bitwise, checked unary negation and structural returns, experimental
-- C0.39 AST backend: independently validated finite i64/static-byte types, RX descriptors and complete stdout writing; exact-pair scoped/generation qualification required, experimental
+- C0.40 source frontend (B0-built, NQAF/1..13): logical bang and explicit bottom result syntax, preserving the preceding static-byte and integer subset, experimental
+- C0.40 AST backend: independently validated i64/static-byte/bottom types, normal/return/diverge flow and defined returning-target guards; exact-pair scoped/generation qualification required, experimental
 - Static values support local alias/assignment and program lifetime. Ordinary
-  function parameters/returns remain i64; see [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md).
+  parameters and unannotated function results remain i64; see
+  [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md) and
+  [NEVER.md](../../bootstrap/compiler/c0/NEVER.md).
 - C0.38 signed remainder, checked quotient faults, wire ownership, 68-byte
   emission and required paired qualification are defined in
   [REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md).
@@ -192,7 +194,7 @@ the exact current contract and its safety/verification limits.
 
 - The active AST backend has i64 and immutable static bytes in one compilation unit. Modules
   and the Full Compiler remain missing; public CLI/project/MCP access to the
-  experimental C0.39 subset is implemented, with capacity and explicit byte/stream/native
+  experimental C0.40 subset is implemented, with capacity and explicit byte/stream/native
   profiles bounded as above
 - C0.25's older 49-byte token-table helper assumes complete tokenizer output;
   it does not validate short input framing and is not the new source frontend
@@ -205,8 +207,8 @@ Use the tested [canonical toolchain access](../compiler/CANONICAL_TOOLCHAIN.md)
 as the foundation for full NolQu-L toolchain migration. Preserve each qualified
 matched source/seed/pin/proof set and failed evidence while resolving the
 historical comparison-backend SIGKILL and remaining stable/security gaps.
-The former 8192-byte/u16 blocker was resolved by C0.31. C0.39 frontend/backend
-sources measure91370/237431 bytes and20329/56093 tokens, producing17679/48428
+The former 8192-byte/u16 blocker was resolved by C0.31. C0.40 frontend/backend
+sources measure97051/249419 bytes and21455/59095 tokens, producing18693/49603
 nodes through u32 NQAF/5. Both fit the unchanged262144-byte,
 65536-token/node bounds; changed component pairs require fresh complete-source
 generation/platform qualification. Static bytes cannot yet cross ordinary i64

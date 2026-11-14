@@ -1,5 +1,16 @@
 # C0 AST Backend
 
+## C0.40: Independently Checked Bottom Contracts
+
+NQAF/13 dialect12 extends the finite type table with bottom=3. Source-owned
+function annotations, all operand/argument types and structured normal/return/
+diverge edges validate before ELF output. Strict bottom composition emits no
+invented value; short-circuit value-producing paths remain live. Dead source
+retains name, arity and native-permission checks. Older /1..12 rules remain.
+Declared-bottom calls and physical fallthrough have a defined C0R-011/70 guard;
+failed diagnostics retain74. Main has no bottom-to-exit-status conversion.
+[NEVER.md](NEVER.md) defines fields, flow, exact costs, bounds and qualification.
+
 ## C0.39: Independently Typed Static Byte Values
 
 NQAF/12 dialect11 adds kind58 with independently checked quoted syntax and
@@ -195,6 +206,7 @@ the generated program. Intervals are half-open.
 | `[0x690000,0x790000)` | C0.32 u32 source-brace correspondence table |
 | `[0x790000,0x7d0000)` | C0.36 u32 logical parent by unique LHS root |
 | `[0x7d0000,0x7e0000)` | C0.39 u8 inferred value type by node |
+| `[0x7e0000,0x7f0000)` | C0.40 u8 function-result/call mode by node |
 | `[0x7ff000,0x7ff100)` | Inactive stores, never semantic state |
 | `[0x800000,0x1000000)` | ELF buffer, at most 8 MiB |
 

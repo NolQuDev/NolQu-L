@@ -1,5 +1,9 @@
 # C0.39 Static Byte Values
 
+C0.40 adds bottom to these historical finite type rules. Existing static-byte
+representation and lifetime remain; [NEVER.md](NEVER.md) defines divergent
+initializers/assignments and explicit nonreturning result annotations.
+
 Maturity: EXPERIMENTAL. This unnumbered design record is PROPOSED; no formal
 RFC acceptance or stable language promise is implied. Qualification requires
 the matched frontend/backend pair, independent review and executed gates below.

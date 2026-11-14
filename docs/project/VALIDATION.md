@@ -6,6 +6,34 @@ was published on 2026-10-29 from
 `26ad9b80b5a3164a20854ce3e3798642fba3f15e`. This does not promote Stable,
 Full Compiler, formal self-hosting or whole-language security qualification.
 
+## C0.40 Bottom And Bang Qualification Contract
+
+[NEVER.md](../../bootstrap/compiler/c0/NEVER.md) defines NB01..NB07: bounded
+syntax/wire validation, source-owned contracts, independent finite types/flow,
+no invented result payload, preserved permissions and a defined returning-target
+fault. Qualification requires the fourteen-method frontend and eighteen-method
+backend suites, all earlier gates and the new actual B/C named Never oracle,
+in addition to the earlier ordered48-method inventory. Missing/stale inputs,
+substituted pairs, omitted selectors or partial success must leave Never/bang
+flags false. A previous qualified pair cannot qualify changed bytes.
+The bootstrap runner also requires four bounded producer controls for actual
+pair selection, complete named transcripts and stable input identities.
+The bounded aggregate component-probe budget is3,000 seconds. The retained
+Native C0.39 run took2,178 seconds; the new suites and expanded actual B/C
+header/oracle matrices require additional execution time. This host budget
+retains every required check and existing per-command resource limit;
+reaching the deadline still fails qualification.
+
+Six balanced Native/QEMU samples per version, after two warmups, retain identical
+AST/ELF bytes on three unchanged C0.39 workloads. For the91,370-byte frontend
+source, median supervised pipeline time changes2.545 ->2.676 seconds and waited
+CPU2.248 ->2.378 seconds; median peak QEMU RSS changes17,192 ->17,010 KiB.
+This is a measured compile-time cost, about5.8% CPU on that workload, with no
+runtime speedup claim or invented release threshold. An earlier three-sample
+run showed much wider wall-time variation and remains retained; its cause
+has not been established. These finite measurements do not characterize every
+workload or device.
+
 ## C0.39 Static Byte Qualification Contract
 
 [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md) defines SB01..SB06:

@@ -378,7 +378,7 @@ def decode_nqaf(data):
     if len(data) < 16 or data[:4] != b"NQAF":
         raise ValueError("invalid NQAF header")
     version = data[4]
-    if version in (5, 6, 7, 8, 9, 10, 11, 12):
+    if version in (5, 6, 7, 8, 9, 10, 11, 12, 13):
         if len(data) < 32:
             raise ValueError(f"truncated NQAF/{version} header")
         (_, _, size, flags, length, count, root, tokens, dialect, profile,
@@ -402,26 +402,36 @@ def decode_nqaf(data):
     if len(data) != size + length + count * size:
         raise ValueError("truncated or trailing NQAF data")
     nodes = []
+    annotations = {}
     for index in range(count):
         position = size + length + index * size
-        if version in (5, 6, 7, 8, 9, 10, 11, 12):
+        if version in (5, 6, 7, 8, 9, 10, 11, 12, 13):
             kind, node_flags, r16, offset, span, left, right, nxt, r1, r2 = struct.unpack_from(
                 "<BBHIIIIIII", data, position)
             reserved = r16 or r1 or r2
+            if version == 13 and kind == 39 and node_flags == 1:
+                if not 0 <= r1 < length or not 3 <= r2 <= length - r1:
+                    raise ValueError(f"node {index + 1}: invalid result annotation span")
+                annotations[index + 1] = (r1, r2)
+                reserved = r16
         else:
             kind, node_flags, offset, span, left, right, nxt, padding = struct.unpack_from(
                 "<BBHHHHH4s", data, position)
             reserved = padding != bytes(4)
-        if node_flags or reserved:
+        allowed_flag = version == 13 and kind == 39 and node_flags == 1
+        if (node_flags and not allowed_flag) or reserved:
             raise ValueError(f"node {index + 1}: reserved fields")
         if offset >= length or not 0 < span <= length - offset:
             raise ValueError(f"node {index + 1}: invalid span")
         if max(left, right, nxt) > count:
             raise ValueError(f"node {index + 1}: invalid ID")
         nodes.append((kind, node_flags, offset, span, left, right, nxt))
-    return dict(version=version, source_length=length, node_count=count,
-                root_id=root, token_count=tokens, dialect=dialect,
-                runtime_profile=profile, source=data[size:size + length]), nodes
+    header = dict(version=version, source_length=length, node_count=count,
+                  root_id=root, token_count=tokens, dialect=dialect,
+                  runtime_profile=profile, source=data[size:size + length])
+    if version == 13:
+        header['return_annotations'] = annotations
+    return header, nodes
 
 
 def assert_owned_graph(header, nodes):

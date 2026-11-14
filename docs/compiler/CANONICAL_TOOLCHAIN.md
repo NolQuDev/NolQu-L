@@ -4,7 +4,7 @@ Current metadata (2026-10-27): `1.0.0-alpha.1`, channel `dev`, by maintainer
 request for `NolQuDev/NolQu-L`. Older version strings in checkpoint evidence
 below describe those historical runs; no release or bootstrap promotion occurs.
 
-The experimental C0.39 frontend/backend can be selected through the existing
+The experimental C0.40 frontend/backend can be selected through the existing
 `nqlc`, `nql`, installed commands and MCP tools. Default source behavior remains
 `nasm`/Reference Compiler R0. This connects implemented components to public
 commands; Full Compiler, self-hosting and Verified status remain false.
@@ -56,6 +56,13 @@ matched pair; string handles never implicitly become integers or raw pointers.
 Parameters/returns remain i64. See
 [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md) for syntax,
 representation, diagnostics and qualification.
+
+C0.40 adds logical `!expression` and explicit `fn f() -> !` result contracts.
+The backend independently validates types and normal/return/diverge flow;
+there is no fabricated return payload or unchecked optimizer promise. NQAF/13
+requires a matched pair, with earlier source formats preserved. See
+[NEVER.md](../../bootstrap/compiler/c0/NEVER.md). Public flags and default R0
+selection remain unchanged.
 
 ## Compile, Check And Run
 

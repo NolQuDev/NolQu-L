@@ -1,5 +1,10 @@
 # C0.33 Structural Return Analysis
 
+C0.40 extends this historical guarantee for NQAF/13 with verified bottom
+calls and literal endless loops. New-format return semantics belong to the
+backend after resolution; [NEVER.md](NEVER.md) defines normal/return/diverge
+edges and the no-value ABI. The earlier rules below remain for older formats.
+
 C0.33 extends the experimental frontend/backend pair with a bounded proof that
 every normal function path returns. An exhaustive `if/else` no longer needs a
 redundant outer `return`. This uses existing syntax and NQAF nodes; it adds no

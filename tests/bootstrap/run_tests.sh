@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_c0_proof_integration.py" -v
+printf 'PASS bootstrap-generation-proof\n'
 python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_run_native_evidence.py" -v
 python3 -B -W error::ResourceWarning "$ROOT_DIR/tests/bootstrap/test_materializer_outputs.py" MaterializerOutputTests -v
 printf 'PASS bootstrap-output-protection\n'
