@@ -5,15 +5,15 @@
 The implemented canonical chain is Machine-Level Foundation -> Stage 0 -> B0
 -> Core Compiler. These stages are `PASS` in the
 [bootstrap manifest](../../bootstrap/manifest.tsv). B0 builds both the C0.25
-bounded emitter and the separate C0.39 source frontend and AST backend.
+bounded emitter and the separate C0.40 source frontend and AST backend.
 
 The Core frontend/backend path is:
 
 ```text
 NolQu-L Core source (*.nql)
-    -> C0.39 frontend
-    -> versioned NQAF/1..12
-    -> independently validating C0.39 backend
+    -> C0.40 frontend
+    -> versioned NQAF/1..13
+    -> independently validating C0.40 backend
     -> direct ELF64 x86_64 Linux executable
 ```
 
@@ -30,7 +30,11 @@ The public `nqlc` driver name and successful bounded/component-generation
 comparisons do not promote those stages. Qualification requirements, recorded
 checkpoints and open signal-attribution/platform limits are documented in
 [validation](../project/VALIDATION.md); the older C0.25 emitter and its bounded
-self-image proof remain distinct from the C0.39 components.
+self-image proof remain distinct from the C0.40 components.
+
+The experimental [bottom contract](../../bootstrap/compiler/c0/NEVER.md) adds
+logical bang and independently verified nonreturning results. It preserves
+the existing i64/static-byte model, ordinary ABI and native permission checks.
 
 ## Programming Paths And Compiler Implementations
 

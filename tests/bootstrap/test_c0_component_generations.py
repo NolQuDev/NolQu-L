@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import struct
 import subprocess
@@ -31,6 +32,7 @@ GENERATION_ORACLES = (
     "test_c0_shifts.ShiftTests.test_generation_shift_contract",
     "test_c0_remainder.RemainderTests.test_generation_remainder_contract",
     "test_c0_static_bytes.StaticBytesTests.test_generation_static_bytes_contract",
+    "test_c0_never.NeverTests.test_generation_never_and_bang_contract",
     "test_c0_capacity_backend.CapacityBackendTests.test_wide_header_and_graph_mutations",
     "test_c0_capacity_backend.CapacityBackendTests.test_legacy_byte_parity_and_limits",
     "test_c0_capacity_backend.CapacityBackendTests.test_high_global_ids_use_local_frames",
@@ -104,6 +106,8 @@ class Evidence:
                  ROOT / "tests/bootstrap/fixtures/c032/predecessor/hashes.json",
                  *ROOT.glob("tests/bootstrap/fixtures/c032/predecessor/*.nql"), *binaries.values(),
                  ROOT / "tests/bootstrap/c0_capacity.sh",
+                 ROOT / "tests/bootstrap/test_c0_never_frontend.py",
+                 ROOT / "tests/bootstrap/test_c0_never.py",
                  ROOT / "bootstrap/compiler/b0/compiler.nql0",
                  ROOT / "bootstrap/stage0/x86_64-linux/stage0.seed",
                  ROOT / "tests/bootstrap/fixtures/c031/predecessor/hashes.json",
@@ -252,6 +256,11 @@ class GenerationCase(unittest.TestCase):
         return self.executable(label, result.stdout)
 
     def run_generation_oracles(self, generation, pair):
+        self.assertIn(generation, ("B", "C"), "invalid oracle generation")
+        self.assertEqual(set(pair), {"frontend", "backend"}, "incomplete oracle generation pair")
+        for component, path in pair.items():
+            self.assertEqual(Path(path).name, generation + "-" + component,
+                             "oracle executable does not match its generation")
         self.evidence.unchanged()
         identities = {name: dict(path=str(path), **fingerprint(self.evidence.read_artifact(path)))
                       for name, path in pair.items()}
@@ -302,6 +311,10 @@ class GenerationCase(unittest.TestCase):
         self.assertEqual(result.stdout, b"")
         self.assertRegex(result.stderr, rb"\nRan " + str(len(GENERATION_ORACLES)).encode()
                          + rb" tests in [0-9.]+s\n\nOK\n$", "missing complete, skip-free oracle result")
+        methods = re.findall(rb"(?m)^([^\s()]+) \(([^()\r\n]+)\) \.\.\. ([^\r\n]+)$", result.stderr)
+        self.assertEqual(methods, [(selector.rsplit(".", 1)[1].encode(), selector.encode(), b"ok")
+                                   for selector in GENERATION_ORACLES],
+                         "missing, duplicate, replaced or failed named oracle results")
 
         # Machine artifacts are evidence from the actual named runtime tests,
         # outside their disposable program/fixture directory. Preserve canonical

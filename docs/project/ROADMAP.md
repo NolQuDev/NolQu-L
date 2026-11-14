@@ -2,9 +2,11 @@
 
 ## Current Experimental Core Direction
 
-The active public version/channel is `1.0.0-alpha.1`/`dev`. The matched C0.39
-frontend/backend add immutable static byte values, finite local inference and
-complete stdout writing; see [STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md).
+The active public version/channel is `1.0.0-alpha.1`/`dev`. The matched C0.40
+frontend/backend add logical bang and explicit verified bottom results to the
+finite i64/static-byte model; see [NEVER.md](../../bootstrap/compiler/c0/NEVER.md).
+Immutable byte values and complete stdout writing retain the contract in
+[STATIC_BYTES.md](../../bootstrap/compiler/c0/STATIC_BYTES.md).
 Checked signed remainder remains available. Complete-source
 component generations remain bounded evidence, not Full Compiler or formal
 self-hosting. Next work must follow measured source coverage and correctness

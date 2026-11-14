@@ -1,4 +1,4 @@
-# C0.39 independently typed static-byte and native NQAF-to-ELF backend, built by B0 compiler profile.
+# C0.40 candidate bottom/static-byte and native NQAF-to-ELF backend, built by B0 compiler profile.
 # Flat B0 grammar: exactly sixteen locals, all other state in the mapped arena.
 # See BACKEND.md for regions, metadata phases, legacy bytes and native lifetimes.
 fn main() {
@@ -24,7 +24,7 @@ fn main() {
         count = count + got
     }
     # Header size/field width are selected before any derived record address.
-    byte_store(6820040, (5 <= byte_load(4)) * (byte_load(4) <= 12))
+    byte_store(6820040, (5 <= byte_load(4)) * (byte_load(4) <= 13))
     byte_store(6820041, 16 + 16 * byte_load(6820040))
     byte_store(6820043, 1 + byte_load(6820040))
     byte_store(6820042, byte_load(4) * (byte_load(6820040) == 0) + byte_load(24) * byte_load(6820040))
@@ -35,7 +35,7 @@ fn main() {
     ok = ok * (0 < nodes) * (nodes <= 512 + 65024 * byte_load(6820040)) * (0 < temp) * (temp <= 512 + 65024 * byte_load(6820040))
     ok = ok * (count == byte_load(6820041) + got + byte_load(6820041) * nodes)
     ok = ok * (byte_load(0) == 78) * (byte_load(1) == 81) * (byte_load(2) == 65) * (byte_load(3) == 70)
-    ok = ok * (1 <= byte_load(4)) * (byte_load(4) <= 12) * (byte_load(5) == byte_load(6820041))
+    ok = ok * (1 <= byte_load(4)) * (byte_load(4) <= 13) * (byte_load(5) == byte_load(6820041))
     ok = ok * (byte_load(6) == 0) * (byte_load(7) == 0)
     temp = (byte_load(12) + 256 * byte_load(13)) * (byte_load(6820040) == 0) + (byte_load(16) + 256 * byte_load(16 + 1) + 65536 * byte_load(16 + 2) + 16777216 * byte_load(16 + 3)) * byte_load(6820040)
     ok = ok * (nodes == temp) * (1 <= byte_load(6820042))
@@ -104,14 +104,18 @@ fn main() {
         ok = ok * ((temp == 0) + temp * (10 <= byte_load(4)))
         byte_store(6820086, (byte_load(6820086) + temp * ok) != 0)
         ok = ok * ((kind != 57) + (kind == 57) * (11 <= byte_load(4)))
-        ok = ok * ((kind != 58) + (kind == 58) * (byte_load(4) == 12))
+        ok = ok * ((kind != 58) + (kind == 58) * (12 <= byte_load(4)))
         active = byte_load(6819860) + byte_load(6819862) + (kind == 42) + (kind == 43) + (kind == 47) + (kind == 51) + (kind == 54)
         ok = ok * (active + byte_load(6819872) + (kind == 33))
-        ok = ok * (byte_load(index + 1) == 0)
+        active = (kind == 39) * (byte_load(4) == 13)
+        ok = ok * (byte_load(index + 1) <= active)
+        temp = (8257535 + pos) * active * ok + 8384512 * (active * ok == 0)
+        byte_store(temp, byte_load(index + 1))
         temp = (byte_load(6820040) == 0)
         ok = ok * ((temp == 0) + temp * (byte_load(index + 12) == 0) * (byte_load(index + 13) == 0) * (byte_load(index + 14) == 0) * (byte_load(index + 15) == 0))
         temp = byte_load(6820040)
         ok = ok * ((temp == 0) + temp * (byte_load(index + 2) == 0) * (byte_load(index + 3) == 0))
+        temp = temp * ((active * byte_load(index + 1)) == 0)
         ok = ok * ((temp == 0) + temp * (byte_load(index + 24) == 0) * (byte_load(index + 25) == 0) * (byte_load(index + 26) == 0) * (byte_load(index + 27) == 0))
         ok = ok * ((temp == 0) + temp * (byte_load(index + 28) == 0) * (byte_load(index + 29) == 0) * (byte_load(index + 30) == 0) * (byte_load(index + 31) == 0))
         ok = ok * (0 < length) * (start < got) * (length <= got - start)
@@ -260,7 +264,7 @@ fn main() {
         ok = ok * ((active == 0) + active * (((kind == 39) + (kind == 33)) * (temp == 0) + (kind != 39) * (kind != 33) * (temp != 0)))
         ok = ok * ((byte_load(6819874) == 0) + byte_load(6819874) * (ch == 0))
         ok = ok * ((kind != 40) + (kind == 40) * byte_load(6819964) * (byte_load(6819966) < 6))
-        ok = ok * ((kind != 41) + (kind == 41) * (byte_load(6815746) == 1))
+        ok = ok * ((kind != 41) + (kind == 41) * ((byte_load(4) == 13) + (byte_load(4) != 13) * (byte_load(6815746) == 1)))
         active = (kind == 33) * (byte_load(6820042) < 3)
         ok = ok * ((active == 0) + active * (byte_load(6815746) == 1))
         temp = temp * (kind != 39) * (kind != 41) + pos * (kind == 39)
@@ -395,8 +399,11 @@ fn main() {
         temp = temp + (length == 2) * (byte_load(byte_load(6820041) + start) == 111) * (byte_load(byte_load(6820041) + start + 1) == 114)
         temp = temp + (length == 3) * (byte_load(byte_load(6820041) + start) == 110) * (byte_load(byte_load(6820041) + start + 1) == 111) * (byte_load(byte_load(6820041) + start + 2) == 116)
         ok = ok * ((byte_load(4) < 9) + (9 <= byte_load(4)) * ((byte_load(6819874) == 0) + byte_load(6819874) * (temp == 0)))
-        # Logical anchors must be complete keywords, never an identifier slice.
-        active = (52 <= kind) * (kind <= 54)
+        # /13 bang is a solitary punctuation token. Keywords keep boundaries.
+        active = (byte_load(4) == 13) * (kind == 54) * (length == 1)
+        index = (byte_load(6820041) + start + 1) * (start + 1 < got) + 8384640 * (got <= start + 1)
+        ok = ok * ((active == 0) + active * (byte_load(byte_load(6820041) + start) == 33) * (byte_load(index) != 61))
+        active = (52 <= kind) * (kind <= 54) * (active == 0)
         temp = 97 * (kind == 52) + 111 * (kind == 53) + 110 * (kind == 54)
         ok = ok * ((active == 0) + active * (length == 3 - (kind == 53)) * (byte_load(byte_load(6820041) + start) == temp))
         temp = 110 * (kind == 52) + 114 * (kind == 53) + 111 * (kind == 54)
@@ -476,7 +483,7 @@ fn main() {
     byte_store(6820141, 0)
     byte_store(6820142, 0)
     byte_store(6820143, 0)
-    while ok * (byte_load(4) == 12) * (pos <= nodes) {
+    while ok * (12 <= byte_load(4)) * (pos <= nodes) {
         error = 11
         index = 32 + got + (pos - 1) * 32
         kind = byte_load(index)
@@ -571,6 +578,12 @@ fn main() {
         temp = byte_load(32 + pos)
         active = ch == 0
         byte_store(6820121, ch)
+        left = (byte_load(4) == 13) * active * (temp != 123) * (temp != 125) * (temp != 34) * (temp != 35) * ((temp != 47) + (temp == 47) * (byte_load(33 + pos) != 47))
+        index = (6881283 + pos * 4) * left + 8384512 * (left == 0)
+        byte_store(index, count + 1)
+        left = (byte_load(4) == 13) * ((ch == 1) + (ch == 0) * ((temp == 35) + (temp == 47) * (byte_load(33 + pos) == 47)) != 0)
+        index = (6881283 + pos * 4) * left + 8384512 * (left == 0)
+        byte_store(index, 255)
         left = active * (temp == 123)
         right = active * (temp == 125)
         ok = ok * ((left == 0) + left * (count < 65)) * ((right == 0) + right * (0 < count))
@@ -587,17 +600,165 @@ fn main() {
         byte_store(index + 1, (pos + 1) / 256)
         byte_store(index + 2, (pos + 1) / 65536)
         byte_store(index + 3, (pos + 1) / 16777216)
-        ch = ((ch + (temp == 35) + (temp == 47) * (byte_load(32 + pos + 1) == 47)) != 0) * (temp != 10) * (byte_load(4) != 12)
+        ch = ((ch + (temp == 35) + (temp == 47) * (byte_load(32 + pos + 1) == 47)) != 0) * (temp != 10) * (byte_load(4) < 12)
         left = byte_load(6820121)
         right = (left == 0) * ((temp == 35) + (temp == 47) * (pos + 1 < got) * (byte_load(32 + pos + 1) == 47) != 0)
         right = right + (left == 1) * (temp != 10)
         right = right + 2 * (left == 0) * (temp == 34)
         right = right + 2 * (left == 2) * (temp != 34) * (temp != 92) + 3 * (left == 2) * (temp == 92) + 2 * (left == 3)
-        ch = ch + right * (byte_load(4) == 12)
+        ch = ch + right * (12 <= byte_load(4))
         pos = pos + 1
     }
     ok = ok * ((byte_load(4) < 6) + (6 <= byte_load(4)) * (count == 0))
-    ok = ok * ((byte_load(4) != 12) + (byte_load(4) == 12) * (ch < 2))
+    ok = ok * ((byte_load(4) < 12) + (12 <= byte_load(4)) * (ch < 2))
+
+    # /13 function headers: collect matching END source anchors in kind data.
+    pos = 1
+    next = 0
+    while ok * (byte_load(4) == 13) * (pos <= nodes) {
+        index = 32 + got + (pos - 1) * 32
+        kind = byte_load(index)
+        next = pos * (kind == 39) + next * (kind != 39)
+        temp = 1 + byte_load(index + 4) + 256 * byte_load(index + 4 + 1) + 65536 * byte_load(index + 4 + 2) + 16777216 * byte_load(index + 4 + 3)
+        active = kind == 41
+        index = (2756608 + (next - 1) * 16) * active + 8384512 * (active == 0)
+        byte_store(index, (temp))
+        byte_store(index + 1, (temp) / 256)
+        byte_store(index + 2, (temp) / 65536)
+        byte_store(index + 3, (temp) / 16777216)
+        pos = pos + 1
+    }
+    # Flat header states:0 node,1 preceding fn,2 '(',3 parameter/empty,
+    # 4 identifier,5 separator,6 arrow,7 bottom,8 real body,9 commit.
+    # State/cursor/identifier/previous-end live at6820140..167, no new locals.
+    pos = 1
+    byte_store(6820140, 0)
+    while ok * (byte_load(4) == 13) * (pos <= nodes) {
+        error = 13
+        index = 32 + got + (pos - 1) * 32
+        kind = byte_load(index)
+        left = byte_load(index + 4) + 256 * byte_load(index + 4 + 1) + 65536 * byte_load(index + 4 + 2) + 16777216 * byte_load(index + 4 + 3)
+        right = byte_load(index + 8) + 256 * byte_load(index + 8 + 1) + 65536 * byte_load(index + 8 + 2) + 16777216 * byte_load(index + 8 + 3)
+        length = byte_load(index + 24) + 256 * byte_load(index + 24 + 1) + 65536 * byte_load(index + 24 + 2) + 16777216 * byte_load(index + 24 + 3)
+        next = byte_load(index + 28) + 256 * byte_load(index + 28 + 1) + 65536 * byte_load(index + 28 + 2) + 16777216 * byte_load(index + 28 + 3)
+        ch = byte_load(6820140)
+        active = (ch == 0) * (kind == 39)
+        index = 6819840 * active + 8384512 * (active == 0)
+        byte_store(index, (left))
+        byte_store(index + 1, (left) / 256)
+        byte_store(index + 2, (left) / 65536)
+        byte_store(index + 3, (left) / 16777216)
+        index = (6881283 + left * 4) * active + 8384640 * (active == 0)
+        ok = ok * ((active == 0) + active * (byte_load(index) == 1) * (1 <= left) * ((byte_load(6820164) + 256 * byte_load(6820164 + 1) + 65536 * byte_load(6820164 + 2) + 16777216 * byte_load(6820164 + 3)) <= left))
+        temp = byte_load(8257535 + pos)
+        ok = ok * ((active * temp == 0) + active * temp * (left + right <= length) * (3 <= next) * (length < got) * (next <= got - length))
+        index = 6820144 * active + 8384512 * (active == 0)
+        byte_store(index, (left - 1))
+        byte_store(index + 1, (left - 1) / 256)
+        byte_store(index + 2, (left - 1) / 65536)
+        byte_store(index + 3, (left - 1) / 16777216)
+        index = 6820140 * active + 8384512 * (active == 0)
+        byte_store(index, 1)
+        byte_store(index + 1, 0)
+        byte_store(index + 2, 0)
+        start = byte_load(6820144) + 256 * byte_load(6820144 + 1) + 65536 * byte_load(6820144 + 2) + 16777216 * byte_load(6820144 + 3)
+        count = byte_load(6820142)
+        active = (0 < ch) * (ch < 9)
+        ok = ok * ((active == 0) + active * (start < got))
+        index = (32 + start) * active * ok + 8384640 * (active * ok == 0)
+        temp = byte_load(index)
+        byte_store(6820152, temp)
+        # Header comments share the lexer's nonzero-ASCII byte domain.
+        ok = ok * ((active == 0) + active * (0 < temp) * (temp < 128))
+        active = (ch == 1) * ok
+        index = (6881283 + start * 4) * active + 8384640 * (active == 0)
+        byte_store(6820153, ((byte_load(index) == 255) + (temp == 32) + (temp == 9) + (temp == 10) + (temp == 13)) != 0)
+        # CR requires LF even inside comments, matching the source lexer.
+        ok = ok * ((active * (temp == 13) == 0) + active * (temp == 13) * (byte_load((33 + start) * active * (start + 1 < got) + 8384640 * (active * (start + 1 < got) == 0)) == 10))
+        index = (32 + start - 1) * active * (1 <= start) + 8384640 * (active * (1 <= start) == 0)
+        # Backward traversal must have consumed legal trivia after fn.
+        # Otherwise fnmain would incorrectly split one identifier into two.
+        ok = ok * ((active * (byte_load(6820153) == 0) == 0) + active * (byte_load(6820153) == 0) * (start + 1 < left) * (1 <= start) * (temp == 110) * (byte_load(index) == 102))
+        index = (32 + start - 2) * active * (2 <= start) + 8384640 * (active * (2 <= start) == 0)
+        temp = byte_load(index)
+        temp = (65 <= temp) * (temp <= 90) + (97 <= temp) * (temp <= 122) + (48 <= temp) * (temp <= 57) + (temp == 95)
+        ok = ok * ((active * (byte_load(6820153) == 0) == 0) + active * (byte_load(6820153) == 0) * (temp == 0))
+        # Trivia at byte zero cannot have a preceding fn; never store -1.
+        ok = ok * ((active * byte_load(6820153) == 0) + active * byte_load(6820153) * (0 < start))
+        active = active * ok
+        start = start - active * byte_load(6820153)
+        start = start * (active * (byte_load(6820153) == 0) == 0) + (left + right) * active * (byte_load(6820153) == 0)
+        byte_store(6820140, byte_load(6820140) + active * (byte_load(6820153) == 0))
+        temp = byte_load(6820152)
+        active = (2 <= ch) * (ch <= 8) * (ch != 4) * ok
+        index = (33 + start) * active * (start + 1 < got) + 8384640 * (active * (start + 1 < got) == 0)
+        byte_store(6820154, ((temp == 35) + (temp == 47) * (byte_load(index) == 47)) != 0)
+        byte_store(6820155, (active * (byte_load(6820141) + byte_load(6820154) + (temp == 32) + (temp == 9) + (temp == 10) + (temp == 13))) != 0)
+        ok = ok * ((active * (temp == 13) == 0) + active * (temp == 13) * (byte_load(index) == 10))
+        byte_store(6820141, byte_load(6820141) * (active == 0) + active * ((byte_load(6820141) * (temp != 10) + byte_load(6820154)) != 0))
+        start = start + byte_load(6820155)
+        byte_store(6820156, active * (byte_load(6820155) == 0) * ok)
+        active = (ch == 2) * byte_load(6820156)
+        ok = ok * ((active == 0) + active * (temp == 40))
+        byte_store(6820140, byte_load(6820140) + active)
+        start = start + active
+        active = (ch == 3) * byte_load(6820156)
+        index = (32 + got + (pos - 1) * 32) * active + 8384640 * (active == 0)
+        right = byte_load(index + 1)
+        left = (65 <= temp) * (temp <= 90) + (97 <= temp) * (temp <= 122) + (temp == 95)
+        ok = ok * ((active == 0) + active * ((temp == 41) * (count == 0) + left * (count < 6)))
+        byte_store(6820140, byte_load(6820140) * (active == 0) + active * ((6 + 2 * (right == 0)) * (temp == 41) + 4 * (temp != 41)))
+        index = 6820160 * active * (temp != 41) + 8384512 * (active * (temp != 41) == 0)
+        byte_store(index, (start))
+        byte_store(index + 1, (start) / 256)
+        byte_store(index + 2, (start) / 65536)
+        byte_store(index + 3, (start) / 16777216)
+        count = count + active * (temp != 41)
+        start = start + active * (temp == 41)
+        active = (ch == 4) * ok
+        left = ((65 <= temp) * (temp <= 90) + (97 <= temp) * (temp <= 122) + (48 <= temp) * (temp <= 57) + (temp == 95)) != 0
+        index = (32 + got + (pos + count - 1) * 32) * active * (left == 0) * (pos + count <= nodes) + 8384640 * (active * (left == 0) * (pos + count <= nodes) == 0)
+        right = byte_load(index + 4) + 256 * byte_load(index + 4 + 1) + 65536 * byte_load(index + 4 + 2) + 16777216 * byte_load(index + 4 + 3)
+        ok = ok * ((active * (left == 0) == 0) + active * (left == 0) * (byte_load(index) == 40) * (right == (byte_load(6820160) + 256 * byte_load(6820160 + 1) + 65536 * byte_load(6820160 + 2) + 16777216 * byte_load(6820160 + 3))))
+        right = byte_load(index + 8) + 256 * byte_load(index + 8 + 1) + 65536 * byte_load(index + 8 + 2) + 16777216 * byte_load(index + 8 + 3)
+        ok = ok * ((active * (left == 0) == 0) + active * (left == 0) * (right == start - (byte_load(6820160) + 256 * byte_load(6820160 + 1) + 65536 * byte_load(6820160 + 2) + 16777216 * byte_load(6820160 + 3))))
+        byte_store(6820140, byte_load(6820140) + active * (left == 0))
+        start = start + active * left
+        active = (ch == 5) * byte_load(6820156) * ok
+        ok = ok * ((active == 0) + active * ((temp == 44) + (temp == 41)))
+        right = byte_load(8257535 + pos)
+        byte_store(6820140, byte_load(6820140) * (active == 0) + active * (3 * (temp == 44) + (6 + 2 * (right == 0)) * (temp == 41)))
+        start = start + active
+        active = (ch == 6) * byte_load(6820156) * ok
+        index = (33 + start) * active * (start + 1 < got) + 8384640 * (active * (start + 1 < got) == 0)
+        ok = ok * ((active == 0) + active * (start == length) * (temp == 45) * (byte_load(index) == 62))
+        byte_store(6820140, byte_load(6820140) + active)
+        start = start + 2 * active
+        active = (ch == 7) * byte_load(6820156) * ok
+        ok = ok * ((active == 0) + active * (temp == 33) * (start + 1 == length + next))
+        byte_store(6820140, byte_load(6820140) + active)
+        start = start + active
+        active = (ch == 8) * byte_load(6820156) * ok
+        index = (6881280 + start * 4) * active + 8384640 * (active == 0)
+        left = byte_load(index) + 256 * byte_load(index + 1) + 65536 * byte_load(index + 2) + 16777216 * byte_load(index + 3)
+        index = (2756608 + (pos - 1) * 16) * active + 8384640 * (active == 0)
+        right = byte_load(index) + 256 * byte_load(index + 1) + 65536 * byte_load(index + 2) + 16777216 * byte_load(index + 3)
+        ok = ok * ((active == 0) + active * (temp == 123) * (start + 1 < left) * (left <= got) * (left == right) * (count == byte_load(3805183 + pos)))
+        index = 6820164 * active * ok + 8384512 * (active * ok == 0)
+        byte_store(index, (left))
+        byte_store(index + 1, (left) / 256)
+        byte_store(index + 2, (left) / 65536)
+        byte_store(index + 3, (left) / 16777216)
+        byte_store(6820140, byte_load(6820140) + active)
+        index = 6820144
+        byte_store(index, (start))
+        byte_store(index + 1, (start) / 256)
+        byte_store(index + 2, (start) / 65536)
+        byte_store(index + 3, (start) / 16777216)
+        byte_store(6820142, count)
+        byte_store(6820140, byte_load(6820140) * (ch != 9))
+        pos = pos + (ch == 0) * (kind != 39) + (ch == 9)
+    }
 
     # Independently recognize each exact unsafe introducer, real brace, first
     # safety tag, nonempty explanation, and maximal header endpoint. No producer
@@ -868,7 +1029,7 @@ fn main() {
         count = count + 521 * left * temp * (6 <= byte_load(4))
 
         temp = (length == 5) * (byte_load(index) == 119) * (byte_load(index + 1) == 114) * (byte_load(index + 2) == 105) * (byte_load(index + 3) == 116) * (byte_load(index + 4) == 101)
-        count = count + 522 * left * temp * (byte_load(4) == 12)
+        count = count + 522 * left * temp * (12 <= byte_load(4))
 
         index = (2756616 + (pos - 1) * 16) * active * ((kind == 39) + (kind == 42)) + 8384512 * (active * ((kind == 39) + (kind == 42)) == 0)
         byte_store(index, byte_load(index) + 2 * (left != 0) * (count != 0))
@@ -1038,11 +1199,11 @@ fn main() {
     }
 
 
-    # /12 finite type inference:1=i64,2=immutable program-lifetime byte handle.
-    # All function parameters/returns remain i64; unsafe never disables types.
+    # Finite types:1=i64,2=static bytes,3=bottom (no runtime payload).
+    # Parameters/unannotated results remain i64; unsafe never disables types.
     # [0x7d0000,0x7e0000) is disjoint from logical parents and discarded stores.
     pos = 1
-    while ok * (byte_load(4) == 12) * (pos <= nodes) {
+    while ok * (12 <= byte_load(4)) * (pos <= nodes) {
         error = 12
         index = 32 + got + (pos - 1) * 32
         kind = byte_load(index)
@@ -1058,31 +1219,151 @@ fn main() {
         index = (8191999 + right) * (right != 0) + 8384640 * (right == 0)
         count = byte_load(index)
         temp = (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (20 <= kind) * (kind <= 25) + (48 <= kind) * (kind <= 50) + (52 <= kind) * (kind <= 53) + (55 <= kind) * (kind <= 57)
-        ok = ok * ((temp == 0) + temp * (length == 1) * (count == 1))
+        ok = ok * ((temp == 0) + temp * ((length == 1) + (length == 3)) * ((count == 1) + (count == 3)))
         active = (kind == 32) + (kind == 34) + (kind == 36) + (kind == 44) + (kind == 47) + (kind == 51) + (kind == 54)
-        ok = ok * ((active == 0) + active * (length == 1))
+        ok = ok * ((active == 0) + active * ((length == 1) + (length == 3)))
         next = temp + (kind == 5) + (kind == 40) + (kind == 42) + (kind == 47) + (kind == 51) + (kind == 54) + 2 * (kind == 58)
+        active = temp * ((kind != 52) * (kind != 53) * ((length == 3) + (count == 3) != 0) + ((kind == 52) + (kind == 53)) * (length == 3))
+        active = (active + ((kind == 47) + (kind == 51) + (kind == 54)) * (length == 3)) != 0
+        next = next * (active == 0) + 3 * active
         active = (kind == 4) * (byte_load(2363391 + pos) != 1)
         index = (2494464 + (pos - 1) * 4) * active + 8384640 * (active == 0)
         ch = byte_load(index) + 256 * byte_load(index + 1) + 65536 * byte_load(index + 2) + 16777216 * byte_load(index + 3)
         index = (8191999 + ch) * active + 8384640 * (active == 0)
         next = next + byte_load(index) * active
-        ok = ok * ((active == 0) + active * ((next == 1) + (next == 2)))
+        ok = ok * ((active == 0) + active * ((next == 1) + (next == 2) + (next == 3)))
         active = kind == 43
-        ok = ok * ((active == 0) + active * ((count == 1) + (count == 2)) * ((left == 0) + (left != 0) * ((length == 1) + (length == 2))))
-        next = next + active * (1 + ((length == 2) + (count == 2) != 0))
+        ok = ok * ((active == 0) + active * ((count == 1) + (count == 2) + (count == 3)) * ((left == 0) + (left != 0) * ((length == 1) + (length == 2) + (length == 3))))
+        ch = ((length == 2) + (count == 2)) != 0
+        next = next + active * (2 * ch + (ch == 0) * (1 + 2 * ((length == 3) + (count == 3) != 0)))
         index = 2756608 + (pos - 1) * 16
         ch = byte_load(index + 4) + 256 * byte_load(index + 5) + 65536 * byte_load(index + 6) + 16777216 * byte_load(index + 7)
         active = (kind == 42) * (byte_load(index + 8) == 2) * (ch == 522)
-        ok = ok * ((kind != 42) + (kind == 42) * (active * (length == 2) + (active == 0) * ((left == 0) + (length == 1))))
+        ok = ok * ((kind != 42) + (kind == 42) * (active * ((length == 2) + (length == 3)) + (active == 0) * ((left == 0) + (length == 1) + (length == 3))))
+        index = (8257535 + ch) * (kind == 42) * (byte_load(index + 8) == 1) + 8384640 * ((kind == 42) * (byte_load(index + 8) == 1) == 0)
+        active = (kind == 42) * ((byte_load(index) == 1) + 2 * (length == 3))
+        next = next * (active == 0) + 3 * (active != 0)
+        index = (8257535 + pos) * (kind == 42) + 8384512 * (kind != 42)
+        byte_store(index, active)
         active = kind == 30
-        ok = ok * ((active == 0) + active * ((count == 1) + (count == 2)))
+        ok = ok * ((active == 0) + active * ((count == 1) + (count == 2) + (count == 3)))
         index = (8191999 + left) * active * ok + 8384512 * (active * ok == 0)
         byte_store(index, count)
         active = kind == 31
-        ok = ok * ((active == 0) + active * ((count == 1) + (count == 2)) * (length == count))
+        ok = ok * ((active == 0) + active * ((count == 1) + (count == 2) + (count == 3)) * ((length == count) + (count == 3) * (length != count)))
         index = (8191999 + pos) * ok + 8384512 * (ok == 0)
         byte_store(index, next)
+        pos = pos + 1
+    }
+
+    # /13 possible expression divergence is distinct from its inhabited type.
+    # All wire reserved bytes were checked before this pass. Reuse record+2
+    # only in compiler memory, after topology/type validation, for one D bit.
+    # No serialized field or earlier-version representation is changed.
+    pos = 1
+    while ok * (byte_load(4) == 13) * (pos <= nodes) {
+        index = 32 + got + (pos - 1) * 32
+        left = byte_load(index + 12) + 256 * byte_load(index + 13) + 65536 * byte_load(index + 14) + 16777216 * byte_load(index + 15)
+        right = byte_load(index + 16) + 256 * byte_load(index + 17) + 65536 * byte_load(index + 18) + 16777216 * byte_load(index + 19)
+        index = (32 + got + (left - 1) * 32 + 2) * (left != 0) + 8384640 * (left == 0)
+        temp = byte_load(index)
+        index = (32 + got + (right - 1) * 32 + 2) * (right != 0) + 8384640 * (right == 0)
+        temp = temp + byte_load(index) + (byte_load(8191999 + pos) == 3)
+        index = 32 + got + (pos - 1) * 32 + 2
+        byte_store(index, temp != 0)
+        pos = pos + 1
+    }
+
+    # /13 post-type flow: N/R/D at+0..2, saved then+3..5, literal+6, kind+7.
+    pos = 1
+    count = 0
+    next = 0
+    while ok * (byte_load(4) == 13) * (pos <= nodes) {
+        error = 13
+        index = 32 + got + (pos - 1) * 32
+        kind = byte_load(index)
+        start = byte_load(index + 4) + 256 * byte_load(index + 4 + 1) + 65536 * byte_load(index + 4 + 2) + 16777216 * byte_load(index + 4 + 3)
+        left = byte_load(index + 12) + 256 * byte_load(index + 12 + 1) + 65536 * byte_load(index + 12 + 2) + 16777216 * byte_load(index + 12 + 3)
+        right = byte_load(index + 16) + 256 * byte_load(index + 16 + 1) + 65536 * byte_load(index + 16 + 2) + 16777216 * byte_load(index + 16 + 3)
+        byte_store(6819840, (start))
+        byte_store(6819840 + 1, (start) / 256)
+        byte_store(6819840 + 2, (start) / 65536)
+        byte_store(6819840 + 3, (start) / 16777216)
+        active = kind == 39
+        next = pos * active + next * (active == 0)
+        count = count * (active == 0)
+        index = 6815744 * active + 8384512 * (active == 0)
+        byte_store(index, 1)
+        byte_store(index + 1, 0)
+        byte_store(index + 2, 0)
+        index = (8191999 + left) * (left != 0) + 8384640 * (left == 0)
+        length = byte_load(index)
+        index = (8191999 + right) * (right != 0) + 8384640 * (right == 0)
+        temp = byte_load(index)
+        index = (32 + got + (left - 1) * 32 + 2) * (left != 0) + 8384640 * (left == 0)
+        ch = byte_load(index)
+        index = (32 + got + (right - 1) * 32 + 2) * (right != 0) + 8384640 * (right == 0)
+        right = (((kind == 30) + (kind == 31)) * byte_load(index) + ((kind == 32) + (kind == 44) + (kind == 34) + (kind == 36)) * ch) != 0
+        index = 6815744 + count * 16
+        active = (kind == 32) * (length != 3)
+        ok = ok * ((active == 0) + active * (byte_load(8257535 + next) == 0))
+        ch = ((kind == 30) + (kind == 31)) * (temp == 3) + ((kind == 32) + (kind == 44)) * (length == 3)
+        left = byte_load(index)
+        byte_store(index + 1, (byte_load(index + 1) + left * active) != 0)
+        byte_store(index + 2, (byte_load(index + 2) + left * right) != 0)
+        byte_store(index, left * (active + ch == 0))
+        active = (kind == 34) + (kind == 36) + (kind == 45)
+        ch = ((kind == 34) + (kind == 36)) * (length == 3)
+        byte_store(index + 2, (byte_load(index + 2) + byte_load(index) * ch) != 0)
+        byte_store(index, byte_load(index) * (ch == 0))
+        count = count + active
+        index = (6815744 + count * 16) * active + 8384512 * (active == 0)
+        byte_store(index, 1)
+        byte_store(index + 1, 0)
+        byte_store(index + 2, 0)
+        byte_store(index + 3, 0)
+        byte_store(index + 4, 0)
+        byte_store(index + 5, 0)
+        byte_store(index + 6, 0)
+        byte_store(index + 7, kind)
+        index = 32 + got + (pos - 1) * 32
+        left = byte_load(index + 12) + 256 * byte_load(index + 12 + 1) + 65536 * byte_load(index + 12 + 2) + 16777216 * byte_load(index + 12 + 3)
+        active = kind == 34
+        index = (32 + got + (left - 1) * 32) * active + 8384640 * (active == 0)
+        active = active * (byte_load(index) == 5)
+        index = (2756608 + (left - 1) * 16) * active + 8384640 * (active == 0)
+        temp = byte_load(index) + byte_load(index + 1) + byte_load(index + 2) + byte_load(index + 3) + byte_load(index + 4) + byte_load(index + 5) + byte_load(index + 6) + byte_load(index + 7)
+        index = (6815750 + count * 16) * active + 8384512 * (active == 0)
+        byte_store(index, temp != 0)
+        active = kind == 37
+        index = (6815744 + count * 16) * active + 8384512 * (active == 0)
+        byte_store(index + 3, byte_load(index))
+        byte_store(index + 4, byte_load(index + 1))
+        byte_store(index + 5, byte_load(index + 2))
+        byte_store(index, 1)
+        byte_store(index + 1, 0)
+        byte_store(index + 2, 0)
+        byte_store(index + 7, 37)
+        active = (kind == 35) + (kind == 38) + (kind == 46)
+        index = (6815744 + count * 16) * active + 8384640 * (active == 0)
+        left = byte_load(index)
+        right = byte_load(index + 1)
+        temp = byte_load(index + 2)
+        ch = kind == 38
+        left = left * (ch == 0) + ((left + byte_load(index + 3) + (byte_load(index + 7) != 37)) != 0) * ch
+        right = right * (ch == 0) + ((right + byte_load(index + 4)) != 0) * ch
+        temp = temp * (ch == 0) + ((temp + byte_load(index + 5)) != 0) * ch
+        ch = kind == 35
+        temp = temp * (ch == 0) + ((temp + left) != 0) * ch
+        left = left * (ch == 0) + (byte_load(index + 6) == 0) * ch
+        count = count - active
+        index = (6815744 + count * 16) * active + 8384512 * (active == 0)
+        ch = byte_load(index)
+        byte_store(index + 1, (byte_load(index + 1) + ch * right) != 0)
+        byte_store(index + 2, (byte_load(index + 2) + ch * temp) != 0)
+        byte_store(index, ch * left)
+        active = kind == 41
+        ok = ok * ((active == 0) + active * (byte_load(6815744) == 0) * ((byte_load(8257535 + next) == 0) + (byte_load(8257535 + next) != 0) * (byte_load(6815745) == 0)))
         pos = pos + 1
     }
 
@@ -1133,7 +1414,7 @@ fn main() {
         byte_store(6819840 + 1, (start) / 256)
         byte_store(6819840 + 2, (start) / 65536)
         byte_store(6819840 + 3, (start) / 16777216)
-        active = (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (kind == 42) + (kind == 47) + (55 <= kind) * (kind <= 56) + (kind == 57)
+        active = (kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (kind == 42) + (kind == 47) + (55 <= kind) * (kind <= 56) + (kind == 57) + (kind == 39) * (byte_load(4) == 13) * byte_load(8257535 + pos)
         ok = ok * ((active == 0) + active * (count + 21 <= 8421376 + 8355840 * byte_load(6820040)))
         active = active * ok
         byte_store(6819860, active)
@@ -1236,7 +1517,7 @@ fn main() {
     pos = 1
     ch = 0
     byte_store(6820120, 0)
-    while ok * (byte_load(4) == 12) * (pos <= nodes) {
+    while ok * (12 <= byte_load(4)) * (pos <= nodes) {
         error = 7
         index = 32 + got + (pos - 1) * 32
         kind = byte_load(index)
@@ -1333,6 +1614,26 @@ fn main() {
         byte_store(6819864, (kind == 30) + (kind == 31))
         byte_store(6819868, (kind == 34) + (kind == 36))
         byte_store(6819866, (kind == 5) + (kind == 58) + byte_load(6819860) + byte_load(6819862) + byte_load(6819864) + (kind == 42) + (kind == 47) + (kind == 51) + (kind == 54))
+        # Bottom has no value operation. Preserve structural/code-offset records.
+        active = kind == 39
+        index = 6820176 * active + 8384512 * (active == 0)
+        byte_store(index, (pos))
+        byte_store(index + 1, (pos) / 256)
+        byte_store(index + 2, (pos) / 65536)
+        byte_store(index + 3, (pos) / 16777216)
+        ch = byte_load(6820176) + 256 * byte_load(6820176 + 1) + 65536 * byte_load(6820176 + 2) + 16777216 * byte_load(6820176 + 3)
+        byte_store(6820171, (kind == 42) * (byte_load(8257535 + pos) == 1))
+        byte_store(6820172, (kind == 41) * byte_load(8257535 + ch))
+        index = (8191999 + left) * (left != 0) + 8384640 * (left == 0)
+        next = byte_load(index) == 3
+        byte_store(6820173, byte_load(6819868) * next)
+        byte_store(6820174, next)
+        active = (byte_load(8191999 + pos) == 3) * (kind != 42) + (kind == 42) * (2 <= byte_load(8257535 + pos))
+        active = active + ((kind == 32) + (kind == 30) + (kind == 31)) * (next * (kind == 32))
+        index = (8191999 + right) * (right != 0) + 8384640 * (right == 0)
+        next = byte_load(index) == 3
+        active = active + ((kind == 30) + (kind == 31)) * next + ((kind == 52) + (kind == 53)) * next
+        byte_store(6820170, active != 0)
         index = (byte_load(6820041) + got + (left - 1) * byte_load(6820041)) * (left != 0) + 8384640 * (left == 0)
         active = byte_load(index) == 5
         index = (3805183 + left) * (left != 0) + 8384640 * (left == 0)
@@ -1346,11 +1647,12 @@ fn main() {
         length = length + 24 * (48 <= kind) * (kind <= 50) + 17 * (kind == 51)
         length = length + 23 * (52 <= kind) * (kind <= 54)
         length = length + 46 * (55 <= kind) * (kind <= 56)
+        length = (length + 10 * byte_load(6820171) + 17 * byte_load(6820172)) * (byte_load(6820170) == 0)
         ok = ok * (count + length <= (24000 + 6267456 * byte_load(6820040)))
 
         # Native entry: push rbp; mov rbp,rsp; sub rsp,4096; inc r15d.
         # The saved rbp makes rsp 16-aligned again after call's return address.
-        active = (kind == 39) * ok
+        active = (kind == 39) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count) * active + 8384512 * (active == 0)
         byte_store(index, 85)
         byte_store(index + 1, 72)
@@ -1368,7 +1670,7 @@ fn main() {
         byte_store(index + 13, 199)
 
         # Parameters are mutable indexed slots, including IDs above 255.
-        active = (kind == 40) * ok
+        active = (kind == 40) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count) * active + 8384512 * (active == 0)
         temp = byte_load(3805183 + pos)
         byte_store(index, 72 + 4 * (4 < temp))
@@ -1385,7 +1687,7 @@ fn main() {
 
         # cmp r15d,64; jb arguments. Only the fault path overwrites r8/r9.
         # Arguments already evaluated left to right into this caller's slots.
-        active = (kind == 42) * ok
+        active = (kind == 42) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count) * active + 8384512 * (active == 0)
         byte_store(index, 65)
         byte_store(index + 1, 131)
@@ -1418,12 +1720,12 @@ fn main() {
         byte_store(index + 21, temp)
         temp = temp / 256
         byte_store(index + 22, temp)
-        index = (8388608 + count + length - 12) * active + 8384512 * (active == 0)
+        index = (8388608 + count + length - 12 - 10 * byte_load(6820171)) * active + 8384512 * (active == 0)
         byte_store(index, 232)
         # Intrinsics load their own source prefix, then the same argument slots.
         # Replace the 23-byte user-depth guard with mov r8d/r9d and eleven NOPs.
         temp = byte_load(2756612 + (pos - 1) * 16) + 256 * byte_load(2756612 + (pos - 1) * 16 + 1) + 65536 * byte_load(2756612 + (pos - 1) * 16 + 2) + 16777216 * byte_load(2756612 + (pos - 1) * 16 + 3)
-        active = (kind == 42) * (byte_load(2756616 + (pos - 1) * 16) == 2) * ok
+        active = (kind == 42) * (byte_load(2756616 + (pos - 1) * 16) == 2) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count) * active + 8384512 * (active == 0)
         byte_store(index, 65)
         byte_store(index + 1, 184)
@@ -1453,8 +1755,8 @@ fn main() {
         byte_store(index + 21, 144)
         byte_store(index + 22, 144)
         # Entries/calls retain their entry/displacement offsets for relocation.
-        temp = count * (kind == 39) + (count + length - 11) * (kind == 42)
-        active = ((kind == 39) + (kind == 42)) * ok
+        temp = count * (kind == 39) + (count + length - 11 - 10 * byte_load(6820171)) * (kind == 42)
+        active = ((kind == 39) + (kind == 42)) * ok * (byte_load(6820170) == 0)
         index = (2756608 + (pos - 1) * 16) * active + 8384512 * (active == 0)
         byte_store(index, temp)
         byte_store(index + 1, (temp) / 256)
@@ -1467,7 +1769,7 @@ fn main() {
         next = next + temp * byte_load(6819860)
         temp = (52 <= kind) * (kind <= 53)
         next = next * (temp == 0) + right * temp
-        active = (byte_load(6819860) + byte_load(6819862) + byte_load(6819864) + (kind == 32) + byte_load(6819868) + (kind == 47) + (kind == 51) + (kind == 54)) * ok
+        active = (byte_load(6819860) + byte_load(6819862) + byte_load(6819864) + (kind == 32) + byte_load(6819868) + (kind == 47) + (kind == 51) + (kind == 54)) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 139)
@@ -1480,7 +1782,7 @@ fn main() {
         byte_store(index + 3 + 2, temp)
         temp = temp / 256
         byte_store(index + 3 + 3, temp)
-        active = byte_load(6819862) * (kind != 52) * (kind != 53) * ok
+        active = byte_load(6819862) * (kind != 52) * (kind != 53) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 7) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 139)
@@ -1494,7 +1796,7 @@ fn main() {
         temp = temp / 256
         byte_store(index + 3 + 3, temp)
         # movabs rax,immediate64; STR uses its validated RX descriptor.
-        active = ((kind == 5) + (kind == 58)) * ok
+        active = ((kind == 5) + (kind == 58)) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 184)
@@ -1507,7 +1809,7 @@ fn main() {
         byte_store(index + 8, byte_load(2756608 + (pos - 1) * 16 + 6))
         byte_store(index + 9, byte_load(2756608 + (pos - 1) * 16 + 7))
         # Error-prefix address/length in r8d/r9d survive arithmetic and idiv.
-        active = ((kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (55 <= kind) * (kind <= 56) + (kind == 57)) * ok
+        active = ((kind == 15) + (kind == 16) + (kind == 17) + (kind == 18) + (55 <= kind) * (kind <= 56) + (kind == 57)) * ok * (byte_load(6820170) == 0)
         next = byte_load(4141056 + (pos - 1) * 8) + 256 * byte_load(4141056 + (pos - 1) * 8 + 1) + 65536 * byte_load(4141056 + (pos - 1) * 8 + 2) + 16777216 * byte_load(4141056 + (pos - 1) * 8 + 3)
         index = (8388608 + count + 14) * active + 8384512 * (active == 0)
         byte_store(index, 65)
@@ -1533,7 +1835,7 @@ fn main() {
         byte_store(index + 2 + 3, temp)
         # Unary: one slot load has already happened. The proven minimum
         # literal pair only copies its value; every other negation is checked.
-        active = (kind == 47) * (byte_load(6820082) == 0) * ok
+        active = (kind == 47) * (byte_load(6820082) == 0) * ok * (byte_load(6820170) == 0)
         next = byte_load(4141056 + (pos - 1) * 8) + 256 * byte_load(4141057 + (pos - 1) * 8) + 65536 * byte_load(4141058 + (pos - 1) * 8) + 16777216 * byte_load(4141059 + (pos - 1) * 8)
         index = (8388608 + count + 7) * active + 8384512 * (active == 0)
         byte_store(index, 65)
@@ -1566,7 +1868,7 @@ fn main() {
 
         # Bitwise operations have no overflow path. Both operand loads have
         # already happened in postorder; NOT uses the same unary slot reuse.
-        active = (48 <= kind) * (kind <= 51) * ok
+        active = (48 <= kind) * (kind <= 51) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 14 - 7 * (kind == 51)) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 33 * (kind == 48) + 49 * (kind == 49) + 9 * (kind == 50) + 247 * (kind == 51))
@@ -1575,7 +1877,7 @@ fn main() {
         # Both operands and the location prefix are loaded before the guard.
         # Unsigned cmp rcx,63 also rejects every negative i64 count. JA reaches
         # the shared fatal writer before hardware can mask CL to six bits.
-        active = (55 <= kind) * (kind <= 56) * ok
+        active = (55 <= kind) * (kind <= 56) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 26) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 131)
@@ -1594,7 +1896,7 @@ fn main() {
         byte_store(index + 12, 224 + 24 * (kind == 56))
 
         # add/sub/imul rax,rcx; jo shared arithmetic handler.
-        active = ((kind == 15) + (kind == 16) + (kind == 17)) * ok
+        active = ((kind == 15) + (kind == 16) + (kind == 17)) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 26) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, (kind == 15) + 15 * (kind == 16) + 41 * (kind == 17))
@@ -1614,7 +1916,7 @@ fn main() {
         # Checked quotient shared by division/remainder: cmp rcx,-1; jne safe;
         # mov rdx,rax; neg rdx; jo fault.
         # safe: test rcx,rcx; je fault; cqo; idiv rcx.
-        active = ((kind == 18) + (kind == 57)) * ok
+        active = ((kind == 18) + (kind == 57)) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 26) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 131)
@@ -1657,13 +1959,13 @@ fn main() {
         byte_store(index + 27 + 3, 247)
         byte_store(index + 27 + 4, 249)
         # Remainder selects full RDX after checked idiv; division keeps RAX.
-        active = (kind == 57) * ok
+        active = (kind == 57) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 58) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 137)
         byte_store(index + 2, 208)
         # cmp rax,rcx; set<signed-condition> al; movzx rax,al. No overflow path.
-        active = (20 <= kind) * (kind <= 25) * ok
+        active = (20 <= kind) * (kind <= 25) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 14) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 57)
@@ -1680,7 +1982,7 @@ fn main() {
 
         # Logical joins evaluate only the selected RHS. NOT always evaluates
         # its single operand. movzx eax,al normalizes the full i64 result.
-        active = (52 <= kind) * (kind <= 54) * ok
+        active = (52 <= kind) * (kind <= 54) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 7) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 133)
@@ -1691,21 +1993,8 @@ fn main() {
         byte_store(index + 6, 15)
         byte_store(index + 7, 182)
         byte_store(index + 8, 192)
-        # Both skipped and evaluated paths meet after the parent result store.
-        active = (52 <= kind) * (kind <= 53) * ok
-        index = (2756608 + (pos - 1) * 16) * active + 8384640 * (active == 0)
-        temp = byte_load(index) + 256 * byte_load(index + 1) + 65536 * byte_load(index + 2) + 16777216 * byte_load(index + 3)
-        ok = ok * ((active == 0) + active * (220 <= temp) * (temp + 4 <= count) * (count + length - temp - 4 <= 2147483647))
-        active = active * ok
-        index = (8388608 + temp) * active + 8384512 * (active == 0)
-        temp = (count + length - temp - 4) * active
-        byte_store(index, temp)
-        byte_store(index + 1, temp / 256)
-        byte_store(index + 2, temp / 65536)
-        byte_store(index + 3, temp / 16777216)
-
         # Store result, or copy an initializer/assignment to its declared slot.
-        active = byte_load(6819866) * ok
+        active = byte_load(6819866) * ok * (byte_load(6820170) == 0) * (byte_load(6820171) == 0)
         index = (2494464 + (left - 1) * 4) * (left != 0) + 8384640 * (left == 0)
         temp = byte_load(index) + 256 * byte_load(index + 1) + 65536 * byte_load(index + 2) + 16777216 * byte_load(index + 3)
         next = pos * (byte_load(6819864) == 0) + temp * byte_load(6819864)
@@ -1722,7 +2011,7 @@ fn main() {
         temp = temp / 256
         byte_store(index + 3 + 3, temp)
         # main return: mov rdi,rax; mov eax,60; syscall.
-        active = (kind == 32) * (byte_load(6820042) < 3) * ok
+        active = (kind == 32) * (byte_load(6820042) < 3) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 7) * active + 8384512 * (active == 0)
         byte_store(index, 72)
         byte_store(index + 1, 137)
@@ -1737,13 +2026,52 @@ fn main() {
 
         # Every function return, including nested early returns, restores depth.
         # dec r15d; leave; ret balances entry without disturbing rax.
-        active = (kind == 32) * (3 <= byte_load(6820042)) * ok
+        active = (kind == 32) * (3 <= byte_load(6820042)) * ok * (byte_load(6820170) == 0)
         index = (8388608 + count + 7) * active + 8384512 * (active == 0)
         byte_store(index, 65)
         byte_store(index + 1, 255)
         byte_store(index + 2, 207)
         byte_store(index + 3, 201)
         byte_store(index + 4, 195)
+
+        # Both skipped and evaluated paths meet after the parent result store.
+        active = (52 <= kind) * (kind <= 53) * ok * (byte_load(6820174) == 0)
+        index = (2756608 + (pos - 1) * 16) * active + 8384640 * (active == 0)
+        temp = byte_load(index) + 256 * byte_load(index + 1) + 65536 * byte_load(index + 2) + 16777216 * byte_load(index + 3)
+        ok = ok * ((active == 0) + active * (220 <= temp) * (temp + 4 <= count) * (count + length - temp - 4 <= 2147483647))
+        active = active * ok
+        index = (8388608 + temp) * active + 8384512 * (active == 0)
+        temp = (count + length - temp - 4) * active
+        byte_store(index, temp)
+        byte_store(index + 1, temp / 256)
+        byte_store(index + 2, temp / 65536)
+        byte_store(index + 3, temp / 16777216)
+
+        # mov r8d,prefix; mov r9d,length; jmp bottom_fault. No RAX result.
+        active = (byte_load(6820171) + byte_load(6820172)) * ok
+        ch = pos * byte_load(6820171) + (byte_load(6820176) + 256 * byte_load(6820176 + 1) + 65536 * byte_load(6820176 + 2) + 16777216 * byte_load(6820176 + 3)) * byte_load(6820172)
+        next = (4141056 + (ch - 1) * 8) * active + 8384640 * (active == 0)
+        index = (8388608 + count + length - 17) * active + 8384512 * (active == 0)
+        byte_store(index, 65)
+        byte_store(index + 1, 184)
+        temp = 4194304 + byte_load(next) + 256 * byte_load(next + 1) + 65536 * byte_load(next + 2) + 16777216 * byte_load(next + 3)
+        byte_store(index + 2, (temp))
+        byte_store(index + 2 + 1, (temp) / 256)
+        byte_store(index + 2 + 2, (temp) / 65536)
+        byte_store(index + 2 + 3, (temp) / 16777216)
+        byte_store(index + 6, 65)
+        byte_store(index + 7, 185)
+        temp = byte_load(next + 4) + 256 * byte_load(next + 4 + 1) + 65536 * byte_load(next + 4 + 2) + 16777216 * byte_load(next + 4 + 3)
+        byte_store(index + 8, (temp))
+        byte_store(index + 8 + 1, (temp) / 256)
+        byte_store(index + 8 + 2, (temp) / 65536)
+        byte_store(index + 8 + 3, (temp) / 16777216)
+        byte_store(index + 12, 233)
+        temp = 6294528 - (count + length)
+        byte_store(index + 13, (temp))
+        byte_store(index + 13 + 1, (temp) / 256)
+        byte_store(index + 13 + 2, (temp) / 65536)
+        byte_store(index + 13 + 3, (temp) / 16777216)
 
         # Record each expression for its expression's first code offset.
         # A while back-edge must repeat the whole condition, not just its load.
@@ -1783,6 +2111,21 @@ fn main() {
         byte_store(index + 4 + 1, (count + 12) / 256)
         byte_store(index + 4 + 2, (count + 12) / 65536)
         byte_store(index + 4 + 3, (count + 12) / 16777216)
+        # An impossible value cannot be loaded/tested as a condition.
+        active = byte_load(6820173) * ok
+        index = (8388608 + count) * active + 8384512 * (active == 0)
+        byte_store(index, 144)
+        byte_store(index + 1, 144)
+        byte_store(index + 2, 144)
+        byte_store(index + 3, 144)
+        byte_store(index + 4, 144)
+        byte_store(index + 5, 144)
+        byte_store(index + 6, 144)
+        byte_store(index + 7, 144)
+        byte_store(index + 8, 144)
+        byte_store(index + 9, 144)
+        byte_store(index + 10, 144)
+        byte_store(index + 11, 233)
 
         # While-end emits jmp condition. Else emits jmp end, then patches the
         # if-false edge to the else body. If-end patches the pending exit edge.
@@ -1825,7 +2168,7 @@ fn main() {
         count = count + length
         index = 7929856 + (pos - 1) * 4
         next = byte_load(index) + 256 * byte_load(index + 1) + 65536 * byte_load(index + 2) + 16777216 * byte_load(index + 3)
-        active = (next != 0) * ok
+        active = (next != 0) * ok * (byte_load(8191999 + pos) != 3)
         ok = ok * ((active == 0) + active * (count + 29 <= (24000 + 6267456 * byte_load(6820040))))
         active = active * ok
         # LHS is still live; its unique parent reuses that consumed slot.
@@ -1885,13 +2228,13 @@ fn main() {
         byte_store(6819840 + 2, (start) / 65536)
         byte_store(6819840 + 3, (start) / 16777216)
         left = (byte_load(index + 6 * byte_load(6820043)) + 256 * byte_load(index + 6 * byte_load(6820043) + 1) + (65536 * byte_load(index + 6 * byte_load(6820043) + 2) + 16777216 * byte_load(index + 6 * byte_load(6820043) + 3)) * byte_load(6820040))
-        active = (kind == 42)
+        active = (kind == 42) * (byte_load(8257535 + pos) < 2)
         next = left * active * (byte_load(6820072) == 0) + next * (byte_load(6820072) != 0)
-        active = (kind == 42)
+        active = (kind == 42) * (byte_load(8257535 + pos) < 2)
         index = 2756608 + (pos - 1) * 16
         count = (byte_load(index) + 256 * byte_load(index + 1) + 65536 * byte_load(index + 2) + 16777216 * byte_load(index + 3)) * active
         left = (byte_load(index + 4) + 256 * byte_load(index + 4 + 1) + 65536 * byte_load(index + 4 + 2) + 16777216 * byte_load(index + 4 + 3)) * active
-        ch = byte_load(index + 8)
+        ch = byte_load(index + 8) * active
         index = (2756608 + (left - 1) * 16) * (ch == 1) + 8384640 * (ch != 1)
         temp = (byte_load(index) + 256 * byte_load(index + 1) + 65536 * byte_load(index + 2) + 16777216 * byte_load(index + 3)) * (ch == 1)
         temp = temp + ((24608 + 6267456 * byte_load(6820040)) * (left == 513) + (24640 + 6267456 * byte_load(6820040)) * (left == 514) + (24672 + 6267456 * byte_load(6820040)) * (left == 515) + (24688 + 6267456 * byte_load(6820040)) * (left == 516) + (24704 + 6267456 * byte_load(6820040)) * (left == 517)) * (ch == 2)
@@ -1958,6 +2301,21 @@ fn main() {
     byte_store(index + 15, 0)
     byte_store(index + 16, 15)
     byte_store(index + 17, 5)
+    # Explicit bottom main has no process result register value.
+    ch = byte_load(6819968) + 256 * byte_load(6819968 + 1) + 65536 * byte_load(6819968 + 2) + 16777216 * byte_load(6819968 + 3)
+    active = (byte_load(4) == 13) * byte_load(8257535 + ch) * ok
+    index = 8388836 * active + 8384512 * (active == 0)
+    byte_store(index, 233)
+    temp = 6294784 - 233
+    byte_store(index + 1, (temp))
+    byte_store(index + 1 + 1, (temp) / 256)
+    byte_store(index + 1 + 2, (temp) / 65536)
+    byte_store(index + 1 + 3, (temp) / 16777216)
+    byte_store(index + 5, 144)
+    byte_store(index + 6, 144)
+    byte_store(index + 7, 144)
+    byte_store(index + 8, 144)
+    byte_store(index + 9, 144)
     # Entry: rbp = rsp; reserve 4096 bytes; rt_sigaction(SIGPIPE, SIG_IGN); js setup_error.
     byte_store(8388784, 72)
     byte_store(8388785, 137)
@@ -3094,7 +3452,11 @@ fn main() {
         left = 231 * (pos == 0) + (6267456 + 24122) * (pos == 1)
         left = left + (6267456 + 24117) * (pos == 2) + (6267456 + 24576) * (pos == 3)
         right = 6293120 * (pos < 2) + 6293248 * (pos == 2) + 6292992 * (pos == 3)
-        index = 8388608 + left
+        # Normal-main continuation at231 overlaps bottom main's rel32 at229.
+        # Keep that bottom jump intact; its located guard uses mapped cleanup.
+        ch = byte_load(6819968) + 256 * byte_load(6819968 + 1) + 65536 * byte_load(6819968 + 2) + 16777216 * byte_load(6819968 + 3)
+        ch = (byte_load(4) == 13) * byte_load(8257535 + ch) * (pos == 0)
+        index = (8388608 + left) * (ch == 0) + 8384512 * ch
         byte_store(index, 233)
         temp = right - left - 5
         byte_store(index + 1, temp)
@@ -4064,6 +4426,75 @@ fn main() {
     byte_store(index + 24, 192)
     byte_store(index + 25, 195)
 
+    # /13 bottom fault at file0x600c00, suffix0x600c80, main stub0x600d00.
+    # Shift suffix stays[0x600c40,0x600c74); bottom uses[0x600c80,0x600cc6).
+    # Existing fatal entry0x600000 selects exit70 and owns complete diagnostics.
+    active = (byte_load(4) == 13) * ok
+    index = (8388608 + 6294528) * active + 8384512 * (active == 0)
+    byte_store(index, 65)
+    byte_store(index + 1, 189)
+    temp = 4194304 + 6294656
+    byte_store(index + 2, (temp))
+    byte_store(index + 2 + 1, (temp) / 256)
+    byte_store(index + 2 + 2, (temp) / 65536)
+    byte_store(index + 2 + 3, (temp) / 16777216)
+    byte_store(index + 6, 65)
+    byte_store(index + 7, 190 - 4 * byte_load(25) * byte_load(6819972))
+    byte_store(index + 8, 70)
+    byte_store(index + 9, 0)
+    byte_store(index + 10, 0)
+    byte_store(index + 11, 0)
+    byte_store(index + 12, 233)
+    temp = 4294967296 + 6291456 - (6294528 + 17)
+    byte_store(index + 13, (temp))
+    byte_store(index + 13 + 1, (temp) / 256)
+    byte_store(index + 13 + 2, (temp) / 65536)
+    byte_store(index + 13 + 3, (temp) / 16777216)
+    pos = 0
+    while (byte_load(4) == 13) * ok * (pos < 10) {
+        temp = 18959370493784677 * (pos == 0) + 26231260165526064 * (pos == 1) + 31371765848612922 * (pos == 2) + 32760423365615725 * (pos == 3) + 32762638143221609 * (pos == 4) + 9072501639246453 * (pos == 5) + 30997893039351907 * (pos == 6) + 32217290123669103 * (pos == 7) + 31352713240275310 * (pos == 8) + 2942719952581742 * (pos == 9)
+        index = 8388608 + 6294656 + pos * 7
+        byte_store(index, temp)
+        temp = temp / 256
+        byte_store(index + 1, temp)
+        temp = temp / 256
+        byte_store(index + 2, temp)
+        temp = temp / 256
+        byte_store(index + 3, temp)
+        temp = temp / 256
+        byte_store(index + 4, temp)
+        temp = temp / 256
+        byte_store(index + 5, temp)
+        temp = temp / 256
+        byte_store(index + 6, temp)
+        pos = pos + 1
+    }
+    # Main stub reloads the declaration prefix, then enters the same guard.
+    ch = byte_load(6819968) + 256 * byte_load(6819968 + 1) + 65536 * byte_load(6819968 + 2) + 16777216 * byte_load(6819968 + 3)
+    active = (byte_load(4) == 13) * byte_load(8257535 + ch) * ok
+    next = (4141056 + (ch - 1) * 8) * active + 8384640 * (active == 0)
+    index = (8388608 + 6294784) * active + 8384512 * (active == 0)
+    byte_store(index, 65)
+    byte_store(index + 1, 184)
+    temp = 4194304 + byte_load(next) + 256 * byte_load(next + 1) + 65536 * byte_load(next + 2) + 16777216 * byte_load(next + 3)
+    byte_store(index + 2, (temp))
+    byte_store(index + 2 + 1, (temp) / 256)
+    byte_store(index + 2 + 2, (temp) / 65536)
+    byte_store(index + 2 + 3, (temp) / 16777216)
+    byte_store(index + 6, 65)
+    byte_store(index + 7, 185)
+    temp = byte_load(next + 4) + 256 * byte_load(next + 4 + 1) + 65536 * byte_load(next + 4 + 2) + 16777216 * byte_load(next + 4 + 3)
+    byte_store(index + 8, (temp))
+    byte_store(index + 8 + 1, (temp) / 256)
+    byte_store(index + 8 + 2, (temp) / 65536)
+    byte_store(index + 8 + 3, (temp) / 16777216)
+    byte_store(index + 12, 233)
+    temp = 4294967296 + 6294528 - (6294784 + 17)
+    byte_store(index + 13, (temp))
+    byte_store(index + 13 + 1, (temp) / 256)
+    byte_store(index + 13 + 2, (temp) / 65536)
+    byte_store(index + 13 + 3, (temp) / 16777216)
+
     # ELF64 header and two program headers; all other bytes start zero.
     byte_store(8388608, 127)
     byte_store(8388609, 69)
@@ -4107,1056 +4538,361 @@ fn main() {
     byte_store(8388712 + 3, (temp) / 16777216)
     output_write(8388608, temp * ok)
 
-    # Compiler diagnostic prefix.
-    byte_store(6825236, 105)
-    byte_store(6825237, 110)
-    byte_store(6825238, 112)
-    byte_store(6825239, 117)
-    byte_store(6825240, 116)
-    byte_store(6825241, 58)
-    byte_store(6825137, 84)
-    # C0B-1: invalid NQAF stream; regenerate the complete AST with C0 frontend.
-    byte_store(6823936, 58)
-    byte_store(6823937, 32)
-    byte_store(6823938, 101)
-    byte_store(6823939, 114)
-    byte_store(6823940, 114)
-    byte_store(6823941, 111)
-    byte_store(6823942, 114)
-    byte_store(6823943, 91)
-    byte_store(6823944, 67)
-    byte_store(6823945, 48)
-    byte_store(6823946, 66)
-    byte_store(6823947, 45)
-    byte_store(6823948, 48)
-    byte_store(6823949, 48)
-    byte_store(6823950, 49)
-    byte_store(6823951, 93)
-    byte_store(6823952, 58)
-    byte_store(6823953, 32)
-    byte_store(6823954, 105)
-    byte_store(6823955, 110)
-    byte_store(6823956, 118)
-    byte_store(6823957, 97)
-    byte_store(6823958, 108)
-    byte_store(6823959, 105)
-    byte_store(6823960, 100)
-    byte_store(6823961, 32)
-    byte_store(6823962, 78)
-    byte_store(6823963, 81)
-    byte_store(6823964, 65)
-    byte_store(6823965, 70)
-    byte_store(6823966, 32)
-    byte_store(6823967, 115)
-    byte_store(6823968, 116)
-    byte_store(6823969, 114)
-    byte_store(6823970, 101)
-    byte_store(6823971, 97)
-    byte_store(6823972, 109)
-    byte_store(6823973, 59)
-    byte_store(6823974, 32)
-    byte_store(6823975, 114)
-    byte_store(6823976, 101)
-    byte_store(6823977, 103)
-    byte_store(6823978, 101)
-    byte_store(6823979, 110)
-    byte_store(6823980, 101)
-    byte_store(6823981, 114)
-    byte_store(6823982, 97)
-    byte_store(6823983, 116)
-    byte_store(6823984, 101)
-    byte_store(6823985, 32)
-    byte_store(6823986, 116)
-    byte_store(6823987, 104)
-    byte_store(6823988, 101)
-    byte_store(6823989, 32)
-    byte_store(6823990, 99)
-    byte_store(6823991, 111)
-    byte_store(6823992, 109)
-    byte_store(6823993, 112)
-    byte_store(6823994, 108)
-    byte_store(6823995, 101)
-    byte_store(6823996, 116)
-    byte_store(6823997, 101)
-    byte_store(6823998, 32)
-    byte_store(6823999, 65)
-    byte_store(6824000, 83)
-    byte_store(6824001, 84)
-    byte_store(6824002, 32)
-    byte_store(6824003, 119)
-    byte_store(6824004, 105)
-    byte_store(6824005, 116)
-    byte_store(6824006, 104)
-    byte_store(6824007, 32)
-    byte_store(6824008, 67)
-    byte_store(6824009, 48)
-    byte_store(6824010, 32)
-    byte_store(6824011, 102)
-    byte_store(6824012, 114)
-    byte_store(6824013, 111)
-    byte_store(6824014, 110)
-    byte_store(6824015, 116)
-    byte_store(6824016, 101)
-    byte_store(6824017, 110)
-    byte_store(6824018, 100)
-    byte_store(6824019, 10)
-    byte_store(6825138, 86)
-    # C0B-2: invalid AST record or topology; regenerate the AST with C0 frontend.
-    byte_store(6824064, 58)
-    byte_store(6824065, 32)
-    byte_store(6824066, 101)
-    byte_store(6824067, 114)
-    byte_store(6824068, 114)
-    byte_store(6824069, 111)
-    byte_store(6824070, 114)
-    byte_store(6824071, 91)
-    byte_store(6824072, 67)
-    byte_store(6824073, 48)
-    byte_store(6824074, 66)
-    byte_store(6824075, 45)
-    byte_store(6824076, 48)
-    byte_store(6824077, 48)
-    byte_store(6824078, 50)
-    byte_store(6824079, 93)
-    byte_store(6824080, 58)
-    byte_store(6824081, 32)
-    byte_store(6824082, 105)
-    byte_store(6824083, 110)
-    byte_store(6824084, 118)
-    byte_store(6824085, 97)
-    byte_store(6824086, 108)
-    byte_store(6824087, 105)
-    byte_store(6824088, 100)
-    byte_store(6824089, 32)
-    byte_store(6824090, 65)
-    byte_store(6824091, 83)
-    byte_store(6824092, 84)
-    byte_store(6824093, 32)
-    byte_store(6824094, 114)
-    byte_store(6824095, 101)
-    byte_store(6824096, 99)
-    byte_store(6824097, 111)
-    byte_store(6824098, 114)
-    byte_store(6824099, 100)
-    byte_store(6824100, 32)
-    byte_store(6824101, 111)
-    byte_store(6824102, 114)
-    byte_store(6824103, 32)
-    byte_store(6824104, 116)
-    byte_store(6824105, 111)
-    byte_store(6824106, 112)
-    byte_store(6824107, 111)
-    byte_store(6824108, 108)
-    byte_store(6824109, 111)
-    byte_store(6824110, 103)
-    byte_store(6824111, 121)
-    byte_store(6824112, 59)
-    byte_store(6824113, 32)
-    byte_store(6824114, 114)
-    byte_store(6824115, 101)
-    byte_store(6824116, 103)
-    byte_store(6824117, 101)
-    byte_store(6824118, 110)
-    byte_store(6824119, 101)
-    byte_store(6824120, 114)
-    byte_store(6824121, 97)
-    byte_store(6824122, 116)
-    byte_store(6824123, 101)
-    byte_store(6824124, 32)
-    byte_store(6824125, 116)
-    byte_store(6824126, 104)
-    byte_store(6824127, 101)
-    byte_store(6824128, 32)
-    byte_store(6824129, 65)
-    byte_store(6824130, 83)
-    byte_store(6824131, 84)
-    byte_store(6824132, 32)
-    byte_store(6824133, 119)
-    byte_store(6824134, 105)
-    byte_store(6824135, 116)
-    byte_store(6824136, 104)
-    byte_store(6824137, 32)
-    byte_store(6824138, 67)
-    byte_store(6824139, 48)
-    byte_store(6824140, 32)
-    byte_store(6824141, 102)
-    byte_store(6824142, 114)
-    byte_store(6824143, 111)
-    byte_store(6824144, 110)
-    byte_store(6824145, 116)
-    byte_store(6824146, 101)
-    byte_store(6824147, 110)
-    byte_store(6824148, 100)
-    byte_store(6824149, 10)
-    byte_store(6825139, 64)
-    # C0B-3: undeclared local; declare the name before use.
-    byte_store(6824192, 58)
-    byte_store(6824193, 32)
-    byte_store(6824194, 101)
-    byte_store(6824195, 114)
-    byte_store(6824196, 114)
-    byte_store(6824197, 111)
-    byte_store(6824198, 114)
-    byte_store(6824199, 91)
-    byte_store(6824200, 67)
-    byte_store(6824201, 48)
-    byte_store(6824202, 66)
-    byte_store(6824203, 45)
-    byte_store(6824204, 48)
-    byte_store(6824205, 48)
-    byte_store(6824206, 51)
-    byte_store(6824207, 93)
-    byte_store(6824208, 58)
-    byte_store(6824209, 32)
-    byte_store(6824210, 117)
-    byte_store(6824211, 110)
-    byte_store(6824212, 100)
-    byte_store(6824213, 101)
-    byte_store(6824214, 99)
-    byte_store(6824215, 108)
-    byte_store(6824216, 97)
-    byte_store(6824217, 114)
-    byte_store(6824218, 101)
-    byte_store(6824219, 100)
-    byte_store(6824220, 32)
-    byte_store(6824221, 108)
-    byte_store(6824222, 111)
-    byte_store(6824223, 99)
-    byte_store(6824224, 97)
-    byte_store(6824225, 108)
-    byte_store(6824226, 59)
-    byte_store(6824227, 32)
-    byte_store(6824228, 100)
-    byte_store(6824229, 101)
-    byte_store(6824230, 99)
-    byte_store(6824231, 108)
-    byte_store(6824232, 97)
-    byte_store(6824233, 114)
-    byte_store(6824234, 101)
-    byte_store(6824235, 32)
-    byte_store(6824236, 116)
-    byte_store(6824237, 104)
-    byte_store(6824238, 101)
-    byte_store(6824239, 32)
-    byte_store(6824240, 110)
-    byte_store(6824241, 97)
-    byte_store(6824242, 109)
-    byte_store(6824243, 101)
-    byte_store(6824244, 32)
-    byte_store(6824245, 98)
-    byte_store(6824246, 101)
-    byte_store(6824247, 102)
-    byte_store(6824248, 111)
-    byte_store(6824249, 114)
-    byte_store(6824250, 101)
-    byte_store(6824251, 32)
-    byte_store(6824252, 117)
-    byte_store(6824253, 115)
-    byte_store(6824254, 101)
-    byte_store(6824255, 10)
-    byte_store(6825140, 91)
-    # C0B-4: duplicate local declaration; use assignment to update the existing local.
-    byte_store(6824320, 58)
-    byte_store(6824321, 32)
-    byte_store(6824322, 101)
-    byte_store(6824323, 114)
-    byte_store(6824324, 114)
-    byte_store(6824325, 111)
-    byte_store(6824326, 114)
-    byte_store(6824327, 91)
-    byte_store(6824328, 67)
-    byte_store(6824329, 48)
-    byte_store(6824330, 66)
-    byte_store(6824331, 45)
-    byte_store(6824332, 48)
-    byte_store(6824333, 48)
-    byte_store(6824334, 52)
-    byte_store(6824335, 93)
-    byte_store(6824336, 58)
-    byte_store(6824337, 32)
-    byte_store(6824338, 100)
-    byte_store(6824339, 117)
-    byte_store(6824340, 112)
-    byte_store(6824341, 108)
-    byte_store(6824342, 105)
-    byte_store(6824343, 99)
-    byte_store(6824344, 97)
-    byte_store(6824345, 116)
-    byte_store(6824346, 101)
-    byte_store(6824347, 32)
-    byte_store(6824348, 108)
-    byte_store(6824349, 111)
-    byte_store(6824350, 99)
-    byte_store(6824351, 97)
-    byte_store(6824352, 108)
-    byte_store(6824353, 32)
-    byte_store(6824354, 100)
-    byte_store(6824355, 101)
-    byte_store(6824356, 99)
-    byte_store(6824357, 108)
-    byte_store(6824358, 97)
-    byte_store(6824359, 114)
-    byte_store(6824360, 97)
-    byte_store(6824361, 116)
-    byte_store(6824362, 105)
-    byte_store(6824363, 111)
-    byte_store(6824364, 110)
-    byte_store(6824365, 59)
-    byte_store(6824366, 32)
-    byte_store(6824367, 117)
-    byte_store(6824368, 115)
-    byte_store(6824369, 101)
-    byte_store(6824370, 32)
-    byte_store(6824371, 97)
-    byte_store(6824372, 115)
-    byte_store(6824373, 115)
-    byte_store(6824374, 105)
-    byte_store(6824375, 103)
-    byte_store(6824376, 110)
-    byte_store(6824377, 109)
-    byte_store(6824378, 101)
-    byte_store(6824379, 110)
-    byte_store(6824380, 116)
-    byte_store(6824381, 32)
-    byte_store(6824382, 116)
-    byte_store(6824383, 111)
-    byte_store(6824384, 32)
-    byte_store(6824385, 117)
-    byte_store(6824386, 112)
-    byte_store(6824387, 100)
-    byte_store(6824388, 97)
-    byte_store(6824389, 116)
-    byte_store(6824390, 101)
-    byte_store(6824391, 32)
-    byte_store(6824392, 116)
-    byte_store(6824393, 104)
-    byte_store(6824394, 101)
-    byte_store(6824395, 32)
-    byte_store(6824396, 101)
-    byte_store(6824397, 120)
-    byte_store(6824398, 105)
-    byte_store(6824399, 115)
-    byte_store(6824400, 116)
-    byte_store(6824401, 105)
-    byte_store(6824402, 110)
-    byte_store(6824403, 103)
-    byte_store(6824404, 32)
-    byte_store(6824405, 108)
-    byte_store(6824406, 111)
-    byte_store(6824407, 99)
-    byte_store(6824408, 97)
-    byte_store(6824409, 108)
-    byte_store(6824410, 10)
-    byte_store(6825141, 80)
-    # C0B-5: decimal literal outside i64 range; use 0..9223372036854775807.
-    byte_store(6824448, 58)
-    byte_store(6824449, 32)
-    byte_store(6824450, 101)
-    byte_store(6824451, 114)
-    byte_store(6824452, 114)
-    byte_store(6824453, 111)
-    byte_store(6824454, 114)
-    byte_store(6824455, 91)
-    byte_store(6824456, 67)
-    byte_store(6824457, 48)
-    byte_store(6824458, 66)
-    byte_store(6824459, 45)
-    byte_store(6824460, 48)
-    byte_store(6824461, 48)
-    byte_store(6824462, 53)
-    byte_store(6824463, 93)
-    byte_store(6824464, 58)
-    byte_store(6824465, 32)
-    byte_store(6824466, 100)
-    byte_store(6824467, 101)
-    byte_store(6824468, 99)
-    byte_store(6824469, 105)
-    byte_store(6824470, 109)
-    byte_store(6824471, 97)
-    byte_store(6824472, 108)
-    byte_store(6824473, 32)
-    byte_store(6824474, 108)
-    byte_store(6824475, 105)
-    byte_store(6824476, 116)
-    byte_store(6824477, 101)
-    byte_store(6824478, 114)
-    byte_store(6824479, 97)
-    byte_store(6824480, 108)
-    byte_store(6824481, 32)
-    byte_store(6824482, 111)
-    byte_store(6824483, 117)
-    byte_store(6824484, 116)
-    byte_store(6824485, 115)
-    byte_store(6824486, 105)
-    byte_store(6824487, 100)
-    byte_store(6824488, 101)
-    byte_store(6824489, 32)
-    byte_store(6824490, 105)
-    byte_store(6824491, 54)
-    byte_store(6824492, 52)
-    byte_store(6824493, 32)
-    byte_store(6824494, 114)
-    byte_store(6824495, 97)
-    byte_store(6824496, 110)
-    byte_store(6824497, 103)
-    byte_store(6824498, 101)
-    byte_store(6824499, 59)
-    byte_store(6824500, 32)
-    byte_store(6824501, 117)
-    byte_store(6824502, 115)
-    byte_store(6824503, 101)
-    byte_store(6824504, 32)
-    byte_store(6824505, 48)
-    byte_store(6824506, 46)
-    byte_store(6824507, 46)
-    byte_store(6824508, 57)
-    byte_store(6824509, 50)
-    byte_store(6824510, 50)
-    byte_store(6824511, 51)
-    byte_store(6824512, 51)
-    byte_store(6824513, 55)
-    byte_store(6824514, 50)
-    byte_store(6824515, 48)
-    byte_store(6824516, 51)
-    byte_store(6824517, 54)
-    byte_store(6824518, 56)
-    byte_store(6824519, 53)
-    byte_store(6824520, 52)
-    byte_store(6824521, 55)
-    byte_store(6824522, 55)
-    byte_store(6824523, 53)
-    byte_store(6824524, 56)
-    byte_store(6824525, 48)
-    byte_store(6824526, 55)
-    byte_store(6824527, 10)
-    byte_store(6825142, 81)
-    # C0B-6: invalid AST anchor lexeme; regenerate the AST with C0 frontend.
-    byte_store(6824576, 58)
-    byte_store(6824577, 32)
-    byte_store(6824578, 101)
-    byte_store(6824579, 114)
-    byte_store(6824580, 114)
-    byte_store(6824581, 111)
-    byte_store(6824582, 114)
-    byte_store(6824583, 91)
-    byte_store(6824584, 67)
-    byte_store(6824585, 48)
-    byte_store(6824586, 66)
-    byte_store(6824587, 45)
-    byte_store(6824588, 48)
-    byte_store(6824589, 48)
-    byte_store(6824590, 54)
-    byte_store(6824591, 93)
-    byte_store(6824592, 58)
-    byte_store(6824593, 32)
-    byte_store(6824594, 105)
-    byte_store(6824595, 110)
-    byte_store(6824596, 118)
-    byte_store(6824597, 97)
-    byte_store(6824598, 108)
-    byte_store(6824599, 105)
-    byte_store(6824600, 100)
-    byte_store(6824601, 32)
-    byte_store(6824602, 65)
-    byte_store(6824603, 83)
-    byte_store(6824604, 84)
-    byte_store(6824605, 32)
-    byte_store(6824606, 97)
-    byte_store(6824607, 110)
-    byte_store(6824608, 99)
-    byte_store(6824609, 104)
-    byte_store(6824610, 111)
-    byte_store(6824611, 114)
-    byte_store(6824612, 32)
-    byte_store(6824613, 108)
-    byte_store(6824614, 101)
-    byte_store(6824615, 120)
-    byte_store(6824616, 101)
-    byte_store(6824617, 109)
-    byte_store(6824618, 101)
-    byte_store(6824619, 59)
-    byte_store(6824620, 32)
-    byte_store(6824621, 114)
-    byte_store(6824622, 101)
-    byte_store(6824623, 103)
-    byte_store(6824624, 101)
-    byte_store(6824625, 110)
-    byte_store(6824626, 101)
-    byte_store(6824627, 114)
-    byte_store(6824628, 97)
-    byte_store(6824629, 116)
-    byte_store(6824630, 101)
-    byte_store(6824631, 32)
-    byte_store(6824632, 116)
-    byte_store(6824633, 104)
-    byte_store(6824634, 101)
-    byte_store(6824635, 32)
-    byte_store(6824636, 65)
-    byte_store(6824637, 83)
-    byte_store(6824638, 84)
-    byte_store(6824639, 32)
-    byte_store(6824640, 119)
-    byte_store(6824641, 105)
-    byte_store(6824642, 116)
-    byte_store(6824643, 104)
-    byte_store(6824644, 32)
-    byte_store(6824645, 67)
-    byte_store(6824646, 48)
-    byte_store(6824647, 32)
-    byte_store(6824648, 102)
-    byte_store(6824649, 114)
-    byte_store(6824650, 111)
-    byte_store(6824651, 110)
-    byte_store(6824652, 116)
-    byte_store(6824653, 101)
-    byte_store(6824654, 110)
-    byte_store(6824655, 100)
-    byte_store(6824656, 10)
-    byte_store(6825143, 81)
-    # C0B-7: executable exceeds bounded output capacity; reduce the program.
-    byte_store(6824704, 58)
-    byte_store(6824705, 32)
-    byte_store(6824706, 101)
-    byte_store(6824707, 114)
-    byte_store(6824708, 114)
-    byte_store(6824709, 111)
-    byte_store(6824710, 114)
-    byte_store(6824711, 91)
-    byte_store(6824712, 67)
-    byte_store(6824713, 48)
-    byte_store(6824714, 66)
-    byte_store(6824715, 45)
-    byte_store(6824716, 48)
-    byte_store(6824717, 48)
-    byte_store(6824718, 55)
-    byte_store(6824719, 93)
-    byte_store(6824720, 58)
-    byte_store(6824721, 32)
-    byte_store(6824722, 101)
-    byte_store(6824723, 120)
-    byte_store(6824724, 101)
-    byte_store(6824725, 99)
-    byte_store(6824726, 117)
-    byte_store(6824727, 116)
-    byte_store(6824728, 97)
-    byte_store(6824729, 98)
-    byte_store(6824730, 108)
-    byte_store(6824731, 101)
-    byte_store(6824732, 32)
-    byte_store(6824733, 101)
-    byte_store(6824734, 120)
-    byte_store(6824735, 99)
-    byte_store(6824736, 101)
-    byte_store(6824737, 101)
-    byte_store(6824738, 100)
-    byte_store(6824739, 115)
-    byte_store(6824740, 32)
-    byte_store(6824741, 98)
-    byte_store(6824742, 111)
-    byte_store(6824743, 117)
-    byte_store(6824744, 110)
-    byte_store(6824745, 100)
-    byte_store(6824746, 101)
-    byte_store(6824747, 100)
-    byte_store(6824748, 32)
-    byte_store(6824749, 111)
-    byte_store(6824750, 117)
-    byte_store(6824751, 116)
-    byte_store(6824752, 112)
-    byte_store(6824753, 117)
-    byte_store(6824754, 116)
-    byte_store(6824755, 32)
-    byte_store(6824756, 99)
-    byte_store(6824757, 97)
-    byte_store(6824758, 112)
-    byte_store(6824759, 97)
-    byte_store(6824760, 99)
-    byte_store(6824761, 105)
-    byte_store(6824762, 116)
-    byte_store(6824763, 121)
-    byte_store(6824764, 59)
-    byte_store(6824765, 32)
-    byte_store(6824766, 114)
-    byte_store(6824767, 101)
-    byte_store(6824768, 100)
-    byte_store(6824769, 117)
-    byte_store(6824770, 99)
-    byte_store(6824771, 101)
-    byte_store(6824772, 32)
-    byte_store(6824773, 116)
-    byte_store(6824774, 104)
-    byte_store(6824775, 101)
-    byte_store(6824776, 32)
-    byte_store(6824777, 112)
-    byte_store(6824778, 114)
-    byte_store(6824779, 111)
-    byte_store(6824780, 103)
-    byte_store(6824781, 114)
-    byte_store(6824782, 97)
-    byte_store(6824783, 109)
-    byte_store(6824784, 10)
-    # C0B-8: function names, main signature and exact call arity.
-    byte_store(6825144, 99)
-    byte_store(6824832, 58)
-    byte_store(6824833, 32)
-    byte_store(6824834, 101)
-    byte_store(6824835, 114)
-    byte_store(6824836, 114)
-    byte_store(6824837, 111)
-    byte_store(6824838, 114)
-    byte_store(6824839, 91)
-    byte_store(6824840, 67)
-    byte_store(6824841, 48)
-    byte_store(6824842, 66)
-    byte_store(6824843, 45)
-    byte_store(6824844, 48)
-    byte_store(6824845, 48)
-    byte_store(6824846, 56)
-    byte_store(6824847, 93)
-    byte_store(6824848, 58)
-    byte_store(6824849, 32)
-    byte_store(6824850, 105)
-    byte_store(6824851, 110)
-    byte_store(6824852, 118)
-    byte_store(6824853, 97)
-    byte_store(6824854, 108)
-    byte_store(6824855, 105)
-    byte_store(6824856, 100)
-    byte_store(6824857, 32)
-    byte_store(6824858, 102)
-    byte_store(6824859, 117)
-    byte_store(6824860, 110)
-    byte_store(6824861, 99)
-    byte_store(6824862, 116)
-    byte_store(6824863, 105)
-    byte_store(6824864, 111)
-    byte_store(6824865, 110)
-    byte_store(6824866, 32)
-    byte_store(6824867, 98)
-    byte_store(6824868, 105)
-    byte_store(6824869, 110)
-    byte_store(6824870, 100)
-    byte_store(6824871, 105)
-    byte_store(6824872, 110)
-    byte_store(6824873, 103)
-    byte_store(6824874, 32)
-    byte_store(6824875, 111)
-    byte_store(6824876, 114)
-    byte_store(6824877, 32)
-    byte_store(6824878, 99)
-    byte_store(6824879, 97)
-    byte_store(6824880, 108)
-    byte_store(6824881, 108)
-    byte_store(6824882, 59)
-    byte_store(6824883, 32)
-    byte_store(6824884, 99)
-    byte_store(6824885, 104)
-    byte_store(6824886, 101)
-    byte_store(6824887, 99)
-    byte_store(6824888, 107)
-    byte_store(6824889, 32)
-    byte_store(6824890, 117)
-    byte_store(6824891, 110)
-    byte_store(6824892, 105)
-    byte_store(6824893, 113)
-    byte_store(6824894, 117)
-    byte_store(6824895, 101)
-    byte_store(6824896, 32)
-    byte_store(6824897, 110)
-    byte_store(6824898, 97)
-    byte_store(6824899, 109)
-    byte_store(6824900, 101)
-    byte_store(6824901, 115)
-    byte_store(6824902, 44)
-    byte_store(6824903, 32)
-    byte_store(6824904, 109)
-    byte_store(6824905, 97)
-    byte_store(6824906, 105)
-    byte_store(6824907, 110)
-    byte_store(6824908, 40)
-    byte_store(6824909, 41)
-    byte_store(6824910, 32)
-    byte_store(6824911, 97)
-    byte_store(6824912, 110)
-    byte_store(6824913, 100)
-    byte_store(6824914, 32)
-    byte_store(6824915, 97)
-    byte_store(6824916, 114)
-    byte_store(6824917, 103)
-    byte_store(6824918, 117)
-    byte_store(6824919, 109)
-    byte_store(6824920, 101)
-    byte_store(6824921, 110)
-    byte_store(6824922, 116)
-    byte_store(6824923, 32)
-    byte_store(6824924, 99)
-    byte_store(6824925, 111)
-    byte_store(6824926, 117)
-    byte_store(6824927, 110)
-    byte_store(6824928, 116)
-    byte_store(6824929, 115)
-    byte_store(6824930, 10)
-    byte_store(6824960, 58)
-    byte_store(6824961, 32)
-    byte_store(6824962, 101)
-    byte_store(6824963, 114)
-    byte_store(6824964, 114)
-    byte_store(6824965, 111)
-    byte_store(6824966, 114)
-    byte_store(6824967, 91)
-    byte_store(6824968, 67)
-    byte_store(6824969, 48)
-    byte_store(6824970, 66)
-    byte_store(6824971, 45)
-    byte_store(6824972, 48)
-    byte_store(6824973, 48)
-    byte_store(6824974, 57)
-    byte_store(6824975, 93)
-    byte_store(6824976, 58)
-    byte_store(6824977, 32)
-    byte_store(6824978, 117)
-    byte_store(6824979, 110)
-    byte_store(6824980, 115)
-    byte_store(6824981, 117)
-    byte_store(6824982, 112)
-    byte_store(6824983, 112)
-    byte_store(6824984, 111)
-    byte_store(6824985, 114)
-    byte_store(6824986, 116)
-    byte_store(6824987, 101)
-    byte_store(6824988, 100)
-    byte_store(6824989, 32)
-    byte_store(6824990, 99)
-    byte_store(6824991, 111)
-    byte_store(6824992, 109)
-    byte_store(6824993, 112)
-    byte_store(6824994, 105)
-    byte_store(6824995, 108)
-    byte_store(6824996, 101)
-    byte_store(6824997, 114)
-    byte_store(6824998, 32)
-    byte_store(6824999, 112)
-    byte_store(6825000, 114)
-    byte_store(6825001, 111)
-    byte_store(6825002, 102)
-    byte_store(6825003, 105)
-    byte_store(6825004, 108)
-    byte_store(6825005, 101)
-    byte_store(6825006, 59)
-    byte_store(6825007, 32)
-    byte_store(6825008, 117)
-    byte_store(6825009, 115)
-    byte_store(6825010, 101)
-    byte_store(6825011, 32)
-    byte_store(6825012, 112)
-    byte_store(6825013, 114)
-    byte_store(6825014, 111)
-    byte_store(6825015, 102)
-    byte_store(6825016, 105)
-    byte_store(6825017, 108)
-    byte_store(6825018, 101)
-    byte_store(6825019, 32)
-    byte_store(6825020, 48)
-    byte_store(6825021, 32)
-    byte_store(6825022, 117)
-    byte_store(6825023, 110)
-    byte_store(6825024, 116)
-    byte_store(6825025, 105)
-    byte_store(6825026, 108)
-    byte_store(6825027, 32)
-    byte_store(6825028, 109)
-    byte_store(6825029, 97)
-    byte_store(6825030, 112)
-    byte_store(6825031, 112)
-    byte_store(6825032, 101)
-    byte_store(6825033, 100)
-    byte_store(6825034, 32)
-    byte_store(6825035, 114)
-    byte_store(6825036, 117)
-    byte_store(6825037, 110)
-    byte_store(6825038, 116)
-    byte_store(6825039, 105)
-    byte_store(6825040, 109)
-    byte_store(6825041, 101)
-    byte_store(6825042, 32)
-    byte_store(6825043, 105)
-    byte_store(6825044, 115)
-    byte_store(6825045, 32)
-    byte_store(6825046, 97)
-    byte_store(6825047, 118)
-    byte_store(6825048, 97)
-    byte_store(6825049, 105)
-    byte_store(6825050, 108)
-    byte_store(6825051, 97)
-    byte_store(6825052, 98)
-    byte_store(6825053, 108)
-    byte_store(6825054, 101)
-    byte_store(6825055, 10)
-    byte_store(6825145, 96)
-    # C0B-010 has a separate slot: historical009 and length table stay intact.
-    byte_store(6825400, 58)
-    byte_store(6825401, 32)
-    byte_store(6825402, 101)
-    byte_store(6825403, 114)
-    byte_store(6825404, 114)
-    byte_store(6825405, 111)
-    byte_store(6825406, 114)
-    byte_store(6825407, 91)
-    byte_store(6825408, 67)
-    byte_store(6825409, 48)
-    byte_store(6825410, 66)
-    byte_store(6825411, 45)
-    byte_store(6825412, 48)
-    byte_store(6825413, 49)
-    byte_store(6825414, 48)
-    byte_store(6825415, 93)
-    byte_store(6825416, 58)
-    byte_store(6825417, 32)
-    byte_store(6825418, 114)
-    byte_store(6825419, 97)
-    byte_store(6825420, 119)
-    byte_store(6825421, 32)
-    byte_store(6825422, 110)
-    byte_store(6825423, 97)
-    byte_store(6825424, 116)
-    byte_store(6825425, 105)
-    byte_store(6825426, 118)
-    byte_store(6825427, 101)
-    byte_store(6825428, 32)
-    byte_store(6825429, 99)
-    byte_store(6825430, 97)
-    byte_store(6825431, 108)
-    byte_store(6825432, 108)
-    byte_store(6825433, 32)
-    byte_store(6825434, 111)
-    byte_store(6825435, 117)
-    byte_store(6825436, 116)
-    byte_store(6825437, 115)
-    byte_store(6825438, 105)
-    byte_store(6825439, 100)
-    byte_store(6825440, 101)
-    byte_store(6825441, 32)
-    byte_store(6825442, 117)
-    byte_store(6825443, 110)
-    byte_store(6825444, 115)
-    byte_store(6825445, 97)
-    byte_store(6825446, 102)
-    byte_store(6825447, 101)
-    byte_store(6825448, 32)
-    byte_store(6825449, 115)
-    byte_store(6825450, 99)
-    byte_store(6825451, 111)
-    byte_store(6825452, 112)
-    byte_store(6825453, 101)
-    byte_store(6825454, 59)
-    byte_store(6825455, 32)
-    byte_store(6825456, 119)
-    byte_store(6825457, 114)
-    byte_store(6825458, 97)
-    byte_store(6825459, 112)
-    byte_store(6825460, 32)
-    byte_store(6825461, 105)
-    byte_store(6825462, 116)
-    byte_store(6825463, 115)
-    byte_store(6825464, 32)
-    byte_store(6825465, 111)
-    byte_store(6825466, 119)
-    byte_store(6825467, 110)
-    byte_store(6825468, 105)
-    byte_store(6825469, 110)
-    byte_store(6825470, 103)
-    byte_store(6825471, 32)
-    byte_store(6825472, 115)
-    byte_store(6825473, 116)
-    byte_store(6825474, 97)
-    byte_store(6825475, 116)
-    byte_store(6825476, 101)
-    byte_store(6825477, 109)
-    byte_store(6825478, 101)
-    byte_store(6825479, 110)
-    byte_store(6825480, 116)
-    byte_store(6825481, 32)
-    byte_store(6825482, 105)
-    byte_store(6825483, 110)
-    byte_store(6825484, 32)
-    byte_store(6825485, 117)
-    byte_store(6825486, 110)
-    byte_store(6825487, 115)
-    byte_store(6825488, 97)
-    byte_store(6825489, 102)
-    byte_store(6825490, 101)
-    byte_store(6825491, 10)
-    # C0B-011 retains existing diagnostics.
-    byte_store(6825600, 58)
-    byte_store(6825601, 32)
-    byte_store(6825602, 101)
-    byte_store(6825603, 114)
-    byte_store(6825604, 114)
-    byte_store(6825605, 111)
-    byte_store(6825606, 114)
-    byte_store(6825607, 91)
-    byte_store(6825608, 67)
-    byte_store(6825609, 48)
-    byte_store(6825610, 66)
-    byte_store(6825611, 45)
-    byte_store(6825612, 48)
-    byte_store(6825613, 49)
-    byte_store(6825614, 49)
-    byte_store(6825615, 93)
-    byte_store(6825616, 58)
-    byte_store(6825617, 32)
-    byte_store(6825618, 105)
-    byte_store(6825619, 110)
-    byte_store(6825620, 118)
-    byte_store(6825621, 97)
-    byte_store(6825622, 108)
-    byte_store(6825623, 105)
-    byte_store(6825624, 100)
-    byte_store(6825625, 32)
-    byte_store(6825626, 115)
-    byte_store(6825627, 116)
-    byte_store(6825628, 97)
-    byte_store(6825629, 116)
-    byte_store(6825630, 105)
-    byte_store(6825631, 99)
-    byte_store(6825632, 32)
-    byte_store(6825633, 98)
-    byte_store(6825634, 121)
-    byte_store(6825635, 116)
-    byte_store(6825636, 101)
-    byte_store(6825637, 32)
-    byte_store(6825638, 108)
-    byte_store(6825639, 105)
-    byte_store(6825640, 116)
-    byte_store(6825641, 101)
-    byte_store(6825642, 114)
-    byte_store(6825643, 97)
-    byte_store(6825644, 108)
-    byte_store(6825645, 59)
-    byte_store(6825646, 32)
-    byte_store(6825647, 99)
-    byte_store(6825648, 108)
-    byte_store(6825649, 111)
-    byte_store(6825650, 115)
-    byte_store(6825651, 101)
-    byte_store(6825652, 32)
-    byte_store(6825653, 113)
-    byte_store(6825654, 117)
-    byte_store(6825655, 111)
-    byte_store(6825656, 116)
-    byte_store(6825657, 101)
-    byte_store(6825658, 115)
-    byte_store(6825659, 32)
-    byte_store(6825660, 97)
-    byte_store(6825661, 110)
-    byte_store(6825662, 100)
-    byte_store(6825663, 32)
-    byte_store(6825664, 117)
-    byte_store(6825665, 115)
-    byte_store(6825666, 101)
-    byte_store(6825667, 32)
-    byte_store(6825668, 115)
-    byte_store(6825669, 117)
-    byte_store(6825670, 112)
-    byte_store(6825671, 112)
-    byte_store(6825672, 111)
-    byte_store(6825673, 114)
-    byte_store(6825674, 116)
-    byte_store(6825675, 101)
-    byte_store(6825676, 100)
-    byte_store(6825677, 32)
-    byte_store(6825678, 101)
-    byte_store(6825679, 115)
-    byte_store(6825680, 99)
-    byte_store(6825681, 97)
-    byte_store(6825682, 112)
-    byte_store(6825683, 101)
-    byte_store(6825684, 115)
-    byte_store(6825685, 10)
-    # C0B-012 retains existing diagnostics.
-    byte_store(6825800, 58)
-    byte_store(6825801, 32)
-    byte_store(6825802, 101)
-    byte_store(6825803, 114)
-    byte_store(6825804, 114)
-    byte_store(6825805, 111)
-    byte_store(6825806, 114)
-    byte_store(6825807, 91)
-    byte_store(6825808, 67)
-    byte_store(6825809, 48)
-    byte_store(6825810, 66)
-    byte_store(6825811, 45)
-    byte_store(6825812, 48)
-    byte_store(6825813, 49)
-    byte_store(6825814, 50)
-    byte_store(6825815, 93)
-    byte_store(6825816, 58)
-    byte_store(6825817, 32)
-    byte_store(6825818, 105)
-    byte_store(6825819, 110)
-    byte_store(6825820, 99)
-    byte_store(6825821, 111)
-    byte_store(6825822, 109)
-    byte_store(6825823, 112)
-    byte_store(6825824, 97)
-    byte_store(6825825, 116)
-    byte_store(6825826, 105)
-    byte_store(6825827, 98)
-    byte_store(6825828, 108)
-    byte_store(6825829, 101)
-    byte_store(6825830, 32)
-    byte_store(6825831, 67)
-    byte_store(6825832, 111)
-    byte_store(6825833, 114)
-    byte_store(6825834, 101)
-    byte_store(6825835, 32)
-    byte_store(6825836, 118)
-    byte_store(6825837, 97)
-    byte_store(6825838, 108)
-    byte_store(6825839, 117)
-    byte_store(6825840, 101)
-    byte_store(6825841, 32)
-    byte_store(6825842, 116)
-    byte_store(6825843, 121)
-    byte_store(6825844, 112)
-    byte_store(6825845, 101)
-    byte_store(6825846, 59)
-    byte_store(6825847, 32)
-    byte_store(6825848, 107)
-    byte_store(6825849, 101)
-    byte_store(6825850, 101)
-    byte_store(6825851, 112)
-    byte_store(6825852, 32)
-    byte_store(6825853, 105)
-    byte_store(6825854, 54)
-    byte_store(6825855, 52)
-    byte_store(6825856, 32)
-    byte_store(6825857, 97)
-    byte_store(6825858, 110)
-    byte_store(6825859, 100)
-    byte_store(6825860, 32)
-    byte_store(6825861, 115)
-    byte_store(6825862, 116)
-    byte_store(6825863, 97)
-    byte_store(6825864, 116)
-    byte_store(6825865, 105)
-    byte_store(6825866, 99)
-    byte_store(6825867, 32)
-    byte_store(6825868, 98)
-    byte_store(6825869, 121)
-    byte_store(6825870, 116)
-    byte_store(6825871, 101)
-    byte_store(6825872, 115)
-    byte_store(6825873, 32)
-    byte_store(6825874, 100)
-    byte_store(6825875, 105)
-    byte_store(6825876, 115)
-    byte_store(6825877, 116)
-    byte_store(6825878, 105)
-    byte_store(6825879, 110)
-    byte_store(6825880, 99)
-    byte_store(6825881, 116)
-    byte_store(6825882, 10)
+    # Compiler diagnostic constants, in the same existing BSS region.
+    # Seven-byte little-endian words keep all literals positive signed i64.
+    # The bounded loop writes seven bytes per word, including old zero gaps.
+    # This replaces1038 separate guards with seven, without changing messages.
+    # Full-byte equivalence and old diagnostic behavior are independently tested.
+    pos = 0
+    while pos < 279 {
+        temp = 0
+        # 6823936 b': error'
+        temp = temp + 32210684681199674 * (pos == 0)
+        # 6823943 b'[C0B-00'
+        temp = temp + 13563769824232283 * (pos == 1)
+        # 6823950 b'1]: inv'
+        temp = temp + 33335445043174705 * (pos == 2)
+        # 6823957 b'alid NQ'
+        temp = temp + 22885374144113761 * (pos == 3)
+        # 6823964 b'AF stre'
+        temp = temp + 28554817121044033 * (pos == 4)
+        # 6823971 b'am; reg'
+        temp = temp + 29103463442640225 * (pos == 5)
+        # 6823978 b'enerate'
+        temp = temp + 28556934527676005 * (pos == 6)
+        # 6823985 b' the co'
+        temp = temp + 31352713206330400 * (pos == 7)
+        # 6823992 b'mplete '
+        temp = temp + 9118749846958189 * (pos == 8)
+        # 6823999 b'AST wit'
+        temp = temp + 32767057662858049 * (pos == 9)
+        # 6824006 b'h C0 fr'
+        temp = temp + 32200435779706984 * (pos == 10)
+        # 6824013 b'ontend\n'
+        temp = temp + 2925175078415983 * (pos == 11)
+        # 6824062 b'\x00\x00: err'
+        temp = temp + 32213926002950144 * (pos == 18)
+        # 6824069 b'or[C0B-'
+        temp = temp + 12739149007909487 * (pos == 19)
+        # 6824076 b'002]: i'
+        temp = temp + 29590307598381104 * (pos == 20)
+        # 6824083 b'nvalid '
+        temp = temp + 9117603207411310 * (pos == 21)
+        # 6824090 b'AST rec'
+        temp = temp + 27977563537429313 * (pos == 22)
+        # 6824097 b'ord or '
+        temp = temp + 9133020865131119 * (pos == 23)
+        # 6824104 b'topolog'
+        temp = temp + 29114434117988212 * (pos == 24)
+        # 6824111 b'y; rege'
+        temp = temp + 28542658051849081 * (pos == 25)
+        # 6824118 b'nerate '
+        temp = temp + 9118749780239726 * (pos == 26)
+        # 6824125 b'the AST'
+        temp = temp + 23735437225191540 * (pos == 27)
+        # 6824132 b' with C'
+        temp = temp + 18894456441370400 * (pos == 28)
+        # 6824139 b'0 front'
+        temp = temp + 32772522238156848 * (pos == 29)
+        # 6824146 b'end\n\x00\x00\x00'
+        temp = temp + 174354021 * (pos == 30)
+        # 6824188 b'\x00\x00\x00\x00: e'
+        temp = temp + 28464406127968256 * (pos == 36)
+        # 6824195 b'rror[C0'
+        temp = temp + 13584858923102834 * (pos == 37)
+        # 6824202 b'B-003]:'
+        temp = temp + 16428023082396994 * (pos == 38)
+        # 6824209 b' undecl'
+        temp = temp + 30508584612558112 * (pos == 39)
+        # 6824216 b'ared lo'
+        temp = temp + 31362608794006113 * (pos == 40)
+        # 6824223 b'cal; de'
+        temp = temp + 28539062246465891 * (pos == 41)
+        # 6824230 b'clare t'
+        temp = temp + 32686717381209187 * (pos == 42)
+        # 6824237 b'he name'
+        temp = temp + 28549237874648424 * (pos == 43)
+        # 6824244 b' before'
+        temp = temp + 28554795432632864 * (pos == 44)
+        # 6824251 b' use\n\x00\x00'
+        temp = temp + 44651738400 * (pos == 45)
+        # 6824314 b'\x00\x00\x00\x00\x00\x00:'
+        temp = temp + 16325548649218048 * (pos == 54)
+        # 6824321 b' error['
+        temp = temp + 25740045867705632 * (pos == 55)
+        # 6824328 b'C0B-004'
+        temp = temp + 14689682264830019 * (pos == 56)
+        # 6824335 b']: dupl'
+        temp = temp + 30522946978069085 * (pos == 57)
+        # 6824342 b'icate l'
+        temp = temp + 30434917601076073 * (pos == 58)
+        # 6824349 b'ocal de'
+        temp = temp + 28539063067829103 * (pos == 59)
+        # 6824356 b'clarati'
+        temp = temp + 29682834434255971 * (pos == 60)
+        # 6824363 b'on; use'
+        temp = temp + 28555919536909935 * (pos == 61)
+        # 6824370 b' assign'
+        temp = temp + 31075950044340512 * (pos == 62)
+        # 6824377 b'ment to'
+        temp = temp + 31371405156050285 * (pos == 63)
+        # 6824384 b' update'
+        temp = temp + 28556934293517600 * (pos == 64)
+        # 6824391 b' the ex'
+        temp = temp + 33888187019981856 * (pos == 65)
+        # 6824398 b'isting '
+        temp = temp + 9120923168043881 * (pos == 66)
+        # 6824405 b'local\n\x00'
+        temp = temp + 11460606652268 * (pos == 67)
+        # 6824447 b'\x00: erro'
+        temp = temp + 31369558063331840 * (pos == 73)
+        # 6824454 b'r[C0B-0'
+        temp = temp + 13560561182923634 * (pos == 74)
+        # 6824461 b'05]: de'
+        temp = temp + 28539062228694320 * (pos == 75)
+        # 6824468 b'cimal l'
+        temp = temp + 30434947347868003 * (pos == 76)
+        # 6824475 b'iteral '
+        temp = temp + 9126365041620073 * (pos == 77)
+        # 6824482 b'outside'
+        temp = temp + 28539376719132015 * (pos == 78)
+        # 6824489 b' i64 ra'
+        temp = temp + 27428555381434656 * (pos == 79)
+        # 6824496 b'nge; us'
+        temp = temp + 32498403617630062 * (pos == 80)
+        # 6824503 b'e 0..92'
+        temp = temp + 14136619341717605 * (pos == 81)
+        # 6824510 b'2337203'
+        temp = temp + 14408216044843826 * (pos == 82)
+        # 6824517 b'6854775'
+        temp = temp + 14978884004296758 * (pos == 83)
+        # 6824524 b'807\n\x00\x00\x00'
+        temp = temp + 171388984 * (pos == 84)
+        # 6824573 b'\x00\x00\x00: er'
+        temp = temp + 32199336431452160 * (pos == 91)
+        # 6824580 b'ror[C0B'
+        temp = temp + 18630414318071666 * (pos == 92)
+        # 6824587 b'-006]: '
+        temp = temp + 9071371270238253 * (pos == 93)
+        # 6824594 b'invalid'
+        temp = temp + 28263411883601513 * (pos == 94)
+        # 6824601 b' AST an'
+        temp = temp + 31069038919762208 * (pos == 95)
+        # 6824608 b'chor le'
+        temp = temp + 28547859262433379 * (pos == 96)
+        # 6824615 b'xeme; r'
+        temp = temp + 32123586821842296 * (pos == 97)
+        # 6824622 b'egenera'
+        temp = temp + 27428852710336357 * (pos == 98)
+        # 6824629 b'te the '
+        temp = temp + 9118698554025332 * (pos == 99)
+        # 6824636 b'AST wit'
+        temp = temp + 32767057662858049 * (pos == 100)
+        # 6824643 b'h C0 fr'
+        temp = temp + 32200435779706984 * (pos == 101)
+        # 6824650 b'ontend\n'
+        temp = temp + 2925175078415983 * (pos == 102)
+        # 6824699 b'\x00\x00\x00\x00\x00: '
+        temp = temp + 9070970929152000 * (pos == 109)
+        # 6824706 b'error[C'
+        temp = temp + 18959370493784677 * (pos == 110)
+        # 6824713 b'0B-007]'
+        temp = temp + 26237852940321328 * (pos == 111)
+        # 6824720 b': execu'
+        temp = temp + 33041859737886778 * (pos == 112)
+        # 6824727 b'table e'
+        temp = temp + 28464592629948788 * (pos == 113)
+        # 6824734 b'xceeds '
+        temp = temp + 9134074289808248 * (pos == 114)
+        # 6824741 b'bounded'
+        temp = temp + 28258979695390562 * (pos == 115)
+        # 6824748 b' output'
+        temp = temp + 32780223149076256 * (pos == 116)
+        # 6824755 b' capaci'
+        temp = temp + 29664142703026976 * (pos == 117)
+        # 6824762 b'ty; red'
+        temp = temp + 28259038512511348 * (pos == 118)
+        # 6824769 b'uce the'
+        temp = temp + 28543820616786805 * (pos == 119)
+        # 6824776 b' progra'
+        temp = temp + 27428861317902368 * (pos == 120)
+        # 6824783 b'm\n\x00\x00\x00\x00\x00'
+        temp = temp + 2669 * (pos == 121)
+        # 6824832 b': error'
+        temp = temp + 32210684681199674 * (pos == 128)
+        # 6824839 b'[C0B-00'
+        temp = temp + 13563769824232283 * (pos == 129)
+        # 6824846 b'8]: inv'
+        temp = temp + 33335445043174712 * (pos == 130)
+        # 6824853 b'alid fu'
+        temp = temp + 33044861584764001 * (pos == 131)
+        # 6824860 b'nction '
+        temp = temp + 9128624044401518 * (pos == 132)
+        # 6824867 b'binding'
+        temp = temp + 29113321536776546 * (pos == 133)
+        # 6824874 b' or cal'
+        temp = temp + 30506375858777888 * (pos == 134)
+        # 6824881 b'l; chec'
+        temp = temp + 27977521708415852 * (pos == 135)
+        # 6824888 b'k uniqu'
+        temp = temp + 33057269913821291 * (pos == 136)
+        # 6824895 b'e names'
+        temp = temp + 32481142782173285 * (pos == 137)
+        # 6824902 b', main('
+        temp = temp + 11380397953589292 * (pos == 138)
+        # 6824909 b') and a'
+        temp = temp + 27338688461611049 * (pos == 139)
+        # 6824916 b'rgument'
+        temp = temp + 32772479205599090 * (pos == 140)
+        # 6824923 b' counts'
+        temp = temp + 32497640087184160 * (pos == 141)
+        # 6824930 b'\n\x00\x00\x00\x00\x00\x00'
+        temp = temp + 10 * (pos == 142)
+        # 6824958 b'\x00\x00: err'
+        temp = temp + 32213926002950144 * (pos == 146)
+        # 6824965 b'or[C0B-'
+        temp = temp + 12739149007909487 * (pos == 147)
+        # 6824972 b'009]: u'
+        temp = temp + 32968007319367728 * (pos == 148)
+        # 6824979 b'nsuppor'
+        temp = temp + 32210676058780526 * (pos == 149)
+        # 6824986 b'ted com'
+        temp = temp + 30803243997357428 * (pos == 150)
+        # 6824993 b'piler p'
+        temp = temp + 31560873091557744 * (pos == 151)
+        # 6825000 b'rofile;'
+        temp = temp + 16718539925122930 * (pos == 152)
+        # 6825007 b' use pr'
+        temp = temp + 32211431788344608 * (pos == 153)
+        # 6825014 b'ofile 0'
+        temp = temp + 13546418864744047 * (pos == 154)
+        # 6825021 b' until '
+        temp = temp + 9126399435502880 * (pos == 155)
+        # 6825028 b'mapped '
+        temp = temp + 9117586095628653 * (pos == 156)
+        # 6825035 b'runtime'
+        temp = temp + 28549272340166002 * (pos == 157)
+        # 6825042 b' is ava'
+        temp = temp + 27433232269273376 * (pos == 158)
+        # 6825049 b'ilable\n'
+        temp = temp + 2926265948531817 * (pos == 159)
+        # 6825133 b'\x00\x00\x00\x00TV@'
+        temp = temp + 18109317286723584 * (pos == 171)
+        # 6825140 b'[PQQc`\x00'
+        temp = temp + 105979682312283 * (pos == 172)
+        # 6825231 b'\x00\x00\x00\x00\x00in'
+        temp = temp + 31077696159088640 * (pos == 185)
+        # 6825238 b'put:\x00\x00\x00'
+        temp = temp + 980710768 * (pos == 186)
+        # 6825399 b'\x00: erro'
+        temp = temp + 31369558063331840 * (pos == 209)
+        # 6825406 b'r[C0B-0'
+        temp = temp + 13560561182923634 * (pos == 210)
+        # 6825413 b'10]: ra'
+        temp = temp + 27428555484639281 * (pos == 211)
+        # 6825420 b'w nativ'
+        temp = temp + 33329995823587447 * (pos == 212)
+        # 6825427 b'e call '
+        temp = temp + 9126412000895077 * (pos == 213)
+        # 6825434 b'outside'
+        temp = temp + 28539376719132015 * (pos == 214)
+        # 6825441 b' unsafe'
+        temp = temp + 28541541382255904 * (pos == 215)
+        # 6825448 b' scope;'
+        temp = temp + 16718557205459744 * (pos == 216)
+        # 6825455 b' wrap i'
+        temp = temp + 29590539597936416 * (pos == 217)
+        # 6825462 b'ts owni'
+        temp = temp + 29676331799180148 * (pos == 218)
+        # 6825469 b'ng stat'
+        temp = temp + 32758250074040174 * (pos == 219)
+        # 6825476 b'ement i'
+        temp = temp + 29590556995054949 * (pos == 220)
+        # 6825483 b'n unsaf'
+        temp = temp + 28817596026789998 * (pos == 221)
+        # 6825490 b'e\n\x00\x00\x00\x00\x00'
+        temp = temp + 2661 * (pos == 222)
+        # 6825595 b'\x00\x00\x00\x00\x00: '
+        temp = temp + 9070970929152000 * (pos == 237)
+        # 6825602 b'error[C'
+        temp = temp + 18959370493784677 * (pos == 238)
+        # 6825609 b'0B-011]'
+        temp = temp + 26231260165521968 * (pos == 239)
+        # 6825616 b': inval'
+        temp = temp + 30506458771169338 * (pos == 240)
+        # 6825623 b'id stat'
+        temp = temp + 32758250074039401 * (pos == 241)
+        # 6825630 b'ic byte'
+        temp = temp + 28557037333930857 * (pos == 242)
+        # 6825637 b' litera'
+        temp = temp + 27428852811263008 * (pos == 243)
+        # 6825644 b'l; clos'
+        temp = temp + 32492133631933292 * (pos == 244)
+        # 6825651 b'e quote'
+        temp = temp + 28556994708316261 * (pos == 245)
+        # 6825658 b's and u'
+        temp = temp + 32968187995824243 * (pos == 246)
+        # 6825665 b'se supp'
+        temp = temp + 31648847136580979 * (pos == 247)
+        # 6825672 b'orted e'
+        temp = temp + 28464588218724975 * (pos == 248)
+        # 6825679 b'scapes\n'
+        temp = temp + 2941629281428339 * (pos == 249)
+        # 6825798 b'\x00\x00: err'
+        temp = temp + 32213926002950144 * (pos == 266)
+        # 6825805 b'or[C0B-'
+        temp = temp + 12739149007909487 * (pos == 267)
+        # 6825812 b'012]: i'
+        temp = temp + 29590307598381360 * (pos == 268)
+        # 6825819 b'ncompat'
+        temp = temp + 32758232798684014 * (pos == 269)
+        # 6825826 b'ible Co'
+        temp = temp + 31317528834499177 * (pos == 270)
+        # 6825833 b're valu'
+        temp = temp + 33051738124608882 * (pos == 271)
+        # 6825840 b'e type;'
+        temp = temp + 16718557374324837 * (pos == 272)
+        # 6825847 b' keep i'
+        temp = temp + 29590539664190240 * (pos == 273)
+        # 6825854 b'64 and '
+        temp = temp + 9117624493421622 * (pos == 274)
+        # 6825861 b'static '
+        temp = temp + 9116503830000755 * (pos == 275)
+        # 6825868 b'bytes d'
+        temp = temp + 28183177666525538 * (pos == 276)
+        # 6825875 b'istinct'
+        temp = temp + 32760423165227881 * (pos == 277)
+        # 6825882 b'\n'
+        temp = temp + 10 * (pos == 278)
+        index = 6823936 + pos * 7
+        byte_store(index, temp)
+        temp = temp / 256
+        byte_store(index + 1, temp)
+        temp = temp / 256
+        byte_store(index + 2, temp)
+        temp = temp / 256
+        byte_store(index + 3, temp)
+        temp = temp / 256
+        byte_store(index + 4, temp)
+        temp = temp / 256
+        byte_store(index + 5, temp)
+        temp = temp / 256
+        byte_store(index + 6, temp)
+        pos = pos + 1
+    }
+
+    # Packed constant bytes reduce predecessor patch-table use; no new arena.
+    pos = 0
+    temp = 0
+    while pos < 83 {
+        index = pos / 8
+        ch = 6589451742132641850 * (index == 0) + 6715765552327045187 * (index == 1) + 7596553832753602618 * (index == 2) + 7885649515982757988 * (index == 3) + 7161130726890365728 * (index == 4) + 7379555244522355572 * (index == 5) + 8386105371570413689 * (index == 6) + 2334111870319161973 * (index == 7) + 8247626271659290478 * (index == 8) + 8386107265617127790 * (index == 9) + 684904 * (index == 10)
+        active = pos - (pos / 8) * 8 == 0
+        temp = temp * (active == 0) + ch * active
+        byte_store(6826000 + pos, temp)
+        temp = temp / 256
+        pos = pos + 1
+    }
 
     # Header failures use offset zero; later failures use the indexed anchor.
     start = (byte_load(6819840) + 256 * byte_load(6819840 + 1) + 65536 * byte_load(6819840 + 2) + 16777216 * byte_load(6819840 + 3))
@@ -5189,6 +4925,6 @@ fn main() {
         pos = pos - 1
     }
     error_write(pos + 1, (6825268 - pos) * (ok == 0))
-    error_write((6823936 + (error - 1) * 128) * (error < 10) + 6825400 * (error == 10) + 6825600 * (error == 11) + 6825800 * (error == 12), (byte_load(6825136 + error) * (error < 10) + 92 * (error == 10) + 86 * (error == 11) + 83 * (error == 12)) * (ok == 0))
+    error_write((6823936 + (error - 1) * 128) * (error < 10) + 6825400 * (error == 10) + 6825600 * (error == 11) + 6825800 * (error == 12) + 6826000 * (error == 13), (byte_load(6825136 + error) * (error < 10) + 92 * (error == 10) + 86 * (error == 11) + 83 * (error == 12) + 83 * (error == 13)) * (ok == 0))
     return ok == 0
 }

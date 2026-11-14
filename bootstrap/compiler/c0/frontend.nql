@@ -1,9 +1,10 @@
-# C0.39 source-to-AST frontend with bounded static bytes, built by B0 --compiler-profile.
+# Source-to-AST frontend with bottom annotations, built by B0 --compiler-profile.
 # Legacy NQAF/1..5 is unchanged; native scopes/operations use NQAF/6 dialect5.
 # Exact logical keywords select NQAF/9 dialect8; prefixes remain identifiers.
 # Contiguous << and >> select NQAF/10 dialect9 with exact two-byte spans.
 # Percent selects NQAF/11 dialect10, including all preceding operator kinds.
 # Quoted leaves or unshadowed write calls select NQAF/12 dialect11.
+# Prefix bang or a bottom result annotation selects NQAF/13 dialect12.
 # Flat state transitions are intentional: B0 has no nested statement blocks.
 fn main() {
     let got = input_read(1180288, 16)
@@ -86,14 +87,17 @@ fn main() {
         temp = byte_load(pos + 1) == 61
         kind = kind + (20 + temp) * (ch == 60) + (22 + temp) * (ch == 62)
         kind = kind + 5 * (ch == 61) * temp + 25 * (ch == 33) * temp
+        kind = kind + 54 * (ch == 33) * (temp == 0)
         kind = kind + 26 * (ch == 44)
         kind = kind + 48 * (ch == 38) + 49 * (ch == 94) + 50 * (ch == 124) + 51 * (ch == 126)
         # Longest match: consume two bytes only for contiguous shift punctuation.
         temp = (ch == 60) * (byte_load(pos + 1) == 60) + (ch == 62) * (byte_load(pos + 1) == 62)
         kind = kind * (temp == 0) + (55 * (ch == 60) + 56 * (ch == 62)) * temp
+        temp = (ch == 45) * (byte_load(pos + 1) == 62)
+        kind = kind * (temp == 0) + 59 * temp
         kind = kind * byte_load(1180200) * (byte_load(1180211) == 0) * (pos < count)
         byte_store(1180210, kind != 0)
-        byte_store(1180215, ((kind == 21) + (kind == 23) + (kind == 24) + (kind == 25) + (kind == 55) + (kind == 56)))
+        byte_store(1180215, ((kind == 21) + (kind == 23) + (kind == 24) + (kind == 25) + (kind == 55) + (kind == 56) + (kind == 59)))
         byte_store(1180162, (byte_load(1180162) + (20 <= kind) * (kind <= 25)) != 0)
 
         # Keyword matching uses the entire lexeme. 'main' remains an identifier.
@@ -235,6 +239,9 @@ fn main() {
         temp = kind == 58
         byte_store(1180266, (byte_load(1180266) + temp) != 0)
         active = active + temp
+        temp = (kind == 59) + (kind == 54) * (ch == 1)
+        byte_store(1180268, (byte_load(1180268) + temp) != 0)
+        active = active + temp
         byte_store(1180161, (byte_load(1180161) + active) != 0)
         pos = pos + 1
     }
@@ -250,7 +257,8 @@ fn main() {
     # Parser states: fn/main/(/)/{ = 0..4, statement=5, binding=6, '='=7,
     # expression=8, return separator=10, closing brace=11, EOF=12, done=13,
     # else keyword=14, else brace=15; parameter separator=16, required param=17,
-    # call close=18. 1179680 holds block depth; 6488064 is its 16-byte sentinel.
+    # call close=18; annotation bang=19, annotated body brace=20.
+    # 1179680 holds block depth; 6488064 is its 16-byte sentinel.
     # Operators at 4194304, stride 12: token u32, reserved u32, kind/precedence.
     # Operand IDs at 5046272, stride 4. Call markers at 5373952, stride 16:
     # value base u32, last argument ID u32, arity u8, then reserved zero.
@@ -268,6 +276,8 @@ fn main() {
     # 1180265 selects remainder function envelopes and NQAF/11 dialect10.
     # 1180266 selects static bytes NQAF/12 dialect11; 1180267 is write's
     # exact global user shadow, separate from native permission/class flags.
+    # 1180268 selects /13; 1180272..75 current FN ID, 1180276..79 arrow offset.
+    # NQSC scratch 1180288..303 is separate and keeps its existing lifetime.
     # Action18 opens unsafe directly into statement state5; action9 closes it.
     while ok * (state != 13) {
         kind = byte_load(327680 + pos * 12)
@@ -304,6 +314,25 @@ fn main() {
         active = (byte_load(1180202) == 16) * ((kind == 26) + (kind == 11))
         state = active * (17 * (kind == 26) + 4 * (kind == 11)) + state * (active == 0)
         byte_store(1180201, byte_load(1180201) + active)
+
+        # Only the signature's post-parameter state can consume an arrow.
+        # Actions21/22 consume annotation tokens without allocating AST nodes.
+        active = (byte_load(1180202) == 4) * (kind == 59)
+        byte_store(1180200, byte_load(1180200) + 21 * active)
+        byte_store(1180201, byte_load(1180201) + active)
+        state = 19 * active + state * (active == 0)
+        index = 1180276 * active + 8384512 * (active == 0)
+        byte_store(index, start)
+        byte_store(index + 1, start / 256)
+        byte_store(index + 2, start / 65536)
+        byte_store(index + 3, start / 16777216)
+        active = (byte_load(1180202) == 19) * (kind == 54) * (ch == 1)
+        byte_store(1180200, byte_load(1180200) + 22 * active)
+        byte_store(1180201, byte_load(1180201) + active)
+        state = 20 * active + state * (active == 0)
+        active = (byte_load(1180202) == 20) * (kind == 12)
+        byte_store(1180201, byte_load(1180201) + active)
+        state = 5 * active + state * (active == 0)
 
         # A call statement starts the existing expression parser without a binding.
         temp = (kind == 4) * (byte_load(327680 + (pos + (pos < tokens)) * 12) == 10)
@@ -411,7 +440,9 @@ fn main() {
         state = 11 * active + state * (active == 0)
         byte_store(1180201, byte_load(1180201) + active)
         active = (byte_load(1180202) == 10) + (byte_load(1180202) == 11)
-        active = active + (byte_load(1180202) == 5) * byte_load(6488065)
+        # /13 return correctness is a backend semantic obligation. Old formats
+        # retain the exact syntactic return gate and diagnostic behavior.
+        active = active + (byte_load(1180202) == 5) * ((byte_load(6488065) + byte_load(1180268)) != 0)
         active = active * (kind == 13) * (byte_load(1179680) == 0)
         state = 12 * active + state * (active == 0)
         byte_store(1180201, byte_load(1180201) + active)
@@ -428,6 +459,8 @@ fn main() {
         index = index + 8 * ((temp == 6) + (temp == 7))
         index = index + 6 * byte_load(1180203) + 7 * byte_load(1180204)
         index = index + 9 * ((temp == 10) + (temp == 11)) + 10 * (temp == 12) + 4 * (14 <= temp)
+        temp = (temp == 19) + (temp == 20) + (byte_load(1180202) == 4) * ((kind == 59) + (kind == 17) + (kind == 54) + (kind == 22))
+        index = index * (temp == 0) + 17 * (temp != 0)
         byte_store(1180163, index)
         ok = ok * ((byte_load(1180201) + byte_load(1180200)) != 0)
         ok = ok * ((byte_load(1180200) != 5) + (byte_load(1180200) == 5) * (2 <= values))
@@ -528,6 +561,30 @@ fn main() {
         byte_store(index + 17, byte_load(1180233))
         byte_store(index + 18, byte_load(1180234))
         byte_store(index + 19, byte_load(1180235))
+
+        # The saved FN ID is u32, independent of name/parameter node counts.
+        temp = (active == 10) * ok
+        index = 1180272 * temp + 8384512 * (temp == 0)
+        byte_store(index, nodes)
+        byte_store(index + 1, nodes / 256)
+        byte_store(index + 2, nodes / 65536)
+        byte_store(index + 3, nodes / 16777216)
+        temp = (active == 22) * ok
+        index = byte_load(1180272) + 256 * byte_load(1180273) + 65536 * byte_load(1180274) + 16777216 * byte_load(1180275)
+        index = (2097152 + (index - 1) * 32) * temp + 8384512 * (temp == 0)
+        byte_store(index + 1, temp)
+        ch = byte_load(1180276) + 256 * byte_load(1180277) + 65536 * byte_load(1180278) + 16777216 * byte_load(1180279)
+        byte_store(index + 24, ch)
+        byte_store(index + 25, ch / 256)
+        byte_store(index + 26, ch / 65536)
+        byte_store(index + 27, ch / 16777216)
+        # Allocation dispatch clears start on actions without nodes. Read the
+        # actual bang token offset to include every intervening trivia byte.
+        ch = 1 + byte_load(327684 + pos * 12) + 256 * byte_load(327685 + pos * 12) + 65536 * byte_load(327686 + pos * 12) + 16777216 * byte_load(327687 + pos * 12) - ch
+        byte_store(index + 28, ch)
+        byte_store(index + 29, ch / 256)
+        byte_store(index + 30, ch / 65536)
+        byte_store(index + 31, ch / 16777216)
         temp = pos + (pos < tokens)
         temp = 1 + byte_load(327684 + temp * 12) + 256 * byte_load(327685 + temp * 12) + 65536 * byte_load(327686 + temp * 12) + 16777216 * byte_load(327687 + temp * 12)
         index = (6684672 + (nodes - 1) * 4) * (active == 18) * ok + 8384512 * (((active == 18) * ok) == 0)
@@ -782,7 +839,7 @@ fn main() {
 
     # Header/body are emitted only after the complete parse. Wide nodes stay
     # in place. All legacy spans/IDs fit u16 because these three bounds hold.
-    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261) + byte_load(1180262) + byte_load(1180263) + byte_load(1180264) + byte_load(1180265) + byte_load(1180266)) != 0
+    active = ((8192 < count) + (512 < tokens) + (512 < nodes) + byte_load(1180164) + byte_load(1180260) + byte_load(1180261) + byte_load(1180262) + byte_load(1180263) + byte_load(1180264) + byte_load(1180265) + byte_load(1180266) + byte_load(1180268)) != 0
     byte_store(1180165, active)
     kind = (1 + byte_load(1180162)) * (byte_load(1180161) == 0) + 3 * byte_load(1180161) + byte_load(1180160)
     kind = kind * (byte_load(1180260) == 0) + 5 * byte_load(1180260)
@@ -792,6 +849,7 @@ fn main() {
     kind = kind * (byte_load(1180264) == 0) + 9 * byte_load(1180264)
     kind = kind * (byte_load(1180265) == 0) + 10 * byte_load(1180265)
     kind = kind * (byte_load(1180266) == 0) + 11 * byte_load(1180266)
+    kind = kind * (byte_load(1180268) == 0) + 12 * byte_load(1180268)
     byte_store(6553600, 78)
     byte_store(6553601, 81)
     byte_store(6553602, 65)
@@ -800,6 +858,7 @@ fn main() {
     byte_store(6553604, byte_load(6553604) * (byte_load(1180264) == 0) + 10 * byte_load(1180264))
     byte_store(6553604, byte_load(6553604) * (byte_load(1180265) == 0) + 11 * byte_load(1180265))
     byte_store(6553604, byte_load(6553604) * (byte_load(1180266) == 0) + 12 * byte_load(1180266))
+    byte_store(6553604, byte_load(6553604) * (byte_load(1180268) == 0) + 13 * byte_load(1180268))
     byte_store(6553605, 16 + 16 * active)
     byte_store(6553608, count)
     byte_store(6553609, count / 256)
@@ -2112,6 +2171,79 @@ fn main() {
     byte_store(6560699, 101)
     byte_store(6560700, 115)
     byte_store(6560701, 10)
+    # : error[C0P-016]: invalid return annotation; use -> ! after parameters
+    byte_store(6558613, 71)
+    byte_store(6560744, 58)
+    byte_store(6560745, 32)
+    byte_store(6560746, 101)
+    byte_store(6560747, 114)
+    byte_store(6560748, 114)
+    byte_store(6560749, 111)
+    byte_store(6560750, 114)
+    byte_store(6560751, 91)
+    byte_store(6560752, 67)
+    byte_store(6560753, 48)
+    byte_store(6560754, 80)
+    byte_store(6560755, 45)
+    byte_store(6560756, 48)
+    byte_store(6560757, 49)
+    byte_store(6560758, 54)
+    byte_store(6560759, 93)
+    byte_store(6560760, 58)
+    byte_store(6560761, 32)
+    byte_store(6560762, 105)
+    byte_store(6560763, 110)
+    byte_store(6560764, 118)
+    byte_store(6560765, 97)
+    byte_store(6560766, 108)
+    byte_store(6560767, 105)
+    byte_store(6560768, 100)
+    byte_store(6560769, 32)
+    byte_store(6560770, 114)
+    byte_store(6560771, 101)
+    byte_store(6560772, 116)
+    byte_store(6560773, 117)
+    byte_store(6560774, 114)
+    byte_store(6560775, 110)
+    byte_store(6560776, 32)
+    byte_store(6560777, 97)
+    byte_store(6560778, 110)
+    byte_store(6560779, 110)
+    byte_store(6560780, 111)
+    byte_store(6560781, 116)
+    byte_store(6560782, 97)
+    byte_store(6560783, 116)
+    byte_store(6560784, 105)
+    byte_store(6560785, 111)
+    byte_store(6560786, 110)
+    byte_store(6560787, 59)
+    byte_store(6560788, 32)
+    byte_store(6560789, 117)
+    byte_store(6560790, 115)
+    byte_store(6560791, 101)
+    byte_store(6560792, 32)
+    byte_store(6560793, 45)
+    byte_store(6560794, 62)
+    byte_store(6560795, 32)
+    byte_store(6560796, 33)
+    byte_store(6560797, 32)
+    byte_store(6560798, 97)
+    byte_store(6560799, 102)
+    byte_store(6560800, 116)
+    byte_store(6560801, 101)
+    byte_store(6560802, 114)
+    byte_store(6560803, 32)
+    byte_store(6560804, 112)
+    byte_store(6560805, 97)
+    byte_store(6560806, 114)
+    byte_store(6560807, 97)
+    byte_store(6560808, 109)
+    byte_store(6560809, 101)
+    byte_store(6560810, 116)
+    byte_store(6560811, 101)
+    byte_store(6560812, 114)
+    byte_store(6560813, 115)
+    byte_store(6560814, 10)
     while pos < error {
         temp = byte_load(pos) == 10
         index = index + temp

@@ -1,5 +1,17 @@
 # C0 Source Frontend
 
+## C0.40: Logical Bang And Bottom Result Syntax
+
+Prefix `!` reuses logical NOT precedence and preserves maximal `!=` tokens.
+`fn name(parameters) -> ! { ... }` records an explicit bottom result. Either
+new form selects NQAF/13 dialect12; no new identifier becomes reserved.
+Kind54 accepts a one-byte bang anchor, and function39 flagbit0 owns the u32
+annotation span at +24/+28. Quoted/commented markers remain opaque.
+For /13 the backend owns complete result/flow semantics after name resolution;
+frontend acceptance alone does not prove the contract. Older format return
+checks and source bytes remain unchanged. [NEVER.md](NEVER.md) defines the
+paired validation boundary, C0P-016 syntax errors and qualification gates.
+
 ## C0.39: Static Byte Literals
 
 Quoted immutable byte literals and resolved unshadowed write calls select
@@ -40,7 +52,7 @@ bounded stacks and existing source/token/node arena limits apply.
 
 
 The sections below retain the original scalar/NQAF/1 and later checkpoint
-contracts. The experimental source contract is **C0.39**;
+contracts. The experimental source contract is **C0.40**;
 [BITWISE.md](BITWISE.md) defines its bitwise extension and required independent
 review and qualification gates. [UNARY_NEGATION.md](UNARY_NEGATION.md) defines
 checked prefix negation and NQAF/7. [RETURN_FLOW.md](RETURN_FLOW.md) defines the

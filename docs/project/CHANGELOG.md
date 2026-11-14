@@ -31,6 +31,17 @@
 
 ### Added
 
+- Add experimental C0.40 logical `!expression` and verified `fn f() -> !`
+  bottom contracts. NQAF/13 independently validates signature ownership,
+  finite types and normal/return/diverge flow. Preserve `!=`, old source/wire
+  behavior, native permissions and the ordinary i64 ABI. Bottom emits no
+  result payload; a returning target reaches defined C0R-011/70 guards.
+  B0, capacities and public version remain unchanged. Require actual B/C
+  Never/bang oracles, fail-closed proof controls, independent review and
+  separate Native/Linux qualification. [NEVER.md](../../bootstrap/compiler/c0/NEVER.md)
+  defines diagnostics, costs and matched rollback; no release or self-hosting
+  promotion is implied.
+
 - Add experimental C0.39 immutable byte literals, inferred i64/static-byte local
   types and complete write(value) with exact global user-function priority.
   NQAF/12 validates quoted spans and value types independently; RX descriptors
