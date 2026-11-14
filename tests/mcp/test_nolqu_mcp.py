@@ -523,6 +523,7 @@ class NolQuMcpCoreTests(unittest.TestCase):
             "bootstrap/compiler/c0/frontend.nql", "bootstrap/compiler/c0/backend.nql",
             "tests/bootstrap/test_c0_component_generations.py", "tests/bootstrap/c031_support.py",
             "tests/bootstrap/c031_debugger.py", "tests/bootstrap/c0_capacity.sh",
+            "tests/bootstrap/test_c0_never_frontend.py", "tests/bootstrap/test_c0_never.py",
             "tests/bootstrap/c032_support.py", "examples/canonical/native_cat.nql",
             "tests/bootstrap/c0_native_os.sh", "tests/bootstrap/fixtures/c032/predecessor/hashes.json",
             "bootstrap/compiler/b0/compiler.nql0", "bootstrap/stage0/x86_64-linux/stage0.seed",
