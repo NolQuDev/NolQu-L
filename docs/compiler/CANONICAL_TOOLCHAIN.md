@@ -346,8 +346,9 @@ approved the coherent installed set. The earlier unexplained comparison-backend
 SIGKILL remains OPEN; these local passes do not qualify stable/security release. Combined R0/canonical relocation passed a scoped rerun (one method,
 15.024s) after the normal `make compiler` prerequisite, without a product change.
 The first isolated attempt lacked prebuilt R0; the unchanged legacy installer
-fallback fails NASM include resolution from a foreign cwd in that situation.
-This existing limitation is not fixed by C0.32. Canonical-only relocation passed
+fallback failed NASM include resolution from a foreign cwd at that checkpoint.
+The current installer builds R0 from the checkout root, as described in the
+[installation guide](../project/INSTALL.md). Canonical-only relocation passed
 without host compilers. See the [session report](../project/VALIDATION.md)
 and [supplemental assurance](../../tests/security/README.md) for exact scope and gaps.
 

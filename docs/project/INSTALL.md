@@ -2,10 +2,28 @@
 
 ## Current Install Model
 
-NolQu-L is currently used directly from the repository.
+Run `./nql` and `./nqlc` in the repository, or install the tools under a
+prefix. For a user-local combined installation, run this from the checkout:
 
-There is not yet a formal system-wide installer, package manager release, or
-binary distribution process.
+```bash
+PREFIX="$HOME/.local" ./install.sh
+```
+
+The installer places `nql`, `nqlc` and their long aliases in `$PREFIX/bin`.
+It reuses an executable `build/nqlc-r0` when available. From a clean checkout
+it builds R0 with NASM and an x86_64 ELF linker. You can also invoke the
+installer by path from another directory. A relative `DESTDIR` stages the
+prefix under the directory where you invoked the installer.
+
+For a canonical-only installation, use a separate prefix:
+
+```bash
+PREFIX="$HOME/.local/nolqu-core" ./install.sh --canonical-only
+"$HOME/.local/nolqu-core/bin/nqlc" --backend canonical program.nql -o program
+```
+
+This installation uses the bundled bootstrap assets. To uninstall, pass
+`--uninstall` with the same `PREFIX` and, for a staged installation, `DESTDIR`.
 
 ## Requirements
 
@@ -64,8 +82,3 @@ make test
 - use the root `Makefile` for common workflows
 - treat R0's NASM path as the current compatibility default
 - do not describe R0 as Stage 0 or self-hosted
-
-## Future Direction
-
-If NolQu-L later gains a formal install target, package recipe, or release
-bundle, this document should be expanded to describe that process directly.
