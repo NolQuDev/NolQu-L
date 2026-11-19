@@ -31,7 +31,8 @@ if [[ $canonical_only -eq 0 && ! -x "$ROOT_DIR/build/nqlc-r0" ]]; then
     command -v nasm >/dev/null 2>&1 || { printf "error: assembler 'nasm' not found\n" >&2; exit 1; }
     command -v "$LINKER" >/dev/null 2>&1 || { printf "error: linker 'ld' not found. Make sure binutils is installed\n" >&2; exit 1; }
     mkdir -p "$ROOT_DIR/build"
-    nasm -f elf64 "$ROOT_DIR/src/nqlc.asm" -o "$ROOT_DIR/build/nqlc-r0.o"
+    # R0's %include paths start at the source tree. Keep relative DESTDIR at the caller.
+    (cd -- "$ROOT_DIR" && nasm -f elf64 "$ROOT_DIR/src/nqlc.asm" -o "$ROOT_DIR/build/nqlc-r0.o")
     "$LINKER" "$ROOT_DIR/build/nqlc-r0.o" -o "$ROOT_DIR/build/nqlc-r0"
 fi
 

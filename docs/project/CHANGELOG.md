@@ -124,6 +124,10 @@
 
 ### Fixed
 
+- Fix combined installation from a clean checkout when invoked from another
+  directory. NASM can now resolve R0's source includes, and relative staging
+  paths still resolve from the caller's directory.
+
 - Correct the backend guide's obsolete Stage 0-only status, public LLVM option
   claim and unrestricted R0 oracle rule. Document the current Core component
   path and distinguish programming paths from compiler implementations and

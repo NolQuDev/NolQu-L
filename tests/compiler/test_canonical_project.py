@@ -1,4 +1,4 @@
-"""Real C0 project/install integration; no bootstrap generation or host compiler."""
+"""Project and installer integration for canonical Core and the R0 fallback build."""
 
 import hashlib
 import json
@@ -720,6 +720,19 @@ class CanonicalProjectTests(unittest.TestCase):
         self.ok(self.command(public / "nql", "init", "legacy app"))
         project = self.work / "legacy app"
         self.assertEqual(self.ok(self.command(public / "nolqul", "run", cwd=project)).stdout, HELLO)
+
+    def test_combined_install_builds_missing_r0_from_another_directory(self):
+        (self.tool / "build/nqlc-r0").unlink(missing_ok=True)
+        stage = Path("staging area")
+        env = dict(self.env, DESTDIR=str(stage), PREFIX="/opt/nolqu")
+        self.ok(self.command(self.tool / "install.sh", cwd=self.work, env=env))
+
+        prefix = self.work / stage / "opt/nolqu"
+        self.assertTrue((prefix / "lib/nolqu/build/nqlc-r0").is_file())
+        source = self.work / "hello source.nq"
+        source.write_text('print 42\n')
+        run = self.command(prefix / "bin/nqlc", "--run", source)
+        self.assertEqual((run.returncode, run.stdout, run.stderr), (0, b"42\n", b""))
 
     def test_canonical_workflow_never_invokes_forbidden_host_tools(self):
         poison = self.work / "forbidden tools"
