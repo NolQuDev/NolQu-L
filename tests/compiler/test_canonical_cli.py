@@ -191,6 +191,8 @@ class CanonicalCliTests(unittest.TestCase):
             ("fn main(){\n return (\n}\n", 3, 1, "C0P-006"),
             ("fn main(){\n return missing\n}\n", 2, 9, "C0B-003"),
             ('fn main() {\n    return !""\n}\n', 2, 12, "C0B-012"),
+            ("fn main() {\n    if !0 { return 1 }\n}\n", 3, 1, "C0B-013"),
+            ("fn main() {\n    if not 0 { return 1 }\n}\n", 3, 1, "C0P-004"),
             ("fn bad() -> ! {\n    return 0\n}\nfn main() { return 0 }\n", 2, 5, "C0B-013"),
             ("fn main() {\n    return 1!!\n}\n", 2, 13, "C0P-007"),
         )
@@ -208,6 +210,22 @@ class CanonicalCliTests(unittest.TestCase):
                 self.assertEqual(stat.S_IMODE(self.output.stat().st_mode), 0o751)
                 self.assertFalse(list(self.work.glob(".c0-source.*")))
                 self.assertEqual(list(self.temps.iterdir()), [])
+
+    def test_return_diagnostic_uses_the_current_function_signature(self):
+        cases = (
+            ("fn first() { return !0 }\nfn stop() -> ! {\n}\nfn main() { return 0 }\n",
+             b"invalid bottom contract; verify signature and nonreturning paths"),
+            ("fn stop() -> ! { stop() }\nfn value() {\n}\nfn main() { return 0 }\n",
+             b"function may reach its end without returning an i64"),
+        )
+        for source, message in cases:
+            self.source.write_text(source)
+            for flags in ((), ("--compiler-profile",)):
+                with self.subTest(source=source, flags=flags):
+                    checked = self.cli(*flags, "--check", self.source)
+                    location = f"{self.source}:3:1: error[C0B-013]: ".encode()
+                    self.assertEqual((checked.returncode, checked.stdout, checked.stderr),
+                                     (1, b"", location + message + b"\n"))
 
     def test_outer_cleanup_failure_preserves_existing_output_and_mode(self):
         public, _ = self.installation(installed=True)

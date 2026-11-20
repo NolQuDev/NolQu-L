@@ -185,6 +185,22 @@ class NeverTests(unittest.TestCase):
                             b'fn wrong(x)->!{'+body+b'}fn main(){return 0}')
                     self.reject(source,profile=profile)
         self.reject(b'fn main()->!{}')
+        for profile in (0, 1):
+            self.check_return_diagnostic_for_signature(profile)
+
+    def check_return_diagnostic_for_signature(self, profile):
+        ordinary = (b"fn choose(x) {\n    if !x { return 7 }\n}\n"
+                    b"fn main() { return choose(0) }\n")
+        result = self.reject(ordinary, profile=profile)
+        self.assertEqual(result.stderr,
+                         b"input:3:1: error[C0B-013]: function may reach its end "
+                         b"without returning an i64\n")
+
+        bottom = b"fn stop() -> ! {\n    return 7\n}\nfn main() { return 0 }\n"
+        result = self.reject(bottom, profile=profile)
+        self.assertEqual(result.stderr,
+                         b"input:2:5: error[C0B-013]: invalid bottom contract; "
+                         b"verify signature and nonreturning paths\n")
 
     def test_strict_bottom_composition(self):
         for expression in [b'halt()+1',b'1+halt()',b'-halt()',b'~halt()',
@@ -443,6 +459,7 @@ class NeverTests(unittest.TestCase):
 
     def test_generation_never_and_bang_contract(self):
         for profile in (0,1):
+            self.check_return_diagnostic_for_signature(profile)
             source=b'fn halt()->!{halt()}fn main(){if !0{return 7}else{halt()}}'
             result=self.execute(self.compile(source,profile))
             self.assertEqual((result.returncode,result.stdout,result.stderr),(7,b'',b''))

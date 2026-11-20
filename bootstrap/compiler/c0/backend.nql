@@ -1363,7 +1363,11 @@ fn main() {
         byte_store(index + 2, (byte_load(index + 2) + ch * temp) != 0)
         byte_store(index, ch * left)
         active = kind == 41
-        ok = ok * ((active == 0) + active * (byte_load(6815744) == 0) * ((byte_load(8257535 + next) == 0) + (byte_load(8257535 + next) != 0) * (byte_load(6815745) == 0)))
+        temp = byte_load(8257535 + next)
+        # An ordinary function can fail this final check only by falling through.
+        # Internal selector 14 retains public code C0B-013 and the closing span.
+        error = 13 + active * (temp == 0)
+        ok = ok * ((active == 0) + active * (byte_load(6815744) == 0) * ((temp == 0) + (temp != 0) * (byte_load(6815745) == 0)))
         pos = pos + 1
     }
 
@@ -4881,12 +4885,19 @@ fn main() {
         pos = pos + 1
     }
 
-    # Packed constant bytes reduce predecessor patch-table use; no new arena.
+    # Both C0B-013 messages use the same scratch and first two little-endian words.
+    # 13: invalid bottom contract; verify signature and nonreturning paths
+    # 14: function may reach its end without returning an i64
     pos = 0
     temp = 0
-    while pos < 83 {
+    length = 83 * (error == 13) + 70 * (error == 14)
+    while (ok == 0) * (pos < length) {
         index = pos / 8
-        ch = 6589451742132641850 * (index == 0) + 6715765552327045187 * (index == 1) + 7596553832753602618 * (index == 2) + 7885649515982757988 * (index == 3) + 7161130726890365728 * (index == 4) + 7379555244522355572 * (index == 5) + 8386105371570413689 * (index == 6) + 2334111870319161973 * (index == 7) + 8247626271659290478 * (index == 8) + 8386107265617127790 * (index == 9) + 684904 * (index == 10)
+        ch = 6589451742132641850 * (index == 0) + 6715765552327045187 * (index == 1)
+        ch = ch + (error == 13) * (7596553832753602618 * (index == 2) + 7885649515982757988 * (index == 3) + 7161130726890365728 * (index == 4) + 7379555244522355572 * (index == 5))
+        ch = ch + (error == 13) * (8386105371570413689 * (index == 6) + 2334111870319161973 * (index == 7) + 8247626271659290478 * (index == 8) + 8386107265617127790 * (index == 9) + 684904 * (index == 10))
+        ch = ch + (error == 14) * (7598807797348048954 * (index == 2) + 8223706378928156271 * (index == 3) + 8319389999571362149 * (index == 4) + 8388366761961874720 * (index == 5))
+        ch = ch + (error == 14) * (8387235364765790056 * (index == 6) + 6998707544846660213 * (index == 7) + 11219367436398 * (index == 8))
         active = pos - (pos / 8) * 8 == 0
         temp = temp * (active == 0) + ch * active
         byte_store(6826000 + pos, temp)
@@ -4925,6 +4936,8 @@ fn main() {
         pos = pos - 1
     }
     error_write(pos + 1, (6825268 - pos) * (ok == 0))
-    error_write((6823936 + (error - 1) * 128) * (error < 10) + 6825400 * (error == 10) + 6825600 * (error == 11) + 6825800 * (error == 12) + 6826000 * (error == 13), (byte_load(6825136 + error) * (error < 10) + 92 * (error == 10) + 86 * (error == 11) + 83 * (error == 12) + 83 * (error == 13)) * (ok == 0))
+    index = (6823936 + (error - 1) * 128) * (error < 10) + 6825400 * (error == 10) + 6825600 * (error == 11) + 6825800 * (error == 12) + 6826000 * ((error == 13) + (error == 14))
+    length = length + byte_load(6825136 + error) * (error < 10) + 92 * (error == 10) + 86 * (error == 11) + 83 * (error == 12)
+    error_write(index, length * (ok == 0))
     return ok == 0
 }

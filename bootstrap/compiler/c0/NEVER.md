@@ -134,6 +134,15 @@ bottom return contract uses C0B-013/exit1. Type errors retain C0B-012/exit1.
 Malformed framing/topology retains its established diagnostic family. Compile
 failure produces no AST or ELF at the failing stage.
 
+For an unannotated function in /13, a possible path to the closing brace
+produces `C0B-013` at that brace with the message
+`function may reach its end without returning an i64`. An explicit `-> !`
+uses the bottom-contract diagnostic. For example, `fn main(){if !0{return 1}}`
+needs a return after the conditional or an `else` whose body returns or
+diverges. The return analysis keeps both branches of an `if` even when its
+condition has a known runtime value. Using only `not` in this example selects
+the older return check, which reports `C0P-004` in the frontend.
+
 ## Machine Contract And Resources
 
 Bottom has no RAX result, return-slot store or strict-parent value operation.
