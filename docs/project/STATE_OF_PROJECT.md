@@ -208,8 +208,9 @@ as the foundation for full NolQu-L toolchain migration. Preserve each qualified
 matched source/seed/pin/proof set and failed evidence while resolving the
 historical comparison-backend SIGKILL and remaining stable/security gaps.
 The former 8192-byte/u16 blocker was resolved by C0.31. C0.40 frontend/backend
-sources measure97051/249419 bytes and21455/59095 tokens, producing18693/49603
-nodes through u32 NQAF/5. Both fit the unchanged262144-byte,
+sources measure 97,051 and 250,269 bytes. The compiler profile produces 21,455
+and 59,235 tokens, and 18,693 and 49,704 nodes, respectively, through u32
+NQAF/5. Both fit the unchanged262144-byte,
 65536-token/node bounds; changed component pairs require fresh complete-source
 generation/platform qualification. Static bytes cannot yet cross ordinary i64
 parameter/return boundaries. Default programs keep

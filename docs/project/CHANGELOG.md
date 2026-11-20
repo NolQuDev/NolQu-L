@@ -124,6 +124,10 @@
 
 ### Fixed
 
+- In canonical Core, `C0B-013` now identifies the possible missing `i64`
+  return in an unannotated function. The diagnostic points to the closing
+  brace. A function declared `-> !` still receives the bottom-contract message.
+
 - Document logical `!`, `!=`, and `-> !` in the C0.40 language guide. The
   [status-byte example](../../examples/canonical/status_bits.nql) shows how to
   compare flags with different masks and distinguish a zero byte from EOF.
