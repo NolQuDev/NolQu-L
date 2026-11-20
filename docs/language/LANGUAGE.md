@@ -114,10 +114,10 @@ sign, and zero divisors or INT64_MIN%-1 fault with located C0R-001/70. This
 checked-quotient policy and independent /11 validation are defined in
 [REMAINDER.md](../../bootstrap/compiler/c0/REMAINDER.md); it does not change R0.
 
-Experimental C0.38 precedence, highest first, is calls/grouping, right-associative
-prefix `-`/`~`/`not`, `*`/`/`/`%`, `+`/`-`, `<<`/`>>`, relational, equality,
-`&`, `^`, `|`, `and`, `or`; binary
-operators associate left. Thus `6&3==2` means `6&(3==2)`. R0 keeps its shared
+Experimental C0.40 precedence, highest first, is calls/grouping, right-associative
+prefix `-`/`~`/`not`/`!`, `*`/`/`/`%`, `+`/`-`, `<<`/`>>`, relational, equality,
+`&`, `^`, `|`, `and`, `or`. Binary operators associate left.
+Thus `6&3==2` means `6&(3==2)`. R0 keeps its shared
 bitwise/additive level. Mixed unparenthesized expressions are not a valid
 differential oracle; overlap comparisons require fully parenthesized expressions
 within common defined semantics. The [C0.35 contract](../../bootstrap/compiler/c0/BITWISE.md)
@@ -166,6 +166,34 @@ Example:
 if x == 10 {
 print 1
 }
+```
+
+### Using `!` in canonical Core
+
+Select the experimental C0.40 frontend and backend with `nqlc --backend canonical`.
+
+| Form | Meaning | Example |
+| --- | --- | --- |
+| `!x` or `not x` | Evaluate an `i64` once. Zero gives `1` and every other value gives `0`. | `!2` gives `0`. Use `~2` for the bitwise complement, `-3`. |
+| `!!x` | Apply two prefix negations to normalize an `i64` to `0` or `1`. | `!!128` gives `1`. |
+| `a != b` | Compare two `i64` values for inequality. `!=` is one token. | `1!=!0` means `1 != (!0)` and gives `0`. |
+| `fn f() -> !` | Declare a function with no normal return. The compiler checks the body, including forward calls. | `fn idle() -> ! { while 1 {} }` |
+
+The built-in `write` returns an `i64` byte count. `!write("")` gives `1`.
+`!!write("\0")` writes one NUL byte and gives `1`. Applying `!` directly to
+`""` produces the type diagnostic `C0B-012`. Postfix `x!` and `x!!` are syntax errors.
+
+A call to `idle()` produces no value. In `1 or idle()`, short-circuit evaluation
+returns `1` without making the call. A body declared `-> !` that can fall through
+or explicitly returns an `i64` receives `C0B-013`. Recursive calls remain subject
+to the runtime depth limit. [Core type and machine contract](../../bootstrap/compiler/c0/NEVER.md)
+
+The status-byte example reads one byte and compares bits 0 and 7. Normalization
+lets it recognize that both bits are set in `0x81`. It exits `0` for agreement,
+`1` for disagreement, or `2` at EOF. [Runnable source](../../examples/canonical/status_bits.nql)
+
+```sh
+printf '\201' | ./nqlc --backend canonical --run examples/canonical/status_bits.nql
 ```
 
 ### Blocks

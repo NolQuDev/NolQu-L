@@ -1,0 +1,12 @@
+# Compare bits 0 and 7 of the first input byte.
+# Exit 0 when they agree, 1 when they differ, or 2 at end of input.
+
+fn bit_is_set(bits, mask) {
+    return !!(bits & mask)
+}
+
+fn main() {
+    if !input_read(0, 1) { return 2 }
+    let bits = byte_load(0)
+    return bit_is_set(bits, 1) != bit_is_set(bits, 128)
+}

@@ -124,6 +124,10 @@
 
 ### Fixed
 
+- Document logical `!`, `!=`, and `-> !` in the C0.40 language guide. The
+  [status-byte example](../../examples/canonical/status_bits.nql) shows how to
+  compare flags with different masks and distinguish a zero byte from EOF.
+
 - Fix combined installation from a clean checkout when invoked from another
   directory. NASM can now resolve R0's source includes, and relative staging
   paths still resolve from the caller's directory.

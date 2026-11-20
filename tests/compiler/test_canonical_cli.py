@@ -101,6 +101,24 @@ class CanonicalCliTests(unittest.TestCase):
         self.preserve("real-source.nql", self.source)
         self.assertEqual(list(self.temps.iterdir()), [])
 
+    def test_status_bits_example(self):
+        source = ROOT / "examples/canonical/status_bits.nql"
+        compiled = self.cli(source, "-o", self.output)
+        self.assertEqual((compiled.returncode, compiled.stdout, compiled.stderr), (0, b"", b""))
+        for data, status in ((b"", 2), (b"\x00", 0), (b"\x01", 1), (b"\x80", 1),
+                             (b"\x81", 0), (b"\x7e", 0), (b"\xff\x80", 0)):
+            with self.subTest(data=data):
+                result = self.execute(self.output, input=data)
+                self.assertEqual((result.returncode, result.stdout, result.stderr), (status, b"", b""))
+
+    def test_bang_on_write_counts_and_short_circuit_bottom(self):
+        self.source.write_text(
+            "fn stop() -> ! { stop() }\n"
+            'fn main() { return !write("") and (!!write("\\0") or stop()) }\n'
+        )
+        result = self.cli("--run", self.source, "-o", self.output)
+        self.assertEqual((result.returncode, result.stdout, result.stderr), (1, b"\x00", b""))
+
     def test_native_utility_check_compile_and_literal_arguments(self):
         self.source.write_bytes((ROOT / "examples/canonical/native_cat.nql").read_bytes())
         first, second = self.work / "binary input", self.work / "--backend=llvm"
@@ -169,8 +187,14 @@ class CanonicalCliTests(unittest.TestCase):
         self.assertEqual(list(self.temps.iterdir()), [])
 
     def test_syntax_and_semantic_errors_keep_locations_and_prior_output(self):
-        for source, code in (("fn main(){\n return (\n}\n", b"C0P-"),
-                             ("fn main(){\n return missing\n}\n", b"C0B-003")):
+        cases = (
+            ("fn main(){\n return (\n}\n", 3, 1, "C0P-006"),
+            ("fn main(){\n return missing\n}\n", 2, 9, "C0B-003"),
+            ('fn main() {\n    return !""\n}\n', 2, 12, "C0B-012"),
+            ("fn bad() -> ! {\n    return 0\n}\nfn main() { return 0 }\n", 2, 5, "C0B-013"),
+            ("fn main() {\n    return 1!!\n}\n", 2, 13, "C0P-007"),
+        )
+        for source, line, column, code in cases:
             with self.subTest(code=code):
                 self.source.write_text(source)
                 self.output.write_bytes(b"previous output\x00")
@@ -178,9 +202,8 @@ class CanonicalCliTests(unittest.TestCase):
                 result = self.cli(self.source, "-o", self.output)
                 self.assertEqual(result.returncode, 1, result.stderr)
                 self.assertEqual(result.stdout, b"")
-                self.assertIn(code, result.stderr)
-                self.assertRegex(result.stderr, re.escape(str(self.source).encode()) +
-                                 rb":[1-9][0-9]*:[1-9][0-9]*: error\[C0[PB]-")
+                diagnostic = f"{self.source}:{line}:{column}: error[{code}]: ".encode()
+                self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)
                 self.assertEqual(self.output.read_bytes(), b"previous output\x00")
                 self.assertEqual(stat.S_IMODE(self.output.stat().st_mode), 0o751)
                 self.assertFalse(list(self.work.glob(".c0-source.*")))
