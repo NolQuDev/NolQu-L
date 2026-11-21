@@ -185,8 +185,12 @@ The built-in `write` returns an `i64` byte count. `!write("")` gives `1`.
 
 A call to `idle()` produces no value. In `1 or idle()`, short-circuit evaluation
 returns `1` without making the call. A body declared `-> !` that can fall through
-or explicitly returns an `i64` receives `C0B-013`. Recursive calls remain subject
-to the runtime depth limit. [Core type and machine contract](../../bootstrap/compiler/c0/NEVER.md)
+or explicitly returns an `i64` receives `C0B-013`. In the same NQAF/13 unit,
+`fn idle() -> ! { while !0 {} }` is valid. The compiler can prove a guard
+from a decimal literal and repeated `!` or `not`. For `while !x {}` a parameter
+can change the outcome, so a function ending there still needs to account
+for a possible exit. Recursive calls remain subject to the runtime depth limit.
+[Core type and machine contract](../../bootstrap/compiler/c0/NEVER.md)
 
 The status-byte example reads one byte and compares bits 0 and 7. Normalization
 lets it recognize that both bits are set in `0x81`. It exits `0` for agreement,

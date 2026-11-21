@@ -291,6 +291,40 @@ class NeverTests(unittest.TestCase):
             source=b'fn Never(){return 7}fn idle()->!{while 1{}}fn main(){return Never()}'
             run=self.execute(self.compile(source,profile))
             self.assertEqual((run.returncode,run.stdout,run.stderr),(7,b'',b''))
+            # A high byte alone must count as nonzero, even under repeated NOT.
+            for condition in (b'!' * 257 + b'(0)', b'!' * 256 + b'9223372036854775807',
+                              b'!!72057594037927936'):
+                with self.subTest(condition=condition, profile=profile):
+                    self.compile(b'fn idle()->!{while ' + condition + b'{}}fn main(){return 7}', profile)
+            for condition in (b'!!0', b'not 256', b'!x', b'!value()', b'!(1-1)',
+                              b'!(1!=1)', b'!(1-0)', b'!(1 or 0)'):
+                with self.subTest(condition=condition, profile=profile):
+                    source = (b'fn value(){return 0}\nfn idle(x)->!{while ' + condition +
+                              b'{}\n}\nfn main(){return 7}')
+                    rejected = self.reject(source, profile=profile)
+                    self.assertTrue(rejected.stderr.startswith(b'input:3:1: error[C0B-013]:'))
+            siblings = (b'fn idle(x)->!{\nif x{while !0{}}else{while !1{}}\n}\n'
+                        b'fn main(){return 7}')
+            rejected = self.reject(siblings, profile=profile)
+            self.assertTrue(rejected.stderr.startswith(b'input:3:1: error[C0B-013]:'))
+            self.reject(b'fn idle()->!{while !0{return 7}}fn main(){return 0}', profile=profile)
+            self.reject(b'fn idle()->!{while !0{}return missing}fn main(){return 0}',
+                        b'C0B-003', profile)
+
+    def check_negated_literal_loop(self, profile):
+        # A finite body witnesses the true edge and its effect exactly once.
+        source = (b'fn idle()->!{while !0{}}'
+                  b'fn main(){while not (!256){write("Y")return 23}}')
+        result = self.execute(self.compile(source, profile))
+        self.assertEqual((result.returncode, result.stdout, result.stderr), (23, b'Y', b''))
+        false_loop = b'fn main(){while !256{write("N")return 23}return 7}'
+        result = self.execute(self.compile(false_loop, profile))
+        self.assertEqual((result.returncode, result.stdout, result.stderr), (7, b'', b''))
+        self.reject(b'fn idle()->!{while !256{}}fn main(){return 0}', profile=profile)
+        # A binary node must clear the zero tag left by its right operand.
+        compound = b'fn idle()->!{\nwhile !(1-0){}\n}\nfn main(){return 7}'
+        rejected = self.reject(compound, profile=profile)
+        self.assertTrue(rejected.stderr.startswith(b'input:3:1: error[C0B-013]:'))
 
     def test_wire_flags_spans_and_stale_versions(self):
         original=recursive_bottom_wire()
@@ -459,6 +493,7 @@ class NeverTests(unittest.TestCase):
 
     def test_generation_never_and_bang_contract(self):
         for profile in (0,1):
+            self.check_negated_literal_loop(profile)
             self.check_return_diagnostic_for_signature(profile)
             source=b'fn halt()->!{halt()}fn main(){if !0{return 7}else{halt()}}'
             result=self.execute(self.compile(source,profile))
