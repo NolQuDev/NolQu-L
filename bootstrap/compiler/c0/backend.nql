@@ -1275,20 +1275,21 @@ fn main() {
     }
 
     # /13 post-type flow: N/R/D at+0..2, saved then+3..5, literal+6, kind+7.
+    # In this pass start is the preceding node's truth: unknown=0, zero=1, nonzero=2.
     pos = 1
     count = 0
     next = 0
+    start = 0
     while ok * (byte_load(4) == 13) * (pos <= nodes) {
         error = 13
         index = 32 + got + (pos - 1) * 32
         kind = byte_load(index)
-        start = byte_load(index + 4) + 256 * byte_load(index + 4 + 1) + 65536 * byte_load(index + 4 + 2) + 16777216 * byte_load(index + 4 + 3)
         left = byte_load(index + 12) + 256 * byte_load(index + 12 + 1) + 65536 * byte_load(index + 12 + 2) + 16777216 * byte_load(index + 12 + 3)
         right = byte_load(index + 16) + 256 * byte_load(index + 16 + 1) + 65536 * byte_load(index + 16 + 2) + 16777216 * byte_load(index + 16 + 3)
-        byte_store(6819840, (start))
-        byte_store(6819840 + 1, (start) / 256)
-        byte_store(6819840 + 2, (start) / 65536)
-        byte_store(6819840 + 3, (start) / 16777216)
+        byte_store(6819840, byte_load(index + 4))
+        byte_store(6819841, byte_load(index + 5))
+        byte_store(6819842, byte_load(index + 6))
+        byte_store(6819843, byte_load(index + 7))
         active = kind == 39
         next = pos * active + next * (active == 0)
         count = count * (active == 0)
@@ -1324,17 +1325,14 @@ fn main() {
         byte_store(index + 3, 0)
         byte_store(index + 4, 0)
         byte_store(index + 5, 0)
-        byte_store(index + 6, 0)
+        # Topology has established that the while condition ends at pos - 1.
+        byte_store(index + 6, (kind == 34) * (start == 2))
         byte_store(index + 7, kind)
-        index = 32 + got + (pos - 1) * 32
-        left = byte_load(index + 12) + 256 * byte_load(index + 12 + 1) + 65536 * byte_load(index + 12 + 2) + 16777216 * byte_load(index + 12 + 3)
-        active = kind == 34
-        index = (32 + got + (left - 1) * 32) * active + 8384640 * (active == 0)
-        active = active * (byte_load(index) == 5)
-        index = (2756608 + (left - 1) * 16) * active + 8384640 * (active == 0)
+        active = kind == 5
+        index = (2756608 + (pos - 1) * 16) * active + 8384640 * (active == 0)
         temp = byte_load(index) + byte_load(index + 1) + byte_load(index + 2) + byte_load(index + 3) + byte_load(index + 4) + byte_load(index + 5) + byte_load(index + 6) + byte_load(index + 7)
-        index = (6815750 + count * 16) * active + 8384512 * (active == 0)
-        byte_store(index, temp != 0)
+        # NOT owns pos - 1 as well. Every other kind clears the literal proof.
+        start = active * (1 + (temp != 0)) + (kind == 54) * ((start == 1) * 2 + (start == 2))
         active = kind == 37
         index = (6815744 + count * 16) * active + 8384512 * (active == 0)
         byte_store(index + 3, byte_load(index))

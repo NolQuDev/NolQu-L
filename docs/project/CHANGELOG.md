@@ -31,6 +31,11 @@
 
 ### Added
 
+- In experimental canonical Core, a loop such as `while !0 {}` or
+  `while !!256 {}` can now satisfy a function's `-> !` contract. The check
+  recognizes logical negations of decimal literals in NQAF/13. Variables,
+  calls and other operators retain a possible loop exit. [Core contract](../../bootstrap/compiler/c0/NEVER.md)
+
 - Add experimental C0.40 logical `!expression` and verified `fn f() -> !`
   bottom contracts. NQAF/13 independently validates signature ownership,
   finite types and normal/return/diverge flow. Preserve `!=`, old source/wire

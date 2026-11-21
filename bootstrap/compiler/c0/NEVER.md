@@ -54,10 +54,15 @@ whose operand diverges has no normal return edge. `main` may declare `-> !`;
 startup then expects no return value or exit-status conversion.
 
 The analysis recognizes nonreturning declared calls after exact global name
-and arity resolution, and a loop whose condition is an exact nonzero integer
-literal. Unknown conditions remain conservative. This is a bounded structural
-analysis, not a general termination proof. Core still has no break/continue or
-exception model. Future loop-exit syntax must revise the loop rule explicitly.
+and arity resolution. In NQAF/13 a `while` guard is provably true if a decimal
+literal, optionally grouped and prefixed with any number of logical `!` or
+`not` operators, evaluates to a nonzero i64. For example, `while !0 {}` and
+`while not (!256) {}` satisfy the loop rule. `while !256 {}`, `while !x {}`
+and `while !(1-1) {}` retain a possible exit. Unary arithmetic minus, bitwise
+complement, comparisons and calls are outside this literal proof. The compiler
+still checks each body and every explicit return. A return inside an entered
+loop can return normally from an ordinary function. Core has no break/continue
+or exception model. Future loop-exit syntax must revise the rule explicitly.
 Recursive and mutually recursive declarations are checked as one compilation
 unit; every body must satisfy its own result contract. The existing depth limit
 may still cause a controlled fault: Never promises absence of normal return,
@@ -189,6 +194,14 @@ topology and type validation, a /13-only postorder pass reuses each input
 record's reserved byte at+2 in compiler memory for its possible-divergence bit.
 Reserved fields remain zero at the wire boundary; no modified AST is published.
 This internal reuse adds neither an arena nor a transport field.
+In the existing /13 flow pass, a scalar tracks whether the preceding node
+is known zero, known nonzero, or unknown. A literal sets it from all eight
+validated immediate bytes, logical NOT flips a known value, and every other
+node clears it. Both NOT and a while guard own the immediately preceding
+expression root in validated postorder. Each while saves that fact before
+its body is scanned. This takes constant work per node and one existing
+local. Branch emission and runtime evaluation follow the original tree.
+Older NQAF versions keep their existing return checks.
 Source correspondence
 reuses spare high bytes of its existing table only for non-brace bytes; actual
 brace offsets retain their old representation. Compiler diagnostic constants
@@ -217,6 +230,7 @@ native authority and false artifact/proof promotion.
 | NB05 wide spans/IDs and capacities remain bounded | frontend `test_wide_annotation_spans_names_and_current_function_id`, `test_source_token_and_block_bounds_in_both_profiles`; backend `test_high_name_and_span_callee_contracts` |
 | NB06 returning target reaches a defined guard | `test_returning_target_faults_before_reading_a_result`, `test_bottom_main_fallthrough_guard` |
 | NB07 complete actual B/C evidence is required | `test_generation_never_and_bang_contract` plus producer/consumer missing-input, selector and false-success controls |
+| NB08 only a true literal/NOT chain removes the loop's false edge | `test_literal_loop_proof_and_ordinary_never_identifier` and `test_generation_never_and_bang_contract`, including finite loop-body effects in both profiles |
 
 Finite recursive tests expect the actual depth fault. Literal endless loops
 are inspected, not executed indefinitely and called successful after timeout.
